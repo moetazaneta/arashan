@@ -702,12 +702,7 @@ async function ofFarm<
     | "flockAssignments"
     | "moneyCategories"
     | "moneyRecords",
->(
-  db: DatabaseReader,
-  table: Table,
-  farmId: FarmId,
-  id: string,
-): Promise<Doc<Table> | null> {
+>(db: DatabaseReader, table: Table, farmId: FarmId, id: string): Promise<Doc<Table> | null> {
   const doc = await getActive(db, table, id);
   return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
 }

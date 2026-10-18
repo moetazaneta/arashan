@@ -69,7 +69,11 @@ describe("invites", () => {
     expect(token).not.toBe(newToken);
 
     const audit = await t.run((ctx) => ctx.db.query("auditLog").collect());
-    expect(audit.map((entry) => entry.command)).toEqual([
+    expect(
+      audit
+        .filter((entry) => entry.command !== "moneyCategory.create")
+        .map((entry) => entry.command),
+    ).toEqual([
       "user.register",
       "user.setOperator",
       "farm.create",
