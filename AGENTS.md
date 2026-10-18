@@ -209,3 +209,11 @@ The main thread is an orchestrator. It routes each task from the owner to a T3 C
   - Medium task: Opus 5.5, effort `high`.
   - Hard task: Opus 5.5, effort `xhigh`. Also use `/advisor`, and get a review from
     `codex 6.1 sol`, effort `low`.
+- **Browser tasks** (computer use: dashboards, sign-ups, clicking through the app) go to
+  `codex 5.6 terra`, effort `xhigh`. Codex is good at computer use. Give it a detailed,
+  step-by-step plan, so that it uses fewer tokens.
+- **Watch for stuck threads.** If a thread makes no progress for a long time, find out why and
+  unblock it: push it, tell it to decide by itself, or tell it to try other approaches.
+- **When the owner is away, the threads do not wait for the owner.** They make the decision
+  themselves, also a risky one, and record it: in the PR description, under "Decisions made
+  without the owner", and in the orchestrator's decision log.
