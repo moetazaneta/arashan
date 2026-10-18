@@ -7,6 +7,7 @@ const staticCheckIgnorePatterns = [
   "packages/backend/convex/_generated/**",
   ".agents/**",
   ".claude/**",
+  ".github/skills/**",
   "**/*.md",
 ];
 

@@ -18,3 +18,7 @@ dist
 
 # The Vercel CLI link of this checkout (scripts/setup-services.sh).
 .vercel
+
+# The platform binaries of the Impeccable skill. Its launcher, scripts/impeccable, downloads the
+# pinned version into ~/.impeccable on first use.
+**/skills/impeccable/scripts/bin/
