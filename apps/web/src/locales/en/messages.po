@@ -7,49 +7,319 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/routes/farms/$farmId/index.tsx
+msgid "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
+msgstr "{lambAgeMonths, plural, one {under # month} other {under # months}}"
+
+#: src/routes/invite/$token.tsx
+msgid "администратор"
+msgstr "Admin"
+
+#: src/routes/operator/farms.tsx
+msgid "Администратор"
+msgstr "Admin"
+
+#: src/routes/operator/farms.tsx
+msgid "Администратор есть"
+msgstr "Has an Admin"
+
+#: src/routes/operator/farms.tsx
+msgid "Администратор фермы сможет потом изменить эти настройки."
+msgstr "The Admin of the farm can change these settings later."
+
+#: src/components/farm-settings-fields.tsx
+msgid "Баран младше этого возраста — ягнёнок."
+msgstr "A sheep younger than this is a lamb."
+
 #: src/errors.ts
-msgid "Введите название."
-msgstr "Enter a name."
+msgid "В ферме уже есть участник: новая ссылка не нужна."
+msgstr "The farm already has a member: it needs no new link."
+
+#: src/components/farm-settings-fields.tsx
+#: src/routes/farms/$farmId/index.tsx
+msgid "Валюта"
+msgstr "Currency"
+
+#: src/errors.ts
+msgid "Ваша учётная запись ещё не готова. Обновите страницу."
+msgstr "Your account is not ready yet. Reload the page."
+
+#: src/errors.ts
+msgid "Введите название фермы."
+msgstr "Enter the name of the farm."
+
+#: src/errors.ts
+msgid "Введите целое число месяцев от {minLambAgeMonths} до {maxLambAgeMonths}."
+msgstr "Enter a whole number of months from {minLambAgeMonths} to {maxLambAgeMonths}."
 
 #: src/components/app-version.tsx
 msgid "Версия {version}"
 msgstr "Version {version}"
 
-#: src/components/samples-card.tsx
-msgid "Добавить"
-msgstr "Add"
+#: src/routes/farms/$farmId/index.tsx
+msgid "Возраст ягнёнка"
+msgstr "Lamb age"
 
-#: src/components/samples-card.tsx
+#: src/components/farm-settings-fields.tsx
+msgid "Возраст ягнёнка, месяцев"
+msgstr "Lamb age, months"
+
+#: src/routes/__root.tsx
+msgid "Войдите, чтобы открыть записи вашей фермы."
+msgstr "Log in to open the records of your farm."
+
+#: src/errors.ts
+msgid "Войдите, чтобы продолжить."
+msgstr "Log in to continue."
+
+#: src/routes/operator/farms.tsx
+msgid "Все фермы"
+msgstr "All farms"
+
+#: src/routes/invite/$token.tsx
+msgid "Вступить в ферму"
+msgstr "Join the farm"
+
+#: src/routes/invite/$token.tsx
+msgid "Вы вошли как <0>{username}</0>."
+msgstr "You are logged in as <0>{username}</0>."
+
+#: src/routes/invite/$token.tsx
+msgid "Вы станете участником фермы. Ваша роль: {role}. Ссылка работает до {expiresAt}."
+msgstr "You will become a member of the farm. Your role: {role}. The link works until {expiresAt}."
+
+#: src/errors.ts
+msgid "Вы уже участник этой фермы."
+msgstr "You are already a member of this farm."
+
+#: src/components/farm-settings-fields.tsx
+msgid "Выберите валюту"
+msgstr "Select a currency"
+
+#: src/errors.ts
+msgid "Выберите валюту из списка."
+msgstr "Select a currency from the list."
+
+#: src/components/app-shell.tsx
+msgid "Выберите ферму"
+msgstr "Select a farm"
+
+#: src/errors.ts
+msgid "Выберите часовой пояс из списка."
+msgstr "Select a time zone from the list."
+
+#: src/components/app-shell.tsx
+#: src/routes/__root.tsx
+#: src/routes/invite/$token.tsx
+msgid "Выйти"
+msgstr "Log out"
+
+#: src/routes/operator/farms.tsx
+msgid "Действия"
+msgstr "Actions"
+
+#: src/routes/operator/farms.tsx
+msgid "Ждёт администратора"
+msgstr "Waits for an Admin"
+
+#: src/components/loading.tsx
+msgid "Загрузка"
+msgstr "Loading"
+
+#: src/routes/farms/$farmId/index.tsx
+msgid "Изменить настройки"
+msgstr "Change the settings"
+
+#: src/components/invite-link-card.tsx
+msgid "Копировать"
+msgstr "Copy"
+
+#: src/components/home-link.tsx
+msgid "На главную"
+msgstr "To the home page"
+
+#: src/routes/operator/farms.tsx
 msgid "Название"
 msgstr "Name"
 
+#: src/components/farm-settings-fields.tsx
+msgid "Например, Asia/Bishkek"
+msgstr "For example, Asia/Bishkek"
+
+#: src/components/app-shell.tsx
+msgid "Настройки"
+msgstr "Settings"
+
+#: src/routes/farms/$farmId/settings.tsx
+msgid "Настройки сохранены."
+msgstr "The settings are saved."
+
+#: src/routes/farms/$farmId/index.tsx
+#: src/routes/farms/$farmId/settings.tsx
+msgid "Настройки фермы"
+msgstr "Farm settings"
+
+#: src/routes/farms/$farmId/settings.tsx
+msgid "Настройки фермы меняет только её администратор."
+msgstr "Only an Admin of the farm can change its settings."
+
+#: src/routes/__root.tsx
+msgid "Не удалось войти"
+msgstr "Could not log in"
+
+#: src/routes/operator/farms.tsx
+msgid "Новая ссылка"
+msgstr "New link"
+
+#: src/routes/operator/farms.tsx
+msgid "Новая ссылка для фермы «{farmName}»"
+msgstr "New link for the farm “{farmName}”"
+
+#: src/routes/operator/farms.tsx
+msgid "Новая ферма"
+msgstr "New farm"
+
+#: src/routes/operator/farms.tsx
+msgid "Новые фермы создаёт оператор приложения."
+msgstr "The operator of the app makes new farms."
+
+#: src/components/invite-link-card.tsx
+msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
+msgstr "Send it to the person who will manage the farm. That person opens the link, logs in, and becomes its Admin."
+
+#: src/components/farm-settings-fields.tsx
+msgid "По нему приложение решает, когда начинается день."
+msgstr "The app uses it to know when a day starts."
+
+#: src/routes/farms/$farmId/index.tsx
+msgid "По ним приложение считает деньги, даты и возраст."
+msgstr "The app uses them for money, dates and ages."
+
+#: src/routes/index.tsx
+msgid "Попросите администратора фермы прислать ссылку-приглашение."
+msgstr "Ask an Admin of a farm to send you an invite link."
+
+#: src/routes/invite/$token.tsx
+msgid "Приглашение в ферму «{farmName}»"
+msgstr "Invitation to the farm “{farmName}”"
+
+#: src/routes/__root.tsx
+msgid "Проверьте адрес или вернитесь на главную."
+msgstr "Check the address, or go back to the home page."
+
+#: src/components/app-shell.tsx
+msgid "Разделы"
+msgstr "Sections"
+
+#: src/routes/invite/$token.tsx
+msgid "редактор"
+msgstr "Editor"
+
+#: src/components/invite-link-card.tsx
+msgid "Скопировано"
+msgstr "Copied"
+
+#: src/routes/operator/farms.tsx
+msgid "Создайте ферму и отправьте ссылку её первому администратору."
+msgstr "Make a farm and send a link to its first Admin."
+
+#: src/routes/operator/farms.tsx
+msgid "Создана"
+msgstr "Created"
+
+#: src/routes/operator/farms.tsx
+msgid "Создать ферму"
+msgstr "Create the farm"
+
+#: src/routes/farms/$farmId/settings.tsx
+msgid "Сохранить"
+msgstr "Save"
+
 #: src/errors.ts
-msgid "Образец с таким названием уже есть."
-msgstr "A sample with this name already exists."
+msgid "Ссылка больше не работает. Попросите новую."
+msgstr "The link no longer works. Ask for a new one."
 
-#: src/components/samples-card.tsx
-msgid "Образцы"
-msgstr "Samples"
+#: src/components/invite-link-card.tsx
+msgid "Ссылка для администратора фермы «{farmName}»"
+msgstr "Link for the Admin of the farm “{farmName}”"
 
-#: src/components/samples-card.tsx
-msgid "Пример команды, которая проходит через все слои приложения."
-msgstr "An example of a command that goes through all the layers of the app."
+#: src/components/invite-link-card.tsx
+msgid "Ссылка работает один раз, до {expiresAt}. Она показана только сейчас: скопируйте её перед уходом со страницы."
+msgstr "The link works once, until {expiresAt}. It is shown only now: copy it before you leave the page."
 
-#: src/components/samples-card.tsx
-msgid "Удалить"
-msgstr "Delete"
+#: src/components/invite-link-card.tsx
+msgid "Ссылка-приглашение"
+msgstr "Invite link"
 
-#: src/components/samples-card.tsx
-msgid "Удалить «{name}»"
-msgstr "Delete “{name}”"
+#: src/errors.ts
+msgid "Такого пользователя нет."
+msgstr "There is no such user."
+
+#: src/components/farm-settings-fields.tsx
+msgid "Такого часового пояса нет."
+msgstr "No such time zone."
+
+#: src/errors.ts
+msgid "Такой ссылки-приглашения нет. Проверьте, что ссылка скопирована целиком."
+msgstr "There is no such invite link. Check that you copied all of the link."
+
+#: src/routes/__root.tsx
+msgid "Такой страницы нет"
+msgstr "There is no such page"
+
+#: src/errors.ts
+msgid "Такой фермы нет."
+msgstr "There is no such farm."
+
+#: src/errors.ts
+msgid "У вас нет доступа к этой ферме."
+msgstr "You have no access to this farm."
+
+#: src/errors.ts
+msgid "У вас нет прав на это действие."
+msgstr "You are not allowed to do this."
+
+#: src/routes/index.tsx
+msgid "У вас пока нет фермы"
+msgstr "You have no farm yet"
+
+#: src/errors.ts
+msgid "У вашей учётной записи нет имени пользователя. Выйдите и войдите по имени пользователя."
+msgstr "Your account has no username. Log out, and log in with a username."
+
+#: src/routes/operator/farms.tsx
+msgid "Ферм пока нет"
+msgstr "No farms yet"
+
+#: src/components/app-shell.tsx
+msgid "Ферма"
+msgstr "Farm"
+
+#: src/components/app-shell.tsx
+#: src/routes/operator/farms.tsx
+msgid "Фермы"
+msgstr "Farms"
+
+#: src/components/farm-settings-fields.tsx
+#: src/routes/farms/$farmId/index.tsx
+msgid "Часовой пояс"
+msgstr "Time zone"
 
 #: src/errors.ts
 msgid "Что-то пошло не так. Попробуйте ещё раз."
 msgstr "Something went wrong. Try again."
 
 #: src/errors.ts
-msgid "Этого образца больше нет."
-msgstr "This sample no longer exists."
+msgid "Это может сделать только оператор."
+msgstr "Only the operator can do this."
+
+#: src/routes/operator/farms.tsx
+msgid "Этот раздел только для оператора"
+msgstr "This section is for the operator only"
+
+#: src/errors.ts
+msgid "Эту ссылку уже использовали. Попросите новую."
+msgstr "Someone already used this link. Ask for a new one."
 
 #: src/components/locale-switch.tsx
 msgid "Язык"

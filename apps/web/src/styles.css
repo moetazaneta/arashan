@@ -4,6 +4,10 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
+/* The Clerk sign-in form of @arashan/client uses Clerk's shadcn theme, whose Tailwind classes are in
+   this file, outside apps/web/src. */
+@source "../../../packages/client/node_modules/@clerk/ui/dist/themes/shadcn.js";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

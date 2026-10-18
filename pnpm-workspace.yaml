@@ -8,6 +8,9 @@ catalogMode: prefer
 
 catalog:
   "@base-ui/react": 1.9.0
+  "@clerk/localizations": 4.23.0
+  "@clerk/react": 6.17.8
+  "@clerk/ui": 1.40.2
   "@convex-dev/react-query": 0.1.0
   "@edge-runtime/vm": 5.0.0
   "@fontsource-variable/geist": 5.3.0
@@ -55,5 +58,8 @@ peerDependencyRules:
 permissions:
   "@tanstack/router-plugin":
     skills: true
+  # A dependency of @clerk/ui. Its install script only prints a message.
+  core-js:
+    build: false
   esbuild:
     build: false
