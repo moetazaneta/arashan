@@ -44,6 +44,7 @@ export const errorCodes = [
   "sheep.birthDateRequired",
   "sheep.birthDateInFuture",
   "sheep.birthDateAfterOwnerChange",
+  "sheep.birthDateAfterFlockMove",
   "sheep.purchaseRequired",
   "sheep.originLocked",
   "sheep.ownerNotMember",

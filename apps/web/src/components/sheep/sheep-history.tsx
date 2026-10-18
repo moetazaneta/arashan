@@ -1,6 +1,7 @@
-import { useSheepHistory } from "@arashan/client";
+import { type SheepCardData, useSheepHistory } from "@arashan/client";
 import type { Farm, SheepId } from "@arashan/core";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { useId } from "react";
 
 import { Loading } from "@/components/loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,9 +17,31 @@ import { useErrorMessage } from "@/errors";
 import { formatDateTime } from "@/format";
 
 import { commandLabels } from "./labels";
+import { SheepFlockStays, SheepResponsible } from "./sheep-flocks";
 
-/** The tab «История»: who changed the Sheep and when, the newest first. */
-export function SheepHistory({ farm, sheepId }: { farm: Farm; sheepId: SheepId }) {
+/**
+ * The tab «История»: the Flocks of the Sheep, who was responsible for it on a day, and who changed
+ * it and when.
+ */
+export function SheepHistory({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
+  const changesId = useId();
+
+  return (
+    <div className="flex flex-col gap-8">
+      <SheepFlockStays farm={farm} sheep={sheep} />
+      <SheepResponsible farm={farm} sheep={sheep} />
+      <section aria-labelledby={changesId} className="flex flex-col gap-3">
+        <h2 id={changesId} className="text-base font-semibold">
+          <Trans>Изменения</Trans>
+        </h2>
+        <SheepChanges farm={farm} sheepId={sheep.id} />
+      </section>
+    </div>
+  );
+}
+
+/** Who changed the Sheep and when, the newest first. */
+function SheepChanges({ farm, sheepId }: { farm: Farm; sheepId: SheepId }) {
   const { i18n } = useLingui();
   const history = useSheepHistory(farm.id, sheepId);
   const error = useErrorMessage(history.error);
