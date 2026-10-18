@@ -160,3 +160,23 @@ test("an Editor has no «Участники» link, and the page tells that only
   expect(screen.queryByRole("link", { name: "Участники" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Новая ссылка" })).toBeNull();
 });
+
+test("the error of a Role change goes away when the Admin starts another action", async () => {
+  const user = userEvent.setup();
+  const { farm } = adminOfFarm();
+  updateFake((backend) => {
+    backend.failures.changeMemberRole = new DomainError("member.lastAdmin");
+  });
+  renderApp(`/farms/${farm.id}/members`);
+  await user.click(await screen.findByRole("combobox", { name: "Роль участника aibek" }));
+  await user.click(await screen.findByRole("option", { name: "Редактор" }));
+  await screen.findByText(/Сначала назначьте администратором/);
+
+  await user.click(screen.getByRole("button", { name: "Удалить zarina из фермы" }));
+  await user.click(
+    within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Удалить" }),
+  );
+
+  expect(await screen.findByText("Бывшие участники")).toBeTruthy();
+  expect(screen.queryByText(/Сначала назначьте администратором/)).toBeNull();
+});
