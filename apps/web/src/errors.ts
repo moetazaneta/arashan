@@ -54,6 +54,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "sheep.dateInvalid": msg`Введите дату полностью: день, месяц и год.`,
   "sheep.birthDateRequired": msg`Введите дату рождения. Если её никто не знает, запишите барана как начальный ввод.`,
   "sheep.birthDateInFuture": msg`Дата рождения не может быть в будущем.`,
+  "sheep.birthDateAfterOwnerChange": msg`Дата рождения позже смены владельца. Проверьте дату рождения или историю владельцев.`,
   "sheep.purchaseRequired": msg`Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод».`,
   "sheep.originLocked": msg`Происхождение меняется только у начального ввода.`,
   "sheep.ownerNotMember": msg`Владелец должен быть участником фермы. Выберите другого.`,

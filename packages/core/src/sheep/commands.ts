@@ -160,10 +160,12 @@ export interface SheepUpdate extends SheepDetails {
 
 /**
  * A Member changes the fields of a Sheep, also of an External Sheep. The same rules apply as for a
- * new Sheep. A Sheep that is a parent keeps its sex, and stays born before its children. A change of
- * the Breed composition changes the composition of all descendants too, so it fails if a Sheep with
- * a Passport among them would stop being 100 percent Arashan. The Owner changes only with
- * `changeSheepOwner`, which records the date. A change that changes nothing writes nothing.
+ * new Sheep, and the birth date is not after a change of the Owner
+ * (`sheep.birthDateAfterOwnerChange`). A Sheep that is a parent keeps its sex, and stays born before
+ * its children. A change of the Breed composition changes the composition of all descendants too,
+ * so it fails if a Sheep with a Passport among them would stop being 100 percent Arashan. The Owner
+ * changes only with `changeSheepOwner`, which records the date. A change that changes nothing writes
+ * nothing.
  */
 export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): Promise<void> {
   authorize(ctx.member, "sheep.update", { farmId: ctx.farm.id });
@@ -172,6 +174,13 @@ export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): 
   if (origin !== sheep.origin && !sheep.initialEntry) throw new DomainError("sheep.originLocked");
   const details = validDetails(input, today(ctx));
   requireBirthDate(details, { origin, initialEntry: sheep.initialEntry });
+  const { birthDate } = details;
+  if (birthDate !== null && birthDate !== sheep.birthDate) {
+    const changes = await ctx.repos.sheep.ownerChanges(sheep.id);
+    if (changes.some((change) => change.date < birthDate)) {
+      throw new DomainError("sheep.birthDateAfterOwnerChange");
+    }
+  }
   if (origin !== "external") await requireFreeTag(ctx, details.tag, sheep.id);
   await requireChildrenFit(ctx, sheep, details);
   const pedigree = await validPedigree(ctx, sheep, details, input);

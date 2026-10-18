@@ -150,7 +150,11 @@ const fieldCodes = {
   tag: ["sheep.tagTaken", "sheep.tagTooLong"],
   name: ["sheep.nameTooLong"],
   sex: ["pedigree.parentSexLocked"],
-  birthDate: ["sheep.birthDateRequired", "sheep.birthDateInFuture"],
+  birthDate: [
+    "sheep.birthDateRequired",
+    "sheep.birthDateInFuture",
+    "sheep.birthDateAfterOwnerChange",
+  ],
   owner: ["sheep.ownerNotMember"],
   weight: ["sheep.weightInvalid", "sheep.weighingDateInvalid"],
   notes: ["sheep.notesTooLong"],
