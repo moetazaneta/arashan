@@ -69,7 +69,10 @@ export type TargetKind =
 export interface AuditEntry {
   /** When the command ran, in milliseconds since the Unix epoch. */
   at: number;
-  /** The User who ran the command, or null for the CLI (an internal function). */
+  /**
+   * The User who ran the command, or null for the CLI (an internal function) and for the app itself,
+   * for example when it gives a Farm its default lists of categories.
+   */
   actorId: UserId | null;
   /** The Farm of the target, or null if the target belongs to no Farm, such as a User. */
   farmId: FarmId | null;
