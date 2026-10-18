@@ -74,6 +74,9 @@ describe("listSheep", () => {
         owner: { id: editorId, name: "editor" },
         weight: { kg: 20, date: "2026-10-01" },
         notes: "Шустрая",
+        composition: { breeds: [], unknown: 1_000_000 },
+        grade: null,
+        hasPassport: false,
         registeredAt: store.time,
       },
     ]);

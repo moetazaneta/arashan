@@ -1,6 +1,8 @@
 import type { Member } from "./access/permissions";
 import type { AuditLog, FarmAuditReader } from "./audit/audit";
+import type { FarmBreedReader, FarmBreedRepository } from "./breeds/breed";
 import type { Farm, FarmReader, FarmRepository, FarmSettings } from "./farms/farm";
+import type { FileReader, FileStorage } from "./files/files";
 import type {
   FarmInviteRepository,
   InviteReader,
@@ -68,6 +70,9 @@ export interface FarmReaders {
   memberships: FarmMembershipReader;
   users: MemberUserReader;
   sheep: FarmSheepReader;
+  breeds: FarmBreedReader;
+  /** The file storage, such as the scans of Passports. */
+  files: FileReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -83,6 +88,8 @@ export interface FarmRepositories {
   users: MemberUserReader;
   invites: FarmInviteRepository;
   sheep: FarmSheepRepository;
+  breeds: FarmBreedRepository;
+  files: FileStorage;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

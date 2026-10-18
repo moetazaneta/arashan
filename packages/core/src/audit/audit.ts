@@ -21,12 +21,18 @@ export type CommandName =
   | "member.setPasswordFailed"
   | "member.setPasswordUnknown"
   | "sheep.register"
+  | "sheep.registerExternal"
   | "sheep.update"
   | "sheep.changeOwner"
-  | "sheep.delete";
+  | "sheep.delete"
+  | "breed.add"
+  | "breed.rename"
+  | "breed.archive"
+  | "breed.unarchive"
+  | "breed.delete";
 
 /** The kind of record that a command changed. */
-export type TargetKind = "User" | "Farm" | "Membership" | "Invite" | "Sheep";
+export type TargetKind = "User" | "Farm" | "Membership" | "Invite" | "Sheep" | "Breed";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

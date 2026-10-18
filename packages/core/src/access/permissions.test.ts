@@ -25,6 +25,10 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "sheep.update": { admin: true, editor: true },
   "sheep.changeOwner": { admin: true, editor: true },
   "sheep.delete": { admin: true, editor: true },
+  "breed.view": { admin: true, editor: true },
+  "breed.add": { admin: true, editor: true },
+  "breed.update": { admin: true, editor: true },
+  "breed.delete": { admin: true, editor: true },
 };
 
 describe("can", () => {

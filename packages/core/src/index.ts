@@ -10,6 +10,22 @@ export {
 export { enterFarm, requireOperator, requireUser } from "./access/session";
 export { getAppVersion } from "./app/version";
 export type { AuditEntry, AuditLog, CommandName, FarmAuditReader, TargetKind } from "./audit/audit";
+export {
+  arashanBreedId,
+  breedNameKey,
+  maxBreedNameLength,
+  type Breed,
+  type FarmBreedReader,
+  type FarmBreedRepository,
+} from "./breeds/breed";
+export {
+  addBreed,
+  deleteBreed,
+  listBreeds,
+  renameBreed,
+  setBreedArchived,
+  type BreedRow,
+} from "./breeds/commands";
 export type {
   CommandContext,
   FarmCommandContext,
@@ -40,8 +56,11 @@ export {
   type FarmSettings,
 } from "./farms/farm";
 export { addMonths, dateAt, isCalendarDate, type CalendarDate } from "./dates";
+export type { FileReader, FileStorage, StoredFile } from "./files/files";
 export type {
+  BreedId,
   FarmId,
+  FileId,
   Id,
   InviteId,
   MembershipId,
@@ -89,11 +108,33 @@ export {
   type Role,
 } from "./members/membership";
 export {
+  arashanShare,
+  compositionOf,
+  isPureArashan,
+  manualLimit,
+  wholeShare,
+  type BreedComposition,
+  type BreedShare,
+} from "./pedigree/composition";
+export {
+  cachedLookup,
+  compositions,
+  knownParents,
+  requireParents,
+  type PedigreeSheep,
+  type SheepLookup,
+} from "./pedigree/pedigree";
+export {
   changeSheepOwner,
   deleteSheep,
+  registerExternalSheep,
   registerSheep,
+  requestPassportScanUpload,
+  requireNotParent,
   requireOwner,
   updateSheep,
+  type ExternalSheepRegistration,
+  type PedigreeDetails,
   type RegisteredOrigin,
   type SheepDetails,
   type SheepRegistration,
@@ -102,30 +143,45 @@ export {
 export {
   getSheep,
   getSheepHistory,
+  getSheepPedigree,
+  listParentOptions,
   listSheep,
   listSheepOwners,
+  pedigreeDepth,
   type OwnerOption,
   type OwnerPeriod,
   type OwnerRef,
+  type ParentOption,
+  type PassportView,
+  type PedigreeNode,
   type SheepCard,
   type SheepHistoryEntry,
+  type SheepRef,
   type SheepRow,
 } from "./sheep/queries";
 export {
+  grades,
   isLamb,
+  isOnFarm,
+  maxPassportNumberLength,
+  maxScanBytes,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxTagLength,
   maxWeightKg,
   origins,
+  scanContentTypes,
   sexes,
   sheepStatuses,
   tagKey,
   withLamb,
   type FarmSheepReader,
   type FarmSheepRepository,
+  type Grade,
+  type Grading,
   type Origin,
   type OwnerChange,
+  type Passport,
   type Sex,
   type Sheep,
   type SheepFields,

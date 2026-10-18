@@ -84,6 +84,11 @@ describe("registerSheep", () => {
       ownerId: membershipId("editor"),
       notes: "С рыжим пятном",
       weight: { kg: 41.5, date: "2026-10-01" },
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
       registeredAt: store.time,
     });
     expect(store.audit.at(-1)).toEqual({

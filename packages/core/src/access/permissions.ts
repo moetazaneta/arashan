@@ -40,6 +40,14 @@ export const permissions = {
   "sheep.changeOwner": ["admin", "editor"],
   /** Make a Sheep Deleted, for a record made by mistake. */
   "sheep.delete": ["admin", "editor"],
+  /** See the Breeds of the Farm. */
+  "breed.view": ["admin", "editor"],
+  /** Add a Breed to the list of the Farm. */
+  "breed.add": ["admin", "editor"],
+  /** Rename a Breed, archive it, or take it out of the archive. */
+  "breed.update": ["admin", "editor"],
+  /** Make a Breed that no Sheep uses Deleted, for a record made by mistake. */
+  "breed.delete": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;
