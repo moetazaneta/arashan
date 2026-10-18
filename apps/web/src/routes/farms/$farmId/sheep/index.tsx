@@ -1,10 +1,11 @@
 import type { FarmId, SheepId } from "@arashan/core";
 import { useFarm, useSheepList } from "@arashan/client";
-import { Plural, Trans } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { type MoveResult, MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
+import { statusLabels } from "@/components/sheep/labels";
 import { RegisterSheepSheet } from "@/components/sheep/sheep-form";
 import {
   ColumnSettings,
@@ -12,6 +13,13 @@ import {
   SheepTable,
   useSheepColumns,
 } from "@/components/sheep/sheep-table";
+import { ChangeStatusDialog, type StatusResult } from "@/components/sheep/status-dialogs";
+import {
+  filterByStatus,
+  isStatusFilter,
+  type StatusFilter,
+  StatusFilterToggle,
+} from "@/components/sheep/status-filter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -19,13 +27,21 @@ import { Kbd } from "@/components/ui/kbd";
 import { useErrorMessage } from "@/errors";
 import { useKeyShortcut } from "@/shortcuts";
 
+/** The Status filter of the table in the URL. Active is the default. */
+interface SheepSearch {
+  status?: Exclude<StatusFilter, "active">;
+}
+
 export const Route = createFileRoute("/farms/$farmId/sheep/")({
+  validateSearch: (search: Record<string, unknown>): SheepSearch =>
+    isStatusFilter(search.status) && search.status !== "active" ? { status: search.status } : {},
   component: SheepPage,
 });
 
 /**
- * The table «Бараны»: all Sheep of the Farm, and the side panel that registers new ones. With Sheep
- * selected, the actions of the header give way to the bulk actions on them.
+ * The table «Бараны»: the Sheep of the Farm with one Status (Active by default) or all of them, and
+ * the side panel that registers new ones. With Sheep selected, the actions of the header give way to
+ * the bulk actions on them.
  */
 function SheepPage() {
   const farmId = Route.useParams().farmId as FarmId;
@@ -41,14 +57,35 @@ function SheepPage() {
   const [moving, setMoving] = useState(false);
   const [movingIds, setMovingIds] = useState<readonly SheepId[]>([]);
   const [moveResult, setMoveResult] = useState<MoveResult | null>(null);
+  // The Sheep of the dialog of the Status, as for the move.
+  const [changingStatus, setChangingStatus] = useState(false);
+  const [statusIds, setStatusIds] = useState<readonly SheepId[]>([]);
+  const [statusResult, setStatusResult] = useState<StatusResult | null>(null);
+  const filter: StatusFilter = Route.useSearch().status ?? "active";
+  const all = sheep.data;
+  const shown = useMemo(
+    () => (all === undefined ? undefined : filterByStatus(all, filter)),
+    [all, filter],
+  );
   useKeyShortcut("KeyN", () => setRegistering(true));
   useKeyShortcut("Escape", () => setSelection(noSelection));
 
   // A new selection starts a new bulk action: the result of the last one goes.
   const changeSelection = useCallback((next: ReadonlySet<SheepId>) => {
     setSelection(next);
-    if (next.size > 0) setMoveResult(null);
+    if (next.size > 0) {
+      setMoveResult(null);
+      setStatusResult(null);
+    }
   }, []);
+
+  const changeFilter = (next: StatusFilter) =>
+    void navigate({
+      to: "/farms/$farmId/sheep",
+      params: { farmId },
+      search: next === "active" ? {} : { status: next },
+      replace: true,
+    });
 
   const openCard = useCallback(
     (sheepId: SheepId) =>
@@ -74,14 +111,15 @@ function SheepPage() {
       <div className="flex items-center gap-3">
         <h1 className="flex items-baseline gap-2 text-2xl font-semibold tracking-tight">
           <Trans>Бараны</Trans>{" "}
-          {sheep.data !== undefined && (
+          {shown !== undefined && (
             <span className="text-base font-normal text-muted-foreground tabular-nums">
-              {sheep.data.length}
+              {shown.length}
             </span>
           )}
         </h1>
         <p role="status" className="text-sm text-muted-foreground">
           {moveResult !== null && <MoveResultText result={moveResult} />}
+          {statusResult !== null && <StatusResultText result={statusResult} />}
         </p>
         {selection.size > 0 ? (
           <div className="ml-auto flex items-center gap-2">
@@ -105,6 +143,15 @@ function SheepPage() {
               }}
             >
               <Trans>Перевести в стадо</Trans>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusIds([...selection]);
+                setChangingStatus(true);
+              }}
+            >
+              <Trans>Сменить статус</Trans>
             </Button>
           </div>
         ) : (
@@ -130,13 +177,28 @@ function SheepPage() {
           <EmptyContent>{addButton}</EmptyContent>
         </Empty>
       ) : (
-        <SheepTable
-          data={sheep.data}
-          columnVisibility={columnVisibility}
-          onOpen={openCard}
-          selection={selection}
-          onSelectionChange={changeSelection}
-        />
+        <>
+          {all !== undefined && (
+            <StatusFilterToggle sheep={all} value={filter} onChange={changeFilter} />
+          )}
+          {shown?.length === 0 ? (
+            <Empty className="border">
+              <EmptyHeader>
+                <EmptyTitle>
+                  <Trans>Нет баранов с этим статусом.</Trans>
+                </EmptyTitle>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <SheepTable
+              data={shown}
+              columnVisibility={columnVisibility}
+              onOpen={openCard}
+              selection={selection}
+              onSelectionChange={changeSelection}
+            />
+          )}
+        </>
       )}
       <RegisterSheepSheet farm={farm} open={registering} onOpenChange={setRegistering} />
       <MoveSheepDialog
@@ -146,10 +208,34 @@ function SheepPage() {
         onOpenChange={setMoving}
         onMoved={(result) => {
           setSelection(noSelection);
+          setStatusResult(null);
           setMoveResult(result);
         }}
       />
+      <ChangeStatusDialog
+        farm={farm}
+        sheepIds={statusIds}
+        open={changingStatus}
+        onOpenChange={setChangingStatus}
+        onChanged={(result) => {
+          setSelection(noSelection);
+          setMoveResult(null);
+          setStatusResult(result);
+        }}
+      />
     </div>
+  );
+}
+
+/** «Новый статус «Пал» у баранов: 3». */
+function StatusResultText({ result }: { result: StatusResult }) {
+  const { i18n } = useLingui();
+  const status = i18n._(statusLabels[result.status]);
+  const count = result.changed;
+  return (
+    <Trans>
+      Новый статус «{status}» у баранов: {count}
+    </Trans>
   );
 }
 

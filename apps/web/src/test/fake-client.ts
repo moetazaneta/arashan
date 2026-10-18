@@ -3,6 +3,7 @@ import type {
   AssignmentDates,
   AuditEntry,
   CalendarDate,
+  ExitInput,
   Farm,
   FarmCommandContext,
   FarmFlockRepository,
@@ -38,6 +39,8 @@ import type {
   ShepherdAssignmentId,
   ShepherdId,
   ShepherdInput,
+  StatusChange,
+  StatusChangeId,
   UserId,
   Viewer,
 } from "@arashan/core";
@@ -47,6 +50,7 @@ import {
   archiveShepherd,
   assignShepherd,
   changeSheepOwner,
+  changeSheepStatus,
   createFlock,
   createLocation,
   createShepherd,
@@ -63,6 +67,7 @@ import {
   listSheep,
   listSheepOwners,
   listShepherds,
+  markSheepFound,
   moveSheep,
   nameKey,
   registerSheep,
@@ -72,6 +77,7 @@ import {
   unarchiveLocation,
   unarchiveShepherd,
   undoFlockMove,
+  undoSheepStatusChange,
   updateFlock,
   updateLocation,
   updateSheep,
@@ -88,6 +94,7 @@ import { createElement, useEffect, useState, useSyncExternalStore } from "react"
 export {
   dateAt,
   defaultLambAgeMonths,
+  exitStatuses,
   inviteLifetimeMs,
   maxLambAgeMonths,
   maxNameLength,
@@ -97,6 +104,8 @@ export {
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxSheepPerStatusChange,
+  maxStatusReasonLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
@@ -127,6 +136,9 @@ type CommandName =
   | "updateSheep"
   | "changeSheepOwner"
   | "deleteSheep"
+  | "changeSheepStatus"
+  | "markSheepFound"
+  | "undoSheepStatusChange"
   | "createFlock"
   | "updateFlock"
   | "archiveFlock"
@@ -160,6 +172,8 @@ interface FakeBackend {
   ownerChanges: OwnerChange[];
   /** The moves of Sheep between Flocks, also the undone ones. */
   flockMoves: (FlockMove & { deleted?: boolean })[];
+  /** The changes of the Status of Sheep, also the undone ones. */
+  statusChanges: (StatusChange & { deleted?: boolean })[];
   flocks: Flock[];
   locations: Location[];
   shepherds: Shepherd[];
@@ -182,6 +196,7 @@ const emptyBackend = (): FakeBackend => ({
   deletedSheep: new Set(),
   ownerChanges: [],
   flockMoves: [],
+  statusChanges: [],
   flocks: [],
   locations: [],
   shepherds: [],
@@ -688,6 +703,28 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
       const found = backend.flockMoves.find((m) => m.id === id);
       if (found !== undefined) found.deleted = true;
     },
+    statusChanges: async (sheepId) =>
+      backend.statusChanges
+        .filter((c) => c.sheepId === sheepId && c.deleted !== true)
+        .map(({ id, from, to, date, reason, flockMoveId, at }) => ({
+          id,
+          sheepId,
+          from,
+          to,
+          date,
+          reason,
+          flockMoveId,
+          at,
+        })),
+    insertStatusChange: async (change) => {
+      const id = nextId(backend, "status-change") as StatusChangeId;
+      backend.statusChanges.push({ id, ...change });
+      return id;
+    },
+    markStatusChangeDeleted: async (id) => {
+      const found = backend.statusChanges.find((c) => c.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
     markDeleted: async (id) => {
       backend.deletedSheep.add(id);
     },
@@ -886,6 +923,23 @@ export const useChangeSheepOwner = (farmId: FarmId) =>
 export const useDeleteSheep = (farmId: FarmId) =>
   useMutation("deleteSheep", (backend, sheepId: SheepId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useChangeSheepStatus = (farmId: FarmId) =>
+  useMutation("changeSheepStatus", (backend, input: ExitInput & { sheepIds: readonly SheepId[] }) =>
+    changeSheepStatus(commandContext(backend, farmId), input),
+  );
+
+export const useMarkSheepFound = (farmId: FarmId) =>
+  useMutation(
+    "markSheepFound",
+    (backend, input: { sheepId: SheepId; date: CalendarDate; reason: string | null }) =>
+      markSheepFound(commandContext(backend, farmId), input),
+  );
+
+export const useUndoSheepStatusChange = (farmId: FarmId) =>
+  useMutation("undoSheepStatusChange", (backend, sheepId: SheepId) =>
+    undoSheepStatusChange(commandContext(backend, farmId), { sheepId }),
   );
 
 // Flocks, Locations and Shepherds. The fake runs the commands and queries of the core, as for the
