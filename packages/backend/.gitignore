@@ -1,0 +1,4 @@
+# What `convex dev` writes: the deployment it uses, and the data of a local deployment. The Convex CLI
+# adds `.env.local` to this file if the line is not here.
+.env.local
+.convex/
