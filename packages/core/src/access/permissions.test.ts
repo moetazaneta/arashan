@@ -20,6 +20,11 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "member.changeRole": { admin: true, editor: false },
   "member.remove": { admin: true, editor: false },
   "member.setPassword": { admin: true, editor: false },
+  "sheep.view": { admin: true, editor: true },
+  "sheep.register": { admin: true, editor: true },
+  "sheep.update": { admin: true, editor: true },
+  "sheep.changeOwner": { admin: true, editor: true },
+  "sheep.delete": { admin: true, editor: true },
 };
 
 describe("can", () => {

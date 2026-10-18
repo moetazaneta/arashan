@@ -30,6 +30,16 @@ export const permissions = {
   "member.remove": ["admin"],
   /** Set a new password for a Member (through the identity provider). */
   "member.setPassword": ["admin"],
+  /** See the Sheep of the Farm, their cards and their history. */
+  "sheep.view": ["admin", "editor"],
+  /** Register a Sheep, also as an Initial entry. */
+  "sheep.register": ["admin", "editor"],
+  /** Change the fields of a Sheep. */
+  "sheep.update": ["admin", "editor"],
+  /** Give a Sheep to another Owner, on a date. */
+  "sheep.changeOwner": ["admin", "editor"],
+  /** Make a Sheep Deleted, for a record made by mistake. */
+  "sheep.delete": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

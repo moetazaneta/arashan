@@ -1,30 +1,43 @@
-import type {
-  AuditLog,
-  Farm,
-  FarmId,
-  FarmReader,
-  FarmReaders,
-  FarmRepositories,
-  FarmRepository,
-  Invite,
-  InviteId,
-  InviteReader,
-  InviteRepository,
-  Membership,
-  MembershipId,
-  MembershipReader,
-  MembershipRepository,
-  MemberUserReader,
-  PasswordReset,
-  PasswordResetId,
-  PasswordResetRepository,
-  Readers,
-  Repositories,
-  User,
-  UserId,
-  UserReader,
-  UserRepository,
+import {
+  type AuditEntry,
+  type AuditLog,
+  type CommandName,
+  type Farm,
+  type FarmAuditReader,
+  type FarmId,
+  type FarmReader,
+  type FarmReaders,
+  type FarmRepositories,
+  type FarmRepository,
+  type FarmSheepReader,
+  type FarmSheepRepository,
+  type Invite,
+  type InviteId,
+  type InviteReader,
+  type InviteRepository,
+  type Membership,
+  type MembershipId,
+  type MembershipReader,
+  type MembershipRepository,
+  type MemberUserReader,
+  type OwnerChange,
+  type OwnerChangeId,
+  type PasswordReset,
+  type PasswordResetId,
+  type PasswordResetRepository,
+  type Readers,
+  type Repositories,
+  type Sheep,
+  type SheepFields,
+  type SheepId,
+  tagKey,
+  type TargetKind,
+  type User,
+  type UserId,
+  type UserReader,
+  type UserRepository,
 } from "@arashan/core";
+import type { WithoutSystemFields } from "convex/server";
 
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../_generated/server";
@@ -85,6 +98,74 @@ function toInvite(doc: Doc<"invites">): Invite {
       ? { used: { at: doc.usedAt, by: doc.usedBy as string as UserId } }
       : {}),
     ...(doc.revokedAt !== undefined ? { revokedAt: doc.revokedAt } : {}),
+  };
+}
+
+function toSheep(doc: Doc<"sheep">): Sheep {
+  return {
+    id: doc._id as string as SheepId,
+    farmId: doc.farmId as string as FarmId,
+    tag: doc.tag ?? null,
+    name: doc.name ?? null,
+    sex: doc.sex,
+    birthDate: doc.birthDate ?? null,
+    origin: doc.origin,
+    initialEntry: doc.initialEntry,
+    status: doc.status,
+    ownerId: doc.ownerId === undefined ? null : (doc.ownerId as string as MembershipId),
+    notes: doc.notes ?? null,
+    weight:
+      doc.weightKg === undefined || doc.weighedOn === undefined
+        ? null
+        : { kg: doc.weightKg, date: doc.weighedOn },
+    registeredAt: doc.registeredAt,
+  };
+}
+
+/**
+ * The columns of a row of `sheep` for the fields of a Sheep. A field that is null in the core is
+ * undefined here: an insert leaves it out, and a patch removes it.
+ */
+function sheepColumns(
+  sheep: SheepFields,
+): Omit<WithoutSystemFields<Doc<"sheep">>, "farmId" | "deletedAt"> {
+  return {
+    tag: sheep.tag ?? undefined,
+    // An External Sheep gets no key: its Tag never makes a Tag of the Farm taken.
+    tagKey: sheep.tag === null || sheep.origin === "external" ? undefined : tagKey(sheep.tag),
+    name: sheep.name ?? undefined,
+    sex: sheep.sex,
+    birthDate: sheep.birthDate ?? undefined,
+    origin: sheep.origin,
+    initialEntry: sheep.initialEntry,
+    status: sheep.status,
+    ownerId: sheep.ownerId === null ? undefined : idOf(sheep.ownerId),
+    notes: sheep.notes ?? undefined,
+    weightKg: sheep.weight?.kg,
+    weighedOn: sheep.weight?.date,
+    registeredAt: sheep.registeredAt,
+  };
+}
+
+function toOwnerChange(doc: Doc<"sheepOwnerChanges">): OwnerChange {
+  return {
+    id: doc._id as string as OwnerChangeId,
+    sheepId: doc.sheepId as string as SheepId,
+    previousOwnerId: doc.previousOwnerId as string as MembershipId,
+    ownerId: doc.ownerId as string as MembershipId,
+    date: doc.date,
+    at: doc.at,
+  };
+}
+
+function toAuditEntry(doc: Doc<"auditLog">): AuditEntry {
+  return {
+    at: doc.at,
+    actorId: doc.actorId === null ? null : (doc.actorId as string as UserId),
+    farmId: doc.farmId === null ? null : (doc.farmId as string as FarmId),
+    // Only the core writes the audit log, so each row has a name and a kind of the core.
+    command: doc.command as CommandName,
+    target: { kind: doc.targetKind as TargetKind, id: doc.targetId },
   };
 }
 
@@ -319,6 +400,81 @@ function memberUserReader(db: DatabaseReader): MemberUserReader {
   };
 }
 
+/** The Sheep of the Farm with the id, or null. */
+async function sheepOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
+  const doc = await getActive(db, "sheep", id);
+  return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
+}
+
+function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
+  return {
+    async get(id) {
+      const doc = await sheepOfFarm(db, farmId, id);
+      return doc === null ? null : toSheep(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("sheep")
+        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toSheep);
+    },
+    async findByTag(tag) {
+      // Only the rows of this key: Convex then sees two registrations of the same Tag at one time
+      // as a conflict, and runs the second again, which finds the first.
+      const docs = await db
+        .query("sheep")
+        .withIndex("by_farmId_deletedAt_tagKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("tagKey", tagKey(tag)),
+        )
+        .collect();
+      return docs.map(toSheep);
+    },
+    async ownerChanges(sheepId) {
+      const sheepDocId = db.normalizeId("sheep", sheepId);
+      if (sheepDocId === null) return [];
+      // An index gives the rows with the same values in the order of creation: the oldest first.
+      const docs = await db
+        .query("sheepOwnerChanges")
+        .withIndex("by_farmId_deletedAt_sheepId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("sheepId", sheepDocId),
+        )
+        .collect();
+      return docs.map(toOwnerChange);
+    },
+    async ownsActiveSheep(ownerId) {
+      const doc = await db
+        .query("sheep")
+        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+          q
+            .eq("farmId", idOf(farmId))
+            .eq("deletedAt", undefined)
+            .eq("status", "active")
+            .eq("ownerId", idOf(ownerId)),
+        )
+        .first();
+      return doc !== null;
+    },
+  };
+}
+
+function farmAuditReader(db: DatabaseReader, farmId: FarmId): FarmAuditReader {
+  return {
+    async listForTarget(target) {
+      // The oldest first, as in `ownerChanges`.
+      const docs = await db
+        .query("auditLog")
+        .withIndex("by_farmId_targetKind_targetId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("targetKind", target.kind).eq("targetId", target.id),
+        )
+        .collect();
+      return docs.map(toAuditEntry);
+    },
+  };
+}
+
 /**
  * The readers of a query of one Farm, bound to the Farm after `enterFarm`. No method takes the id
  * of the Farm, so a query cannot reach a record of another Farm.
@@ -341,6 +497,8 @@ export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
       },
     },
     users: memberUserReader(db),
+    sheep: farmSheepReader(db, farmId),
+    history: farmAuditReader(db, farmId),
   };
 }
 
@@ -351,10 +509,40 @@ export function farmRepositories(
   farmId: FarmId,
 ): FarmRepositories {
   const readers = farmReaders(db, farmId);
-  // A write checks the Farm again, so that it never reaches a Membership of another Farm.
+  // A write checks the Farm again, so that it never reaches a record of another Farm.
   const patchMembership = async (id: string, fields: Partial<Doc<"memberships">>) => {
     const doc = await membershipOfFarm(db, farmId, id);
     if (doc !== null) await db.patch("memberships", doc._id, fields);
+  };
+  const sheep: FarmSheepRepository = {
+    ...readers.sheep,
+    async insert(fields) {
+      return (await db.insert("sheep", {
+        farmId: idOf(farmId),
+        ...sheepColumns(fields),
+      })) as string as SheepId;
+    },
+    async update(id, fields) {
+      const doc = await sheepOfFarm(db, farmId, id);
+      if (doc === null) return;
+      // The patch writes all the columns again: a field that became null goes away, and the key
+      // of the Tag follows the Tag.
+      await db.patch("sheep", doc._id, sheepColumns({ ...toSheep(doc), ...fields }));
+    },
+    async insertOwnerChange(change) {
+      return (await db.insert("sheepOwnerChanges", {
+        farmId: idOf(farmId),
+        sheepId: idOf(change.sheepId),
+        previousOwnerId: idOf(change.previousOwnerId),
+        ownerId: idOf(change.ownerId),
+        date: change.date,
+        at: change.at,
+      })) as string as OwnerChangeId;
+    },
+    async markDeleted(id, deletedAt) {
+      const doc = await sheepOfFarm(db, farmId, id);
+      if (doc !== null) await db.patch("sheep", doc._id, { deletedAt });
+    },
   };
   return {
     ...readers,
@@ -379,6 +567,7 @@ export function farmRepositories(
         })) as string as InviteId;
       },
     },
+    sheep,
     passwordResets: {
       async insert(reset) {
         return (await db.insert("passwordResets", {

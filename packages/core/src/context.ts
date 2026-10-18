@@ -1,5 +1,5 @@
 import type { Member } from "./access/permissions";
-import type { AuditLog } from "./audit/audit";
+import type { AuditLog, FarmAuditReader } from "./audit/audit";
 import type { Farm, FarmReader, FarmRepository, FarmSettings } from "./farms/farm";
 import type {
   FarmInviteRepository,
@@ -18,6 +18,7 @@ import type {
   MembershipReader,
   MembershipRepository,
 } from "./members/membership";
+import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
 /** The repositories that a query gets: they only read. */
@@ -66,6 +67,9 @@ export interface CommandContext {
 export interface FarmReaders {
   memberships: FarmMembershipReader;
   users: MemberUserReader;
+  sheep: FarmSheepReader;
+  /** The audit log of the Farm, for the history of a record. */
+  history: FarmAuditReader;
 }
 
 /**
@@ -78,6 +82,8 @@ export interface FarmRepositories {
   memberships: FarmMembershipRepository;
   users: MemberUserReader;
   invites: FarmInviteRepository;
+  sheep: FarmSheepRepository;
+  history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;
 }

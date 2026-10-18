@@ -9,10 +9,19 @@ import type {
   SystemContext,
 } from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
-import type { FarmId, InviteId, MembershipId, PasswordResetId, UserId } from "../ids";
+import type {
+  FarmId,
+  InviteId,
+  MembershipId,
+  OwnerChangeId,
+  PasswordResetId,
+  SheepId,
+  UserId,
+} from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type { Membership, MembershipRepository } from "../members/membership";
 import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
+import { type FarmSheepRepository, type OwnerChange, type Sheep, tagKey } from "../sheep/sheep";
 import type { Identity, User, UserRepository } from "../users/user";
 
 // The repositories in memory, for the tests of the core. They hide Deleted records, as the real ones
@@ -26,6 +35,8 @@ export class InMemoryStore {
   readonly memberships: Stored<Membership>[] = [];
   readonly invites: Stored<Invite>[] = [];
   readonly passwordResets: Stored<PasswordReset>[] = [];
+  readonly sheep: Stored<Sheep>[] = [];
+  readonly ownerChanges: Stored<OwnerChange>[] = [];
   readonly audit: AuditEntry[] = [];
   private nextId = 1;
 
@@ -198,6 +209,54 @@ export class InMemoryStore {
         countFarms: async (id) =>
           this.memberships.filter((m) => m.userId === id && m.deletedAt === undefined).length,
       },
+      sheep: this.farmSheep(farmId),
+      history: {
+        listForTarget: async (target) =>
+          this.audit.filter(
+            (e) =>
+              e.farmId === farmId && e.target.kind === target.kind && e.target.id === target.id,
+          ),
+      },
+    };
+  }
+
+  /** The Sheep of one Farm, as the backend binds them to it. */
+  private farmSheep(farmId: FarmId): FarmSheepRepository {
+    const ofFarm = () => this.sheep.filter((s) => s.farmId === farmId && s.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((s) => s.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async () => ofFarm().map(withoutDeletedAt),
+      findByTag: async (tag) =>
+        ofFarm()
+          .filter((s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag))
+          .map(withoutDeletedAt),
+      ownerChanges: async (sheepId) =>
+        this.ownerChanges
+          .filter((c) => c.sheepId === sheepId && c.deletedAt === undefined)
+          .map(withoutDeletedAt),
+      ownsActiveSheep: async (ownerId) =>
+        ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
+      insert: async (fields) => {
+        const id = this.id("Sheep") as SheepId;
+        this.sheep.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((s) => s.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+      insertOwnerChange: async (change) => {
+        const id = this.id("OwnerChange") as OwnerChangeId;
+        this.ownerChanges.push({ id, ...change });
+        return id;
+      },
+      markDeleted: async (id, deletedAt) => {
+        const found = ofFarm().find((s) => s.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
     };
   }
 
@@ -234,6 +293,7 @@ export class InMemoryStore {
           return id;
         },
       },
+      sheep: this.farmSheep(farmId),
       audit: repos.audit,
     };
   }

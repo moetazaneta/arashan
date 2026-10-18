@@ -8,6 +8,15 @@ import { deletable } from "./lib/records";
 // A table of no Farm, such as `users`, starts with `deletedAt`.
 
 const role = v.union(v.literal("admin"), v.literal("editor"));
+const sex = v.union(v.literal("ram"), v.literal("ewe"));
+const origin = v.union(v.literal("born"), v.literal("bought"), v.literal("external"));
+const sheepStatus = v.union(
+  v.literal("active"),
+  v.literal("sold"),
+  v.literal("slaughtered"),
+  v.literal("dead"),
+  v.literal("lost"),
+);
 
 export default defineSchema({
   users: defineTable({
@@ -56,6 +65,48 @@ export default defineSchema({
   })
     .index("by_farmId_deletedAt", ["farmId", "deletedAt"])
     .index("by_tokenHash", ["tokenHash"]),
+
+  // A field that the core keeps as null (no Tag, no name…) is absent from the row.
+  sheep: defineTable({
+    farmId: v.id("farms"),
+    tag: v.optional(v.string()),
+    /**
+     * The key of the Tag (`tagKey` of the core), to find a Tag that is taken. Absent if the Sheep
+     * has no Tag, and for an External Sheep: its Tag never makes a Tag of the Farm taken.
+     */
+    tagKey: v.optional(v.string()),
+    name: v.optional(v.string()),
+    sex,
+    /** A calendar date, "YYYY-MM-DD". */
+    birthDate: v.optional(v.string()),
+    origin,
+    initialEntry: v.boolean(),
+    status: sheepStatus,
+    /** The Membership of the Owner. Absent only for an External Sheep. */
+    ownerId: v.optional(v.id("memberships")),
+    notes: v.optional(v.string()),
+    /** The last weighing: the weight in kilograms and the date "YYYY-MM-DD". Both or none. */
+    weightKg: v.optional(v.number()),
+    weighedOn: v.optional(v.string()),
+    registeredAt: v.number(),
+    ...deletable,
+  })
+    .index("by_farmId_deletedAt_tagKey", ["farmId", "deletedAt", "tagKey"])
+    // Also the index of the list of all Sheep of the Farm, with only `farmId` and `deletedAt`.
+    .index("by_farmId_deletedAt_status_ownerId", ["farmId", "deletedAt", "status", "ownerId"]),
+
+  // The changes of the Owner of a Sheep, for the history of the Owners on its card.
+  sheepOwnerChanges: defineTable({
+    farmId: v.id("farms"),
+    sheepId: v.id("sheep"),
+    previousOwnerId: v.id("memberships"),
+    ownerId: v.id("memberships"),
+    /** The date when the new Owner got the Sheep, "YYYY-MM-DD". */
+    date: v.string(),
+    /** When a Member recorded the change. */
+    at: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_sheepId", ["farmId", "deletedAt", "sheepId"]),
 
   // An Admin's request to set a new password for a Member through Clerk (`members.setPassword`).
   passwordResets: defineTable({

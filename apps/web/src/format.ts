@@ -59,3 +59,77 @@ export function timeZoneOffset(timeZone: string, locale: string): string {
   }
   return format.formatToParts(new Date()).find((part) => part.type === "timeZoneName")?.value ?? "";
 }
+
+// Dates and numbers of the records. A table can show hundreds of them, so each formatter is made one
+// time for each language and time zone.
+
+const calendarDateFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * A calendar date "YYYY-MM-DD", such as a birth date, as the language shows it: «01.06.2026». The
+ * date has no time zone, so it is read and shown at UTC: it is the same date everywhere.
+ */
+export function formatCalendarDate(date: string, locale: string): string {
+  let format = calendarDateFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.DateTimeFormat(locale, {
+      timeZone: "UTC",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    calendarDateFormats.set(locale, format);
+  }
+  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
+  return format.format(Date.UTC(year, month - 1, day));
+}
+
+const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
+
+/** A time, in milliseconds since the Unix epoch, as the date and time in the time zone of the Farm. */
+export function formatDateTime(time: number, timeZone: string, locale: string): string {
+  const key = `${locale} ${timeZone}`;
+  let format = dateTimeFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    dateTimeFormats.set(key, format);
+  }
+  return format.format(time);
+}
+
+const dateAtFormats = new Map<string, Intl.DateTimeFormat>();
+
+/** A time, in milliseconds since the Unix epoch, as the date in the time zone of the Farm. */
+export function formatDateAt(time: number, timeZone: string, locale: string): string {
+  const key = `${locale} ${timeZone}`;
+  let format = dateAtFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    dateAtFormats.set(key, format);
+  }
+  return format.format(time);
+}
+
+const weightFormats = new Map<string, Intl.NumberFormat>();
+
+/** A weight in kilograms, with at most one decimal: «42,5». */
+export function formatKg(kg: number, locale: string): string {
+  let format = weightFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+    weightFormats.set(locale, format);
+  }
+  return format.format(kg);
+}

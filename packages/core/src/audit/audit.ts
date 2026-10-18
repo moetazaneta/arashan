@@ -19,10 +19,14 @@ export type CommandName =
   | "member.requestPassword"
   | "member.setPassword"
   | "member.setPasswordFailed"
-  | "member.setPasswordUnknown";
+  | "member.setPasswordUnknown"
+  | "sheep.register"
+  | "sheep.update"
+  | "sheep.changeOwner"
+  | "sheep.delete";
 
 /** The kind of record that a command changed. */
-export type TargetKind = "User" | "Farm" | "Membership" | "Invite";
+export type TargetKind = "User" | "Farm" | "Membership" | "Invite" | "Sheep";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {
@@ -38,10 +42,19 @@ export interface AuditEntry {
 
 /**
  * The audit log. Each command that changes a record appends one entry. Nothing changes or erases an
- * entry. The reads come with the slices that show the history (#6).
+ * entry. `FarmAuditReader` reads the entries of one record.
  */
 export interface AuditLog {
   append(entry: AuditEntry): Promise<void>;
+}
+
+/**
+ * Reads the audit log of one Farm, for the history of a record (the tab «История»). The backend
+ * binds it to the Farm, so it never gives an entry of another Farm.
+ */
+export interface FarmAuditReader {
+  /** The entries of the record, the oldest first. */
+  listForTarget(target: AuditEntry["target"]): Promise<AuditEntry[]>;
 }
 
 /** Appends an entry to the audit log, at the time now. A command can append more than one. */

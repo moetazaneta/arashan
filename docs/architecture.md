@@ -26,6 +26,7 @@ codes, never text for people (ADR 0004).
 | `src/errors.ts`          | `errorCodes`, the list of all domain error codes, and `DomainError`.      |
 | `src/context.ts`         | The contexts that the backend gives to the core (see below).              |
 | `src/ids.ts`             | `Id<Kind>`, the id of a record of one kind, and the ids of each kind.     |
+| `src/dates.ts`           | `CalendarDate` ("YYYY-MM-DD"), today in a time zone, months after a date. |
 | `src/access/`            | `requireUser`, `requireOperator`, `enterFarm`, and `can` with the matrix. |
 | `src/audit/`             | The audit log: `AuditEntry`, the port `AuditLog`, `CommandName`.          |
 | `src/<module>/`          | The types of a module, its repository ports, its commands and queries.    |
@@ -156,6 +157,11 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `member.changeRole`   | yes   | no     |
 | `member.remove`       | yes   | no     |
 | `member.setPassword`  | yes   | no     |
+| `sheep.view`          | yes   | yes    |
+| `sheep.register`      | yes   | yes    |
+| `sheep.update`        | yes   | yes    |
+| `sheep.changeOwner`   | yes   | yes    |
+| `sheep.delete`        | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -175,6 +181,8 @@ stop the older ones, so that an Admin can invite many people at one time.
   removed Member accepts a new link, the old Membership comes back with the Role of the link.
 - A Farm always has at least one Admin. The core refuses to remove the last Admin, or to make the
   last Admin an Editor, with `member.lastAdmin`.
+- The Owner of an Active Sheep is a Member. The core refuses to remove a Member who owns an Active
+  Sheep, with `member.ownsActiveSheep`: first give the Sheep to another Member.
 - **A new password for a Member** (ADR 0003): an Admin sets it through the Clerk Backend API, for
   example for a Member with no email who forgot the password. Clerk ends the Member's sessions.
   The account of a User is the same in all Farms, so the core refuses (`member.passwordNotAllowed`)
@@ -194,6 +202,34 @@ stop the older ones, so that an Admin can invite many people at one time.
   with `user.passwordResetPending`. Thus the rule above still holds when Clerk sets the password. A
   normal reset finishes in seconds.
 
+## Sheep
+
+The Sheep registry (`core/src/sheep/`) keeps the Sheep of a Farm: the table «Бараны», the card,
+and its tab «История».
+
+- **The Owner is a Member,** stored as the id of the Membership. The id stays the same when a
+  removed Member comes back, and an Archived Membership keeps its name in old records. The Owner of
+  a new or an Active Sheep is a Member who is not removed (`requireOwner`). A command that makes a
+  Sheep Active again (a restore, a found Lost Sheep, a cancelled Sale) checks it too.
+- **A change of the Owner is an event with a date** (`changeSheepOwner`), in the table
+  `sheepOwnerChanges`. The card shows the Owners, the newest first. The first Owner has no date: the
+  Owner at the registration.
+- **The Tag is optional, and unique among the Sheep of the Farm.** `tagKey` compares two Tags: the
+  case, the spaces at the ends and the Cyrillic letters that look like Latin ones do not count. A
+  Sold or a Dead Sheep keeps its Tag; a Deleted Sheep and an External Sheep do not count. The table
+  keeps the key (`tagKey`) in an index, so the check reads one index range.
+- **The Initial entry** registers a Sheep that was on the Farm before the app: its Origin is Born
+  or Bought, it needs no birth date, and it has no Purchase. Outside the Initial entry, a Sheep is
+  Born and has a birth date; a Bought Sheep comes from a Purchase.
+- **A Lamb** is a Sheep younger than the lamb age of the Farm (`isLamb`). The answer changes with
+  the day, but the result of a Convex query changes only with its data. So no query gives it: the
+  client adds it with `withLamb` when it shows the Sheep, with today's date in the time zone of the
+  Farm, and again when the day changes on an open page. A report that counts the Lambs gets the date
+  as an argument.
+- **Dates without a time,** such as a birth date, are `CalendarDate` strings "YYYY-MM-DD"
+  (`core/src/dates.ts`). Two of them compare as strings. Today is the date in the time zone of the
+  Farm (`dateAt`).
+
 ## The audit log
 
 Each command that writes a record appends at least one audit entry: the actor (the User, or null
@@ -209,6 +245,7 @@ for the CLI), the time, the command, the Farm, and the target (the kind and the 
   same username.
 - The table `auditLog` is append-only, so it has no `deletable`. Its index
   `by_farmId_targetKind_targetId` gives the history of one record of one Farm (the tab «История»).
+  The reader `history` of `FarmReaders` (`FarmAuditReader`) reads it.
 - A new command adds its name to `CommandName` in `audit/audit.ts`.
 
 ## How a query goes through the layers
