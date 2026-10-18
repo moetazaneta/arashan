@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ru\n"
 
+#: src/components/sheep/sheep-details.tsx
+msgid "{kg} кг, взвешен {weighed}"
+msgstr "{kg} кг, взвешен {weighed}"
+
 #: src/routes/farms/$farmId/index.tsx
 msgid "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
 msgstr "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
@@ -32,9 +36,50 @@ msgstr "Администратор управляет фермой и её уч�
 msgid "Администратор фермы сможет потом изменить эти настройки."
 msgstr "Администратор фермы сможет потом изменить эти настройки."
 
+#: src/components/sheep/labels.ts
+msgid "Активен"
+msgstr "Активен"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Баран добавлен: <0>{addedLabel}</0>"
+msgstr "Баран добавлен: <0>{addedLabel}</0>"
+
 #: src/components/farm-settings-fields.tsx
 msgid "Баран младше этого возраста — ягнёнок."
 msgstr "Баран младше этого возраста — ягнёнок."
+
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "Баран пропадёт из списков. Его можно будет восстановить."
+msgstr "Баран пропадёт из списков. Его можно будет восстановить."
+
+#: src/errors.ts
+msgid "Баран уже у этого владельца. Выберите другого."
+msgstr "Баран уже у этого владельца. Выберите другого."
+
+#: src/components/app-shell.tsx
+#: src/components/sheep/sheep-table.tsx
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Бараны"
+msgstr "Бараны"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "без бирки"
+msgstr "без бирки"
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "Без бирки"
+msgstr "Без бирки"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Бирка"
+msgstr "Бирка"
+
+#: src/errors.ts
+msgid "Бирка не длиннее {maxTagLength} символов."
+msgstr "Бирка не длиннее {maxTagLength} символов."
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Бывшие участники"
@@ -58,6 +103,18 @@ msgid "Ваша учётная запись ещё не готова. Обнов
 msgstr "Ваша учётная запись ещё не готова. Обновите страницу."
 
 #: src/errors.ts
+msgid "Введите вес в килограммах, больше нуля и не больше {maxWeightKg}."
+msgstr "Введите вес в килограммах, больше нуля и не больше {maxWeightKg}."
+
+#: src/errors.ts
+msgid "Введите дату полностью: день, месяц и год."
+msgstr "Введите дату полностью: день, месяц и год."
+
+#: src/errors.ts
+msgid "Введите дату рождения. Если её никто не знает, запишите барана как начальный ввод."
+msgstr "Введите дату рождения. Если её никто не знает, запишите барана как начальный ввод."
+
+#: src/errors.ts
 msgid "Введите название фермы."
 msgstr "Введите название фермы."
 
@@ -68,6 +125,33 @@ msgstr "Введите целое число месяцев от {minLambAgeMont
 #: src/components/app-version.tsx
 msgid "Версия {version}"
 msgstr "Версия {version}"
+
+#: src/components/sheep/sheep-details.tsx
+msgid "Вес"
+msgstr "Вес"
+
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Вес, кг"
+msgstr "Вес, кг"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Владелец"
+msgstr "Владелец"
+
+#: src/errors.ts
+msgid "Владелец должен быть участником фермы. Выберите другого."
+msgstr "Владелец должен быть участником фермы. Выберите другого."
+
+#: src/components/sheep/sheep-details.tsx
+msgid "Владельцы"
+msgstr "Владельцы"
+
+#: src/components/sheep/labels.ts
+msgid "Внешний"
+msgstr "Внешний"
 
 #: src/routes/farms/$farmId/index.tsx
 msgid "Возраст ягнёнка"
@@ -121,6 +205,18 @@ msgstr "Выберите валюту"
 msgid "Выберите валюту из списка."
 msgstr "Выберите валюту из списка."
 
+#: src/components/sheep/sheep-form.tsx
+msgid "Выберите владельца"
+msgstr "Выберите владельца"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Выберите пол: самец или самка."
+msgstr "Выберите пол: самец или самка."
+
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "Выберите участника"
+msgstr "Выберите участника"
+
 #: src/components/app-shell.tsx
 msgid "Выберите ферму"
 msgstr "Выберите ферму"
@@ -143,22 +239,131 @@ msgstr "Выйти из фермы?"
 msgid "Готово"
 msgstr "Готово"
 
+#: src/components/sheep/sheep-details.tsx
+msgid "Да"
+msgstr "Да"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Дата взвешивания"
+msgstr "Дата взвешивания"
+
+#: src/errors.ts
+msgid "Дата взвешивания не может быть в будущем или раньше рождения."
+msgstr "Дата взвешивания не может быть в будущем или раньше рождения."
+
+#: src/errors.ts
+msgid "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
+msgstr "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
+
+#: src/components/sheep/sheep-details.tsx
+msgid "Дата регистрации"
+msgstr "Дата регистрации"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Дата рождения"
+msgstr "Дата рождения"
+
+#: src/errors.ts
+msgid "Дата рождения не может быть в будущем."
+msgstr "Дата рождения не может быть в будущем."
+
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Действия"
 msgstr "Действия"
 
+#: src/components/sheep/sheep-form.tsx
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Добавить барана"
+msgstr "Добавить барана"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+msgid "Дополнительно"
+msgstr "Дополнительно"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Если дату никто не знает, оставьте поле пустым."
+msgstr "Если дату никто не знает, оставьте поле пустым."
+
 #: src/routes/operator/farms.tsx
 msgid "Ждёт администратора"
 msgstr "Ждёт администратора"
+
+#: src/components/sheep/labels.ts
+msgid "Забит"
+msgstr "Забит"
 
 #: src/components/loading.tsx
 msgid "Загрузка"
 msgstr "Загрузка"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Задан новый пароль"
+msgstr "Задан новый пароль"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Задать пароль"
 msgstr "Задать пароль"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Закрыть"
+msgstr "Закрыть"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Заметки"
+msgstr "Заметки"
+
+#: src/errors.ts
+msgid "Заметки не длиннее {maxSheepNotesLength} символов. Сократите текст."
+msgstr "Заметки не длиннее {maxSheepNotesLength} символов. Сократите текст."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Зарегистрирован"
+msgstr "Зарегистрирован"
+
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Здесь будут бараны фермы."
+msgstr "Здесь будут бараны фермы."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Изменён"
+msgstr "Изменён"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Изменена роль участника"
+msgstr "Изменена роль участника"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Изменено имя пользователя"
+msgstr "Изменено имя пользователя"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Изменены настройки фермы"
+msgstr "Изменены настройки фермы"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Изменены права оператора"
+msgstr "Изменены права оператора"
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "Изменить"
+msgstr "Изменить"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Изменить барана"
+msgstr "Изменить барана"
 
 #: src/routes/farms/$farmId/index.tsx
 msgid "Изменить настройки"
@@ -168,9 +373,52 @@ msgstr "Изменить настройки"
 msgid "Имя пользователя"
 msgstr "Имя пользователя"
 
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "История"
+msgstr "История"
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "К списку баранов"
+msgstr "К списку баранов"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Как записать барана"
+msgstr "Как записать барана"
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "Карточка"
+msgstr "Карточка"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Кличка"
+msgstr "Кличка"
+
+#: src/errors.ts
+msgid "Кличка не длиннее {maxSheepNameLength} символов."
+msgstr "Кличка не длиннее {maxSheepNameLength} символов."
+
+#: src/components/sheep/sheep-history.tsx
+msgid "Когда"
+msgstr "Когда"
+
 #: src/components/invite-link-card.tsx
 msgid "Копировать"
 msgstr "Копировать"
+
+#: src/components/sheep/sheep-history.tsx
+msgid "Кто"
+msgstr "Кто"
+
+#: src/components/sheep/labels.ts
+#: src/components/sheep/sheep-form.tsx
+msgid "Куплен"
+msgstr "Куплен"
+
+#: src/errors.ts
+msgid "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
+msgstr "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 
 #: src/components/home-link.tsx
 msgid "На главную"
@@ -201,9 +449,22 @@ msgstr "Настройки фермы"
 msgid "Настройки фермы меняет только её администратор."
 msgstr "Настройки фермы меняет только её администратор."
 
+#: src/components/sheep/sheep-table.tsx
+msgid "начальный ввод"
+msgstr "начальный ввод"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+msgid "Начальный ввод"
+msgstr "Начальный ввод"
+
 #: src/routes/__root.tsx
 msgid "Не удалось войти"
 msgstr "Не удалось войти"
+
+#: src/components/sheep/sheep-details.tsx
+msgid "Нет"
+msgstr "Нет"
 
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
@@ -222,6 +483,10 @@ msgstr "Новая ферма"
 msgid "Новые фермы создаёт оператор приложения."
 msgstr "Новые фермы создаёт оператор приложения."
 
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "Новый владелец"
+msgstr "Новый владелец"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Новый пароль"
 msgstr "Новый пароль"
@@ -238,6 +503,7 @@ msgstr "Они не могут открыть ферму, но остаются 
 msgid "От {minPasswordLength} до {maxPasswordLength} символов."
 msgstr "От {minPasswordLength} до {maxPasswordLength} символов."
 
+#: src/components/sheep/sheep-dialogs.tsx
 #: src/routes/farms/$farmId/members.tsx
 msgid "Отмена"
 msgstr "Отмена"
@@ -249,6 +515,10 @@ msgstr "Отправьте её человеку, который будет ве
 #: src/components/invite-link-card.tsx
 msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
 msgstr "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
+
+#: src/components/sheep/labels.ts
+msgid "Пал"
+msgstr "Пал"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Пароль"
@@ -270,9 +540,32 @@ msgstr "По нему приложение решает, когда начина
 msgid "По ним приложение считает деньги, даты и возраст."
 msgstr "По ним приложение считает деньги, даты и возраст."
 
+#: src/components/sheep/sheep-table.tsx
+msgid "Показывать столбцы"
+msgstr "Показывать столбцы"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Пол"
+msgstr "Пол"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Пользователь зарегистрирован"
+msgstr "Пользователь зарегистрирован"
+
 #: src/routes/index.tsx
 msgid "Попросите администратора фермы прислать ссылку-приглашение."
 msgstr "Попросите администратора фермы прислать ссылку-приглашение."
+
+#: src/components/sheep/labels.ts
+msgid "Потерян"
+msgstr "Потерян"
+
+#: src/components/sheep/sheep-details.tsx
+msgid "при регистрации"
+msgstr "при регистрации"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Пригласить редактора"
@@ -282,9 +575,28 @@ msgstr "Пригласить редактора"
 msgid "Приглашение в ферму «{farmName}»"
 msgstr "Приглашение в ферму «{farmName}»"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Приглашение принято"
+msgstr "Приглашение принято"
+
 #: src/routes/__root.tsx
 msgid "Проверьте адрес или вернитесь на главную."
 msgstr "Проверьте адрес или вернитесь на главную."
+
+#: src/components/sheep/labels.ts
+msgid "Продан"
+msgstr "Продан"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Происхождение"
+msgstr "Происхождение"
+
+#: src/errors.ts
+msgid "Происхождение меняется только у начального ввода."
+msgstr "Происхождение меняется только у начального ввода."
 
 #: src/components/app-shell.tsx
 msgid "Разделы"
@@ -302,6 +614,11 @@ msgstr "Редактор"
 msgid "Редактор ведёт все записи фермы, но не управляет участниками и настройками. Ссылка работает один раз, 7 дней."
 msgstr "Редактор ведёт все записи фермы, но не управляет участниками и настройками. Ссылка работает один раз, 7 дней."
 
+#: src/components/sheep/labels.ts
+#: src/components/sheep/sheep-form.tsx
+msgid "Рождён на ферме"
+msgstr "Рождён на ферме"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Роль"
 msgstr "Роль"
@@ -310,9 +627,40 @@ msgstr "Роль"
 msgid "Роль участника {username}"
 msgstr "Роль участника {username}"
 
+#: src/components/sheep/sheep-details.tsx
+msgid "с {since}"
+msgstr "с {since}"
+
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "С какого дня"
+msgstr "С какого дня"
+
+#: src/components/sheep/labels.ts
+#: src/components/sheep/sheep-form.tsx
+msgid "Самец"
+msgstr "Самец"
+
+#: src/components/sheep/labels.ts
+#: src/components/sheep/sheep-form.tsx
+msgid "Самка"
+msgstr "Самка"
+
+#: src/components/sheep/sheep-history.tsx
+msgid "Система"
+msgstr "Система"
+
 #: src/components/invite-link-card.tsx
 msgid "Скопировано"
 msgstr "Скопировано"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Сменён владелец"
+msgstr "Сменён владелец"
+
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "Сменить владельца"
+msgstr "Сменить владельца"
 
 #: src/routes/operator/farms.tsx
 msgid "Создайте ферму и отправьте ссылку её первому администратору."
@@ -322,10 +670,21 @@ msgstr "Создайте ферму и отправьте ссылку её пе
 msgid "Создана"
 msgstr "Создана"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Создана ссылка для администратора"
+msgstr "Создана ссылка для администратора"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Создана ссылка для редактора"
+msgstr "Создана ссылка для редактора"
+
 #: src/routes/operator/farms.tsx
 msgid "Создать ферму"
 msgstr "Создать ферму"
 
+#: src/components/sheep/sheep-form.tsx
 #: src/routes/farms/$farmId/settings.tsx
 msgid "Сохранить"
 msgstr "Сохранить"
@@ -349,6 +708,19 @@ msgstr "Ссылка работает один раз, до {expiresAt}. Она 
 #: src/components/invite-link-card.tsx
 msgid "Ссылка-приглашение"
 msgstr "Ссылка-приглашение"
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Статус"
+msgstr "Статус"
+
+#: src/components/sheep/sheep-table.tsx
+msgid "Столбцы"
+msgstr "Столбцы"
+
+#: src/errors.ts
+msgid "Такого барана нет. Возможно, его уже удалили."
+msgstr "Такого барана нет. Возможно, его уже удалили."
 
 #: src/errors.ts
 msgid "Такого пользователя нет."
@@ -394,7 +766,17 @@ msgstr "У вашей учётной записи нет имени пользо
 msgid "Удалён"
 msgstr "Удалён"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Удалён"
+msgstr "Удалён"
+
 #: src/routes/farms/$farmId/members.tsx
+msgid "Удалить"
+msgstr "Удалить"
+
+#: src/components/sheep/sheep-dialogs.tsx
+msgctxt "sheep"
 msgid "Удалить"
 msgstr "Удалить"
 
@@ -406,6 +788,10 @@ msgstr "Удалить {username} из фермы"
 msgid "Удалить {username} из фермы?"
 msgstr "Удалить {username} из фермы?"
 
+#: src/components/sheep/sheep-dialogs.tsx
+msgid "Удалить барана?"
+msgstr "Удалить барана?"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участник больше не сможет открыть ферму. Его записи и история останутся."
 msgstr "Участник больше не сможет открыть ферму. Его записи и история останутся."
@@ -413,6 +799,11 @@ msgstr "Участник больше не сможет открыть ферм�
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участник войдёт с этим паролем. Все его открытые сеансы закончатся. Сообщите ему новый пароль лично."
 msgstr "Участник войдёт с этим паролем. Все его открытые сеансы закончатся. Сообщите ему новый пароль лично."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Участник удалён"
+msgstr "Участник удалён"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участниками фермы управляет только её администратор."
@@ -435,6 +826,11 @@ msgstr "Ферм пока нет"
 msgid "Ферма"
 msgstr "Ферма"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Ферма создана"
+msgstr "Ферма создана"
+
 #: src/components/app-shell.tsx
 #: src/routes/operator/farms.tsx
 msgid "Фермы"
@@ -445,13 +841,29 @@ msgstr "Фермы"
 msgid "Часовой пояс"
 msgstr "Часовой пояс"
 
+#: src/components/sheep/sheep-history.tsx
+msgid "Что"
+msgstr "Что"
+
 #: src/errors.ts
 msgid "Что-то пошло не так. Попробуйте ещё раз."
 msgstr "Что-то пошло не так. Попробуйте ещё раз."
 
 #: src/errors.ts
+msgid "Эта бирка уже есть у другого барана фермы. Проверьте номер."
+msgstr "Эта бирка уже есть у другого барана фермы. Проверьте номер."
+
+#: src/errors.ts
 msgid "Это может сделать только оператор."
 msgstr "Это может сделать только оператор."
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "Этого барана нет: его удалили."
+msgstr "Этого барана нет: его удалили."
+
+#: src/errors.ts
+msgid "Этого барана уже нет на ферме, у него нельзя сменить владельца."
+msgstr "Этого барана уже нет на ферме, у него нельзя сменить владельца."
 
 #: src/errors.ts
 msgid "Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы."
@@ -466,8 +878,18 @@ msgid "Этот раздел только для оператора"
 msgstr "Этот раздел только для оператора"
 
 #: src/errors.ts
+msgid "Этот участник — владелец активных баранов. Сначала передайте их другому участнику."
+msgstr "Этот участник — владелец активных баранов. Сначала передайте их другому участнику."
+
+#: src/errors.ts
 msgid "Эту ссылку уже использовали. Попросите новую."
 msgstr "Эту ссылку уже использовали. Попросите новую."
+
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-table.tsx
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "ягнёнок"
+msgstr "ягнёнок"
 
 #: src/components/locale-switch.tsx
 msgid "Язык"
