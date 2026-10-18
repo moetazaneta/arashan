@@ -35,6 +35,8 @@ export default defineSchema({
     farmId: v.id("farms"),
     userId: v.id("users"),
     role,
+    /** When an Admin removed the Member. An Archived Membership gives no access to the Farm. */
+    archivedAt: v.optional(v.number()),
     ...deletable,
   })
     .index("by_farmId_deletedAt", ["farmId", "deletedAt"])

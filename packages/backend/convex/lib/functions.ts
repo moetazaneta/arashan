@@ -9,18 +9,21 @@ import {
   type QueryContext,
   type SystemContext,
 } from "@arashan/core";
-import type { RegisteredMutation, RegisteredQuery } from "convex/server";
+import type { RegisteredAction, RegisteredMutation, RegisteredQuery } from "convex/server";
 import { ConvexError, type ObjectType, type PropertyValidators, v } from "convex/values";
 
 import {
+  type ActionCtx,
+  action as convexAction,
   type DatabaseWriter,
   internalMutation as convexInternalMutation,
+  internalQuery as convexInternalQuery,
   type MutationCtx,
   mutation as convexMutation,
   type QueryCtx,
   query as convexQuery,
 } from "../_generated/server";
-import { farmRepositories, readers, repositories } from "./repositories";
+import { farmReaders, farmRepositories, readers, repositories } from "./repositories";
 import { tokens } from "./tokens";
 
 // The builders for the public functions. Each function in this directory uses them, not the builders
@@ -31,6 +34,11 @@ import { tokens } from "./tokens";
 // - `farmQuery`, `farmCommand`: a request to one Farm. The builder adds the argument `farmId`, calls
 //   `enterFarm` of the core, and gives the function the Member, the Farm, and repositories bound to
 //   the Farm.
+// - `internalFarmQuery`, `internalFarmCommand`: the same, for an action of a Farm. No client can call
+//   them, and they get the identity of the action that calls them.
+// - `farmAction`: a public action of one Farm, for a call to another service, such as Clerk. An
+//   action cannot read the database: it calls an internal function of a Farm, which checks the
+//   Membership.
 // - `systemCommand`: an internal function for the CLI. No client can call it.
 //
 // Each command that writes a record must append an audit entry. The command builders check it: they
@@ -156,28 +164,53 @@ function splitFarmId<Args extends PropertyValidators>(allArgs: ObjectType<FarmAr
   return { farmId: farmId as FarmId, args: args as unknown as ObjectType<Args> };
 }
 
-/** A public query of one Farm. Only a Member of the Farm gets past `enterFarm`. */
-export function farmQuery<Args extends PropertyValidators, Result>(definition: {
+type FarmQueryDefinition<Args extends PropertyValidators, Result> = {
   args: Args;
   handler: (ctx: FarmQueryContext, args: ObjectType<Args>) => Promise<Result> | Result;
-}): RegisteredQuery<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
-  return convexQuery({
+};
+
+function defineFarmQuery<Args extends PropertyValidators, Result>(
+  builder: typeof convexQuery | typeof convexInternalQuery,
+  definition: FarmQueryDefinition<Args, Result>,
+) {
+  return builder({
     args: withFarmId(definition.args),
     handler: (ctx: QueryCtx, allArgs: ObjectType<FarmArgs<Args>>) =>
       withDomainErrors(async () => {
         const { farmId, args } = splitFarmId<Args>(allArgs);
         const { member, farm } = await enterFarm(await queryContext(ctx), farmId);
-        return definition.handler({ member, farm, now: () => Date.now() }, args);
+        return definition.handler(
+          { member, farm, repos: farmReaders(ctx.db, farm.id), now: () => Date.now() },
+          args,
+        );
       }),
   } as never);
 }
 
-/** A public mutation of one Farm. Only a Member of the Farm gets past `enterFarm`. */
-export function farmCommand<Args extends PropertyValidators, Result>(definition: {
+/** A public query of one Farm. Only a Member of the Farm gets past `enterFarm`. */
+export function farmQuery<Args extends PropertyValidators, Result>(
+  definition: FarmQueryDefinition<Args, Result>,
+): RegisteredQuery<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return defineFarmQuery(convexQuery, definition) as never;
+}
+
+/** An internal query of one Farm, for a `farmAction`. */
+export function internalFarmQuery<Args extends PropertyValidators, Result>(
+  definition: FarmQueryDefinition<Args, Result>,
+): RegisteredQuery<"internal", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return defineFarmQuery(convexInternalQuery, definition) as never;
+}
+
+type FarmCommandDefinition<Args extends PropertyValidators, Result> = {
   args: Args;
   handler: (ctx: FarmCommandContext, args: ObjectType<Args>) => Promise<Result> | Result;
-}): RegisteredMutation<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
-  return convexMutation({
+};
+
+function defineFarmCommand<Args extends PropertyValidators, Result>(
+  builder: typeof convexMutation | typeof convexInternalMutation,
+  definition: FarmCommandDefinition<Args, Result>,
+) {
+  return builder({
     args: withFarmId(definition.args),
     handler: (ctx: MutationCtx, allArgs: ObjectType<FarmArgs<Args>>) =>
       withDomainErrors(async () => {
@@ -191,12 +224,47 @@ export function farmCommand<Args extends PropertyValidators, Result>(definition:
                 farm,
                 repos: farmRepositories(records, audit, farm.id),
                 now: () => Date.now(),
+                tokens,
               },
               args,
             ),
           ),
         );
       }),
+  } as never);
+}
+
+/** A public mutation of one Farm. Only a Member of the Farm gets past `enterFarm`. */
+export function farmCommand<Args extends PropertyValidators, Result>(
+  definition: FarmCommandDefinition<Args, Result>,
+): RegisteredMutation<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return defineFarmCommand(convexMutation, definition) as never;
+}
+
+/** An internal mutation of one Farm, for a `farmAction`. */
+export function internalFarmCommand<Args extends PropertyValidators, Result>(
+  definition: FarmCommandDefinition<Args, Result>,
+): RegisteredMutation<"internal", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return defineFarmCommand(convexInternalMutation, definition) as never;
+}
+
+/**
+ * A public action of one Farm, for a call to another service. The action itself checks nothing: its
+ * handler must call an `internalFarmQuery` or an `internalFarmCommand` (with the `farmId`) before
+ * the call, which checks the Membership and the rules of the core. A DomainError of the handler goes
+ * to the client as a `ConvexError`, as in the other builders.
+ */
+export function farmAction<Args extends PropertyValidators, Result>(definition: {
+  args: Args;
+  handler: (
+    ctx: ActionCtx,
+    args: ObjectType<Args> & { farmId: string },
+  ) => Promise<Result> | Result;
+}): RegisteredAction<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return convexAction({
+    args: withFarmId(definition.args),
+    handler: (ctx: ActionCtx, args: ObjectType<Args> & { farmId: string }) =>
+      withDomainErrors(() => definition.handler(ctx, args)),
   } as never);
 }
 

@@ -36,7 +36,7 @@ Before you start, you need:
 | `VITE_CONVEX_URL`            | no     | Vercel (production, preview); local env file        | The web app: the Convex client                      |
 | `VITE_CLERK_PUBLISHABLE_KEY` | no     | Vercel (production, preview); GitHub variable; `apps/web/.env.local` | The web app: `ClerkProvider`         |
 | `CLERK_JWT_ISSUER_DOMAIN`    | no     | Convex (dev, prod, local); GitHub variable          | `convex/auth.config.ts`: validates the Clerk JWT    |
-| `CLERK_SECRET_KEY`           | yes    | Convex (dev, prod); GitHub secret                   | Convex actions that call the Clerk Backend API      |
+| `CLERK_SECRET_KEY`           | yes    | Convex (dev, prod); GitHub secret                   | Convex actions that call the Clerk Backend API (`members.setPassword`) |
 | `CONVEX_DEPLOY_KEY`          | yes    | GitHub secret                                       | `convex deploy` to the production deployment        |
 | `VERCEL_TOKEN`               | yes    | GitHub secret                                       | The Deploy workflow: the Vercel CLI                 |
 | `VERCEL_ORG_ID`              | no     | GitHub variable                                     | The Deploy workflow: selects the Vercel team        |
@@ -58,6 +58,9 @@ Values for each environment:
 - **Local deployment**: `vp dev` sets `CLERK_JWT_ISSUER_DOMAIN` on a local Convex deployment that
   does not have it. It takes the value from `VITE_CLERK_PUBLISHABLE_KEY`, which encodes the Frontend
   API host (`pk_test_` + base64 of `<host>$`).
+- **Local deployment and Clerk**: a new password for a Member (`members.setPassword`) needs
+  `CLERK_SECRET_KEY` on the deployment. `vp dev` does not set it; set it by hand with
+  `vp -C packages/backend exec convex env set CLERK_SECRET_KEY …`. Without it, the action fails.
 - **CI**: the backend job pushes the functions to a new local deployment. It sets
   `CLERK_JWT_ISSUER_DOMAIN` to a placeholder, because a push does not contact the issuer.
 

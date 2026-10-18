@@ -14,3 +14,9 @@ declare class TextEncoder {
 }
 
 declare function btoa(data: string): string;
+
+/** The Fetch API of the runtime, as the call to the Clerk Backend API uses it. */
+declare function fetch(
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string },
+): Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;

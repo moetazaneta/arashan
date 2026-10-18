@@ -46,14 +46,18 @@ export async function createFarm(
   const name = validFarmName(input.name);
   const settings = validFarmSettings(input);
   const farmId = await ctx.repos.farms.insert({ name, ...settings, createdAt: ctx.now() });
-  const invite = await issueInvite(ctx, { farmId, role: "admin", createdBy: operator.id });
+  const { token, expiresAt } = await issueInvite(
+    ctx,
+    (invite) => ctx.repos.invites.insert({ ...invite, farmId }),
+    { role: "admin", createdBy: operator.id },
+  );
   await recordAudit(ctx, {
     actorId: operator.id,
     farmId,
     command: "farm.create",
     target: { kind: "Farm", id: farmId },
   });
-  return { farmId, invite };
+  return { farmId, invite: { token, expiresAt } };
 }
 
 /**
@@ -70,18 +74,18 @@ export async function inviteFarmAdmin(
     throw new DomainError("farm.hasMembers");
   }
   await revokeOpenInvites(ctx, input.farmId);
-  const invite = await issueInvite(ctx, {
-    farmId: input.farmId,
-    role: "admin",
-    createdBy: operator.id,
-  });
+  const { token, expiresAt } = await issueInvite(
+    ctx,
+    (invite) => ctx.repos.invites.insert({ ...invite, farmId: input.farmId }),
+    { role: "admin", createdBy: operator.id },
+  );
   await recordAudit(ctx, {
     actorId: operator.id,
     farmId: input.farmId,
     command: "farm.inviteAdmin",
     target: { kind: "Farm", id: input.farmId },
   });
-  return invite;
+  return { token, expiresAt };
 }
 
 /** The Farm of the request, with its settings. */

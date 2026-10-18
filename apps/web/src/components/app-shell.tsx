@@ -46,9 +46,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             )}
             {farm?.role === "admin" && (
-              <Link to="/farms/$farmId/settings" params={{ farmId: farm.id }} className={navLink}>
-                <Trans>Настройки</Trans>
-              </Link>
+              <>
+                <Link to="/farms/$farmId/members" params={{ farmId: farm.id }} className={navLink}>
+                  <Trans>Участники</Trans>
+                </Link>
+                <Link to="/farms/$farmId/settings" params={{ farmId: farm.id }} className={navLink}>
+                  <Trans>Настройки</Trans>
+                </Link>
+              </>
             )}
             {viewer.user.isOperator && (
               <Link to="/operator/farms" className={navLink}>

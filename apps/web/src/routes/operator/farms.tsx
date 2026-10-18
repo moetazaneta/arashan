@@ -128,7 +128,7 @@ function NewFarmCard({ onCreated }: { onCreated: (invite: ShownInvite) => void }
               { name: farmName, ...settingsOf(draft) },
               {
                 onSuccess: ({ invite }) => {
-                  onCreated({ farmName, ...invite });
+                  onCreated({ farmName, role: "admin", ...invite });
                   setName("");
                 },
               },
@@ -242,7 +242,8 @@ function FarmsCard({ onInvited }: { onInvited: (invite: ShownInvite) => void }) 
                   inviting={inviteAdmin.isPending && inviteAdmin.variables === farm.id}
                   onInvite={() =>
                     inviteAdmin.mutate(farm.id, {
-                      onSuccess: (invite) => onInvited({ farmName: farm.name, ...invite }),
+                      onSuccess: (invite) =>
+                        onInvited({ farmName: farm.name, role: "admin", ...invite }),
                     })
                   }
                 />

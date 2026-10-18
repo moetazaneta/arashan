@@ -40,8 +40,8 @@ repositories and the clock:
 | -------------------- | ------------------------------------- | --------------------------------------------------------- |
 | `QueryContext`       | a query with no Farm                  | `identity`, the readers of all repositories, `now`, `tokens` |
 | `CommandContext`     | a command with no Farm                | `identity`, all repositories with the audit log, `now`, `tokens` |
-| `FarmQueryContext`   | a query of one Farm                   | `member`, `farm`, `now`                                   |
-| `FarmCommandContext` | a command of one Farm                 | `member`, `farm`, the repositories bound to the Farm, `now` |
+| `FarmQueryContext`   | a query of one Farm                   | `member`, `farm`, the readers bound to the Farm, `now`    |
+| `FarmCommandContext` | a command of one Farm                 | `member`, `farm`, the repositories bound to the Farm, `now`, `tokens` |
 | `SystemContext`      | an internal function of the CLI       | all repositories, `now`, no identity                      |
 
 A repository port is an interface for each kind of record, for example `FarmRepository`. The reader
@@ -59,6 +59,7 @@ function of the core, and returns the result.
 | `convex/lib/functions.ts`    | The builders for all public and internal functions.                      |
 | `convex/lib/repositories.ts` | The Convex adapters of the repository ports.                             |
 | `convex/lib/tokens.ts`       | The random tokens of invite links, and their SHA-256 hashes.             |
+| `convex/lib/clerk.ts`        | The calls to the Clerk Backend API, for an action.                       |
 | `convex/lib/records.ts`      | `deletable`: the fields that make a record Deleted.                      |
 | `convex/<module>.ts`         | The public functions of a module.                                        |
 | `convex/_generated/`         | The code that Convex generates. It is in git; CI checks that it is new.  |
@@ -73,6 +74,8 @@ A function uses the builders in `convex/lib/functions.ts`, not the builders in
 | `command`       | a public mutation           | `CommandContext`                                                  |
 | `farmQuery`     | a public query of a Farm    | `FarmQueryContext`, after `enterFarm`                             |
 | `farmCommand`   | a public mutation of a Farm | `FarmCommandContext`, after `enterFarm`                           |
+| `internalFarmQuery`, `internalFarmCommand` | the same, internal | The same. Only a `farmAction` calls them, with its identity.  |
+| `farmAction`    | a public action of a Farm   | Nothing: it calls an internal function of the Farm first (see below). |
 | `systemCommand` | an internal mutation        | `SystemContext`. Only the CLI calls it (`convex run`).            |
 
 Each builder sends a `DomainError` to the client as a `ConvexError` with its code. The package exports
@@ -91,7 +94,8 @@ transport stays in this package.
   one time, which makes the User at the first log-in.
 - `SignInForm` is the Clerk form to log in or to make an account. `useSignOut()` logs out and clears
   the data of the session.
-- A mutation hook turns a domain error from the backend into a `DomainError` of the core.
+- A mutation hook turns a domain error from the backend into a `DomainError` of the core. A hook
+  of an action, such as `useSetMemberPassword`, is a mutation hook too.
 - `toDomainError(error)` does the same for the error of a query hook.
 - The client exports the values of the core that the views need, such as `defaultLambAgeMonths`.
 
@@ -136,8 +140,9 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
   `userId`, `farmId`, `role`) and the Farm, or the error `farm.notMember`. The error is the same for
   a Farm that does not exist, and the Operator is no exception.
 - **The repositories of a Farm are bound to it.** After `enterFarm`, the builder makes the
-  repositories of the Farm (`FarmRepositories` in `context.ts`) with the id of the Farm. Their methods
-  never take a `farmId`, so a command of one Farm cannot reach a record of another.
+  readers (`FarmReaders` in `context.ts`) or the repositories (`FarmRepositories`) of the Farm with
+  the id of the Farm. Their methods never take a `farmId`, so a request of one Farm cannot reach a
+  record of another.
 - **`can(actor, action, target)`** checks the permission matrix of `access/permissions.ts`: the Roles
   that can do each action. It is false when the target belongs to another Farm. `authorize` throws
   `access.denied`. Each command of a Farm calls `authorize` first.
@@ -146,6 +151,11 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | --------------------- | ----- | ------ |
 | `farm.view`           | yes   | yes    |
 | `farm.updateSettings` | yes   | no     |
+| `member.list`         | yes   | no     |
+| `member.invite`       | yes   | no     |
+| `member.changeRole`   | yes   | no     |
+| `member.remove`       | yes   | no     |
+| `member.setPassword`  | yes   | no     |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -153,7 +163,25 @@ A new action adds a row to the matrix and to the table of its test (`permissions
 database keeps only its SHA-256 hash. The Operator makes a Farm and gets the link of its first Admin
 (`farms.create`). If the link expires or is lost, the Operator makes a new one (`farms.inviteAdmin`),
 and the older links stop. A logged-in User who opens the link sees the Farm and joins it
-(`invites.accept`).
+(`invites.accept`). An Admin makes the links of new Editors (`members.invite`); these links do not
+stop the older ones, so that an Admin can invite many people at one time.
+
+**Members.** An Admin sees the Members (`members.list`), changes the Role of a Member
+(`members.changeRole`) and removes a Member (`members.remove`).
+
+- A removed Member's Membership becomes Archived (`archivedAt`). `enterFarm` refuses it with
+  `farm.notMember`, and the Farm goes out of the User's list. The Membership stays, so the history
+  and the old records still show the Member. A User has at most one Membership in a Farm: when a
+  removed Member accepts a new link, the old Membership comes back with the Role of the link.
+- A Farm always has at least one Admin. The core refuses to remove the last Admin, or to make the
+  last Admin an Editor, with `member.lastAdmin`.
+- **A new password for a Member** (ADR 0003): an Admin sets it through the Clerk Backend API, for
+  example for a Member with no email who forgot the password. Clerk ends the Member's sessions.
+  The account of a User is the same in all Farms, so the core refuses (`member.passwordNotAllowed`)
+  the Admin's own account, the Operator's, and the account of a User who is or was a Member of
+  another Farm. The action `members.setPassword` runs in three steps: the internal query
+  `members.passwordTarget` checks the rules and gives the Clerk user id, the action calls Clerk,
+  and the internal mutation `members.recordPassword` appends the audit entry.
 
 ## The audit log
 

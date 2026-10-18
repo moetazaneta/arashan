@@ -1,8 +1,19 @@
 import type { Member } from "./access/permissions";
 import type { AuditLog } from "./audit/audit";
 import type { Farm, FarmReader, FarmRepository, FarmSettings } from "./farms/farm";
-import type { InviteReader, InviteRepository, Tokens } from "./members/invite";
-import type { MembershipReader, MembershipRepository } from "./members/membership";
+import type {
+  FarmInviteRepository,
+  InviteReader,
+  InviteRepository,
+  Tokens,
+} from "./members/invite";
+import type {
+  FarmMembershipReader,
+  FarmMembershipRepository,
+  MemberUserReader,
+  MembershipReader,
+  MembershipRepository,
+} from "./members/membership";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
 /** The repositories that a query gets: they only read. */
@@ -43,13 +54,25 @@ export interface CommandContext {
 }
 
 /**
- * The repositories of a request to one Farm. The backend binds each one to the Farm after
- * `enterFarm`, so that a read or a write never reaches a record of another Farm, and no method takes
- * the id of the Farm. A slice with records of a Farm (Sheep, Flocks…) adds its repository here.
+ * The readers of a query of one Farm. The backend binds each one to the Farm after `enterFarm`, so
+ * that a read never reaches a record of another Farm, and no method takes the id of the Farm. A
+ * slice with records of a Farm (Sheep, Flocks…) adds its reader here.
+ */
+export interface FarmReaders {
+  memberships: FarmMembershipReader;
+  users: MemberUserReader;
+}
+
+/**
+ * The repositories of a command of one Farm, bound to the Farm as `FarmReaders` are. A slice with
+ * records of a Farm adds its repository here.
  */
 export interface FarmRepositories {
   /** The Farm of the request itself. */
   farm: { updateSettings(settings: FarmSettings): Promise<void> };
+  memberships: FarmMembershipRepository;
+  users: MemberUserReader;
+  invites: FarmInviteRepository;
   audit: AuditLog;
 }
 
@@ -61,6 +84,7 @@ export interface FarmRepositories {
 export interface FarmQueryContext {
   member: Member;
   farm: Farm;
+  repos: FarmReaders;
   now(): number;
 }
 
@@ -70,6 +94,7 @@ export interface FarmCommandContext {
   farm: Farm;
   repos: FarmRepositories;
   now(): number;
+  tokens: Tokens;
 }
 
 /**
