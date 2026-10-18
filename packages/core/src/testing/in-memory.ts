@@ -1,6 +1,13 @@
 import type { AuditEntry } from "../audit/audit";
 import { enterFarm } from "../access/session";
-import type { CommandContext, FarmCommandContext, Repositories, SystemContext } from "../context";
+import type {
+  CommandContext,
+  FarmCommandContext,
+  FarmReaders,
+  FarmRepositories,
+  Repositories,
+  SystemContext,
+} from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
 import type { FarmId, InviteId, MembershipId, UserId } from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
@@ -84,13 +91,21 @@ export class InMemoryStore {
       },
       listForUser: async (userId) =>
         active(this.memberships)
-          .filter((m) => m.userId === userId)
+          .filter((m) => m.userId === userId && m.archivedAt === undefined)
           .map(withoutDeletedAt),
-      hasMembers: async (farmId) => active(this.memberships).some((m) => m.farmId === farmId),
+      hasMembers: async (farmId) =>
+        active(this.memberships).some((m) => m.farmId === farmId && m.archivedAt === undefined),
       insert: async (record) => {
         const id = this.id("Membership") as MembershipId;
         this.memberships.push({ id, ...record });
         return id;
+      },
+      restore: async (id, role) => {
+        const found = this.memberships.find((m) => m.id === id);
+        if (found !== undefined) {
+          found.role = role;
+          delete found.archivedAt;
+        }
       },
     };
 
@@ -145,6 +160,59 @@ export class InMemoryStore {
     return { system: true, repos: this.repositories(), now: () => this.time };
   }
 
+  /** The readers of one Farm, as the backend binds them to it. */
+  farmReaders(farmId: FarmId): FarmReaders {
+    const repos = this.repositories();
+    const ofFarm = () =>
+      this.memberships.filter((m) => m.farmId === farmId && m.deletedAt === undefined);
+    return {
+      memberships: {
+        list: async () => ofFarm().map(withoutDeletedAt),
+        get: async (id) => {
+          const found = ofFarm().find((m) => m.id === id);
+          return found === undefined ? null : withoutDeletedAt(found);
+        },
+      },
+      users: {
+        get: (id) => repos.users.get(id),
+        providerUserId: async (id) =>
+          this.users.find((u) => u.id === id && u.deletedAt === undefined)?.providerUserId ?? null,
+        countFarms: async (id) =>
+          this.memberships.filter((m) => m.userId === id && m.deletedAt === undefined).length,
+      },
+    };
+  }
+
+  /** The repositories of one Farm, as the backend binds them to it. */
+  farmRepositories(farmId: FarmId): FarmRepositories {
+    const readers = this.farmReaders(farmId);
+    const repos = this.repositories();
+    const membership = (id: MembershipId) =>
+      this.memberships.find((m) => m.id === id && m.farmId === farmId);
+    return {
+      ...readers,
+      farm: {
+        updateSettings: async (settings) => {
+          const found = this.farms.find((f) => f.id === farmId);
+          if (found !== undefined) Object.assign(found, settings);
+        },
+      },
+      memberships: {
+        ...readers.memberships,
+        setRole: async (id, role) => {
+          const found = membership(id);
+          if (found !== undefined) found.role = role;
+        },
+        archive: async (id, archivedAt) => {
+          const found = membership(id);
+          if (found !== undefined) found.archivedAt = archivedAt;
+        },
+      },
+      invites: { insert: (invite) => repos.invites.insert({ ...invite, farmId }) },
+      audit: repos.audit,
+    };
+  }
+
   /** The context of a request to one Farm, as the backend makes it after `enterFarm`. */
   async farmContext(ctx: CommandContext, farmId: FarmId): Promise<FarmCommandContext> {
     const { member, farm } = await enterFarm(ctx, farmId);
@@ -152,15 +220,8 @@ export class InMemoryStore {
       member,
       farm,
       now: () => this.time,
-      repos: {
-        farm: {
-          updateSettings: async (settings) => {
-            const found = this.farms.find((f) => f.id === farmId);
-            if (found !== undefined) Object.assign(found, settings);
-          },
-        },
-        audit: ctx.repos.audit,
-      },
+      repos: this.farmRepositories(farmId),
+      tokens: ctx.tokens,
     };
   }
 

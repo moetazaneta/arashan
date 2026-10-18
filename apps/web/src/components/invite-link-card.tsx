@@ -1,3 +1,4 @@
+import type { Role } from "@arashan/core";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -13,13 +14,15 @@ import {
 /** A new invite link: the backend gives its token only once. */
 export interface ShownInvite {
   farmName: string;
+  /** The Role that the new Member gets. */
+  role: Role;
   token: string;
   expiresAt: number;
 }
 
 /**
- * The invite link for the first Admin of a Farm, to copy and send. The app does not keep the token,
- * so the link is on the screen only now.
+ * A new invite link, to copy and send: for the first Admin of a Farm, or for a new Editor. The app
+ * does not keep the token, so the link is on the screen only now.
  */
 export function InviteLinkCard({ invite }: { invite: ShownInvite }) {
   const { i18n, t } = useLingui();
@@ -50,15 +53,31 @@ export function InviteLinkCard({ invite }: { invite: ShownInvite }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          <Trans>Ссылка для администратора фермы «{farmName}»</Trans>
-        </CardTitle>
-        <CardDescription>
-          <Trans>
-            Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет
-            администратором.
-          </Trans>
-        </CardDescription>
+        {invite.role === "admin" ? (
+          <>
+            <CardTitle>
+              <Trans>Ссылка для администратора фермы «{farmName}»</Trans>
+            </CardTitle>
+            <CardDescription>
+              <Trans>
+                Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет
+                администратором.
+              </Trans>
+            </CardDescription>
+          </>
+        ) : (
+          <>
+            <CardTitle>
+              <Trans>Ссылка для редактора фермы «{farmName}»</Trans>
+            </CardTitle>
+            <CardDescription>
+              <Trans>
+                Отправьте её человеку, который будет вести записи фермы. Он войдёт по ссылке и
+                станет редактором.
+              </Trans>
+            </CardDescription>
+          </>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <InputGroup>

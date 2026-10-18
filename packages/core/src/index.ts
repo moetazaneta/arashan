@@ -14,6 +14,7 @@ export type {
   CommandContext,
   FarmCommandContext,
   FarmQueryContext,
+  FarmReaders,
   FarmRepositories,
   QueryContext,
   Readers,
@@ -42,13 +43,29 @@ export type { FarmId, Id, InviteId, MembershipId, UserId } from "./ids";
 export { acceptInvite, previewInvite, type NewInvite } from "./members/commands";
 export {
   inviteLifetimeMs,
+  type FarmInviteRepository,
   type Invite,
+  type InviteDraft,
   type InviteReader,
   type InviteRepository,
   type Tokens,
 } from "./members/invite";
 export {
+  changeMemberRole,
+  inviteMember,
+  listMembers,
+  maxPasswordLength,
+  minPasswordLength,
+  prepareMemberPassword,
+  recordMemberPassword,
+  removeMember,
+  type MemberSummary,
+} from "./members/manage";
+export {
   roles,
+  type FarmMembershipReader,
+  type FarmMembershipRepository,
+  type MemberUserReader,
   type Membership,
   type MembershipReader,
   type MembershipRepository,

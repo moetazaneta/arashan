@@ -15,6 +15,7 @@ msgstr "{lambAgeMonths, plural, one {under # month} other {under # months}}"
 msgid "администратор"
 msgstr "Admin"
 
+#: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Администратор"
 msgstr "Admin"
@@ -23,6 +24,10 @@ msgstr "Admin"
 msgid "Администратор есть"
 msgstr "Has an Admin"
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Администратор управляет фермой и её участниками. В ферме всегда есть хотя бы один администратор."
+msgstr "An Admin manages the farm and its members. A farm always has at least one Admin."
+
 #: src/routes/operator/farms.tsx
 msgid "Администратор фермы сможет потом изменить эти настройки."
 msgstr "The Admin of the farm can change these settings later."
@@ -30,6 +35,14 @@ msgstr "The Admin of the farm can change these settings later."
 #: src/components/farm-settings-fields.tsx
 msgid "Баран младше этого возраста — ягнёнок."
 msgstr "A sheep younger than this is a lamb."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Бывшие участники"
+msgstr "Former members"
+
+#: src/errors.ts
+msgid "В ферме должен остаться хотя бы один администратор. Сначала назначьте администратором другого участника."
+msgstr "The farm must keep at least one Admin. First make another member an Admin."
 
 #: src/errors.ts
 msgid "В ферме уже есть участник: новая ссылка не нужна."
@@ -80,6 +93,14 @@ msgstr "All farms"
 msgid "Вступить в ферму"
 msgstr "Join the farm"
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Вы"
+msgstr "You"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Вы больше не сможете открыть ферму. Вернуть вас может другой администратор."
+msgstr "You will not be able to open the farm. Another Admin can bring you back."
+
 #: src/routes/invite/$token.tsx
 msgid "Вы вошли как <0>{username}</0>."
 msgstr "You are logged in as <0>{username}</0>."
@@ -114,6 +135,15 @@ msgstr "Select a time zone from the list."
 msgid "Выйти"
 msgstr "Log out"
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Выйти из фермы?"
+msgstr "Leave the farm?"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Готово"
+msgstr "Done"
+
+#: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Действия"
 msgstr "Actions"
@@ -126,9 +156,17 @@ msgstr "Waits for an Admin"
 msgid "Загрузка"
 msgstr "Loading"
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Задать пароль"
+msgstr "Set password"
+
 #: src/routes/farms/$farmId/index.tsx
 msgid "Изменить настройки"
 msgstr "Change the settings"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Имя пользователя"
+msgstr "Username"
 
 #: src/components/invite-link-card.tsx
 msgid "Копировать"
@@ -167,6 +205,7 @@ msgstr "Only an Admin of the farm can change its settings."
 msgid "Не удалось войти"
 msgstr "Could not log in"
 
+#: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Новая ссылка"
 msgstr "New link"
@@ -183,9 +222,45 @@ msgstr "New farm"
 msgid "Новые фермы создаёт оператор приложения."
 msgstr "The operator of the app makes new farms."
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Новый пароль"
+msgstr "New password"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Новый пароль для {username}"
+msgstr "New password for {username}"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
+msgstr "They cannot open the farm, but they stay in its history. To bring a member back, send them a new link."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "От {minPasswordLength} до {maxPasswordLength} символов."
+msgstr "From {minPasswordLength} to {maxPasswordLength} characters."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Отмена"
+msgstr "Cancel"
+
+#: src/components/invite-link-card.tsx
+msgid "Отправьте её человеку, который будет вести записи фермы. Он войдёт по ссылке и станет редактором."
+msgstr "Send it to the person who will keep the farm's records. They log in with the link and become an Editor."
+
 #: src/components/invite-link-card.tsx
 msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
 msgstr "Send it to the person who will manage the farm. That person opens the link, logs in, and becomes its Admin."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Пароль"
+msgstr "Password"
+
+#: src/errors.ts
+msgid "Пароль должен быть длиной от {minPasswordLength} до {maxPasswordLength} символов."
+msgstr "The password must have from {minPasswordLength} to {maxPasswordLength} characters."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Пароль изменён."
+msgstr "The password is changed."
 
 #: src/components/farm-settings-fields.tsx
 msgid "По нему приложение решает, когда начинается день."
@@ -198,6 +273,10 @@ msgstr "The app uses them for money, dates and ages."
 #: src/routes/index.tsx
 msgid "Попросите администратора фермы прислать ссылку-приглашение."
 msgstr "Ask an Admin of a farm to send you an invite link."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Пригласить редактора"
+msgstr "Invite an Editor"
 
 #: src/routes/invite/$token.tsx
 msgid "Приглашение в ферму «{farmName}»"
@@ -214,6 +293,22 @@ msgstr "Sections"
 #: src/routes/invite/$token.tsx
 msgid "редактор"
 msgstr "Editor"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Редактор"
+msgstr "Editor"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Редактор ведёт все записи фермы, но не управляет участниками и настройками. Ссылка работает один раз, 7 дней."
+msgstr "An Editor keeps all the records of the farm, but does not manage its members and settings. The link works once, for 7 days."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Роль"
+msgstr "Role"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Роль участника {username}"
+msgstr "Role of {username}"
 
 #: src/components/invite-link-card.tsx
 msgid "Скопировано"
@@ -244,6 +339,10 @@ msgid "Ссылка для администратора фермы «{farmName}�
 msgstr "Link for the Admin of the farm “{farmName}”"
 
 #: src/components/invite-link-card.tsx
+msgid "Ссылка для редактора фермы «{farmName}»"
+msgstr "Link for an Editor of the farm “{farmName}”"
+
+#: src/components/invite-link-card.tsx
 msgid "Ссылка работает один раз, до {expiresAt}. Она показана только сейчас: скопируйте её перед уходом со страницы."
 msgstr "The link works once, until {expiresAt}. It is shown only now: copy it before you leave the page."
 
@@ -254,6 +353,10 @@ msgstr "Invite link"
 #: src/errors.ts
 msgid "Такого пользователя нет."
 msgstr "There is no such user."
+
+#: src/errors.ts
+msgid "Такого участника в ферме нет. Возможно, его уже удалили."
+msgstr "The farm has no such member. Maybe someone removed them already."
 
 #: src/components/farm-settings-fields.tsx
 msgid "Такого часового пояса нет."
@@ -287,6 +390,43 @@ msgstr "You have no farm yet"
 msgid "У вашей учётной записи нет имени пользователя. Выйдите и войдите по имени пользователя."
 msgstr "Your account has no username. Log out, and log in with a username."
 
+#: src/routes/farms/$farmId/members.tsx
+msgid "Удалён"
+msgstr "Removed"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Удалить"
+msgstr "Remove"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Удалить {username} из фермы"
+msgstr "Remove {username} from the farm"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Удалить {username} из фермы?"
+msgstr "Remove {username} from the farm?"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Участник больше не сможет открыть ферму. Его записи и история останутся."
+msgstr "The member will not be able to open the farm. Their records and history stay."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Участник войдёт с этим паролем. Все его открытые сеансы закончатся. Сообщите ему новый пароль лично."
+msgstr "The member will log in with this password. All their open sessions end. Tell them the new password in person."
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Участниками фермы управляет только её администратор."
+msgstr "Only an Admin of the farm manages its members."
+
+#: src/components/app-shell.tsx
+#: src/routes/farms/$farmId/members.tsx
+msgid "Участники"
+msgstr "Members"
+
+#: src/routes/farms/$farmId/members.tsx
+msgid "Участники фермы"
+msgstr "Members of the farm"
+
 #: src/routes/operator/farms.tsx
 msgid "Ферм пока нет"
 msgstr "No farms yet"
@@ -312,6 +452,14 @@ msgstr "Something went wrong. Try again."
 #: src/errors.ts
 msgid "Это может сделать только оператор."
 msgstr "Only the operator can do this."
+
+#: src/errors.ts
+msgid "Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы."
+msgstr "You cannot set a password for this member here: it is your own account, the operator's, or the account of a member of another farm."
+
+#: src/errors.ts
+msgid "Этот пароль слишком простой или есть в утёкших базах. Придумайте другой."
+msgstr "This password is too simple or is in a known data breach. Choose another one."
 
 #: src/routes/operator/farms.tsx
 msgid "Этот раздел только для оператора"

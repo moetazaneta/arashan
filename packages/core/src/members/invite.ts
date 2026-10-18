@@ -39,6 +39,14 @@ export interface InviteRepository extends InviteReader {
   markRevoked(id: InviteId, revokedAt: number): Promise<void>;
 }
 
+/** The fields of a new Invite that its maker gives. */
+export type InviteDraft = Omit<Invite, "id" | "farmId" | "used" | "revokedAt">;
+
+/** Makes the Invites of one Farm. The backend binds it to the Farm (`FarmRepositories`). */
+export interface FarmInviteRepository {
+  insert(invite: InviteDraft): Promise<InviteId>;
+}
+
 /** Makes the random tokens of invite links, and their hashes. The backend gives a real one. */
 export interface Tokens {
   /** A new random token that nobody can guess, safe in a URL. */
