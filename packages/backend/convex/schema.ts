@@ -20,7 +20,7 @@ export default defineSchema({
     ...deletable,
   })
     .index("by_deletedAt_identityKey", ["deletedAt", "identityKey"])
-    .index("by_deletedAt_username", ["deletedAt", "username"]),
+    .index("by_deletedAt_providerUserId", ["deletedAt", "providerUserId"]),
 
   farms: defineTable({
     name: v.string(),

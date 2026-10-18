@@ -97,14 +97,14 @@ function userReader(db: DatabaseReader): UserReader {
         .unique();
       return doc === null ? null : toUser(doc);
     },
-    async listByUsername(username) {
-      const docs = await db
+    async findByProviderUserId(providerUserId) {
+      const doc = await db
         .query("users")
-        .withIndex("by_deletedAt_username", (q) =>
-          q.eq("deletedAt", undefined).eq("username", username),
+        .withIndex("by_deletedAt_providerUserId", (q) =>
+          q.eq("deletedAt", undefined).eq("providerUserId", providerUserId),
         )
-        .collect();
-      return docs.map(toUser);
+        .unique();
+      return doc === null ? null : toUser(doc);
     },
   };
 }

@@ -66,18 +66,17 @@ export async function registerUser(ctx: CommandContext): Promise<UserId> {
 }
 
 /**
- * Makes a User the Operator, or takes the flag away, and gives the id of the User. Only the CLI runs
- * it: the Operator is not a Role in a Farm, and no screen gives it. The username must belong to
- * exactly one User, so that the flag never goes to the wrong person.
+ * Makes a User the Operator, or takes the flag away, and gives the User. Only the CLI runs it: the
+ * Operator is not a Role in a Farm, and no screen gives it. The CLI names the User by the id at the
+ * identity provider, not by the username: the app copies a username only at a log-in, so a stored
+ * username can belong to another person now, and the flag must never go to the wrong person.
  */
 export async function setOperator(
   ctx: SystemContext,
-  input: { username: string; isOperator: boolean },
-): Promise<{ userId: UserId }> {
-  const users = await ctx.repos.users.listByUsername(input.username.trim());
-  const [user] = users;
-  if (user === undefined) throw new DomainError("user.notFound");
-  if (users.length > 1) throw new DomainError("user.usernameAmbiguous");
+  input: { providerUserId: string; isOperator: boolean },
+): Promise<{ userId: UserId; username: string }> {
+  const user = await ctx.repos.users.findByProviderUserId(input.providerUserId.trim());
+  if (user === null) throw new DomainError("user.notFound");
   if (user.isOperator !== input.isOperator) {
     await ctx.repos.users.setOperator(user.id, input.isOperator);
     await recordAudit(ctx, {
@@ -87,5 +86,5 @@ export async function setOperator(
       target: { kind: "User", id: user.id },
     });
   }
-  return { userId: user.id };
+  return { userId: user.id, username: user.username };
 }

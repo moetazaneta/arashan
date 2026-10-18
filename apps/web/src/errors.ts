@@ -12,7 +12,6 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "user.notRegistered": msg`Ваша учётная запись ещё не готова. Обновите страницу.`,
   "user.usernameMissing": msg`У вашей учётной записи нет имени пользователя. Выйдите и войдите по имени пользователя.`,
   "user.notFound": msg`Такого пользователя нет.`,
-  "user.usernameAmbiguous": msg`Это имя пользователя есть у нескольких пользователей.`,
   "farm.notMember": msg`У вас нет доступа к этой ферме.`,
   "farm.notFound": msg`Такой фермы нет.`,
   "farm.hasMembers": msg`В ферме уже есть участник: новая ссылка не нужна.`,

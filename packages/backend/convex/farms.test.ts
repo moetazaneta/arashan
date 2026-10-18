@@ -87,8 +87,8 @@ describe("farms", () => {
     await t.run(async (ctx) => {
       const user = await ctx.db
         .query("users")
-        .withIndex("by_deletedAt_username", (q) =>
-          q.eq("deletedAt", undefined).eq("username", "editor"),
+        .withIndex("by_deletedAt_providerUserId", (q) =>
+          q.eq("deletedAt", undefined).eq("providerUserId", "user_editor"),
         )
         .unique();
       await ctx.db.insert("memberships", {

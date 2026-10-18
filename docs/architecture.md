@@ -115,15 +115,17 @@ from the claim `preferred_username` (see [environment.md](./environment.md)).
   new username. `requireUser(ctx)` gives the User, or the error `auth.signedOut` or
   `user.notRegistered`.
 - **Operator.** A flag of the User, not a Role in a Farm. `requireOperator(ctx)` gives the Operator,
-  or `auth.operatorOnly`. Only the CLI sets the flag:
+  or `auth.operatorOnly`. Only the CLI sets the flag, for the Clerk user id of the person (Clerk
+  dashboard → Users → the user → User ID):
 
   ```sh
-  vp -C packages/backend exec convex run users:setOperator '{"username": "aibek"}'
-  vp -C packages/backend exec convex run users:setOperator '{"username": "aibek", "isOperator": false}'
+  vp -C packages/backend exec convex run users:setOperator '{"clerkUserId": "user_…"}'
+  vp -C packages/backend exec convex run users:setOperator '{"clerkUserId": "user_…", "isOperator": false}'
   ```
 
-  For a cloud deployment, add `--prod` or set the deployment as for any `convex` command. The username
-  must belong to exactly one User.
+  The command takes the Clerk user id and not the username, because the app copies a username only
+  at a log-in: a stored username can belong to another person now. For a cloud deployment, add
+  `--prod` or set the deployment as for any `convex` command.
 
 ## Farms, Members and permissions
 

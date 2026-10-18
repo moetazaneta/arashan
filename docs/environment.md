@@ -86,17 +86,18 @@ Variables with the `VITE_` prefix go into the browser bundle. Never give a secre
 ## The Operator
 
 The Operator makes the Farms (screen «Фермы»). The flag is not a Role in a Farm, and only the CLI
-sets it, for a User who logged in at least once:
+sets it, for a User who logged in at least once. Get the Clerk user id of the person in the Clerk
+dashboard: Users → the user → User ID (`user_…`).
 
 ```sh
 # The local deployment.
-vp -C packages/backend exec convex run users:setOperator '{"username": "<username>"}'
+vp -C packages/backend exec convex run users:setOperator '{"clerkUserId": "user_…"}'
 # The production deployment: with the production deploy key in CONVEX_DEPLOY_KEY.
-vp -C packages/backend exec convex run --prod users:setOperator '{"username": "<username>"}'
+vp -C packages/backend exec convex run --prod users:setOperator '{"clerkUserId": "user_…"}'
 ```
 
-`'{"username": "<username>", "isOperator": false}'` takes the flag away. The command fails if no User
-or more than one User has the username.
+`'{"clerkUserId": "user_…", "isOperator": false}'` takes the flag away. The command prints the id
+and the username of the User, and fails if the person never logged in.
 
 ## Deployment
 

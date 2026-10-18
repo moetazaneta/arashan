@@ -16,11 +16,15 @@ export const register = command({
 });
 
 /**
- * Makes a User the Operator, or takes the flag away. Only the CLI can run it:
- * `vp -C packages/backend exec convex run users:setOperator '{"username": "…"}'`.
+ * Makes a User the Operator, or takes the flag away. Only the CLI can run it, with the Clerk user id
+ * of the person (Clerk dashboard → Users):
+ * `vp -C packages/backend exec convex run users:setOperator '{"clerkUserId": "user_…"}'`.
  */
 export const setOperator = systemCommand({
-  args: { username: v.string(), isOperator: v.optional(v.boolean()) },
+  args: { clerkUserId: v.string(), isOperator: v.optional(v.boolean()) },
   handler: (ctx, args) =>
-    setOperatorCommand(ctx, { username: args.username, isOperator: args.isOperator ?? true }),
+    setOperatorCommand(ctx, {
+      providerUserId: args.clerkUserId,
+      isOperator: args.isOperator ?? true,
+    }),
 });

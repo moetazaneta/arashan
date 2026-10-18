@@ -27,7 +27,9 @@ export async function logIn(t: Test, username: string, options: { operator?: boo
     preferredUsername: username,
   });
   await user.mutation(api.users.register, {});
-  if (options.operator === true) await t.mutation(internal.users.setOperator, { username });
+  if (options.operator === true) {
+    await t.mutation(internal.users.setOperator, { clerkUserId: `user_${username}` });
+  }
   return user;
 }
 

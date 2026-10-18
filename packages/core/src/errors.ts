@@ -12,7 +12,6 @@ export const errorCodes = [
   "user.notRegistered",
   "user.usernameMissing",
   "user.notFound",
-  "user.usernameAmbiguous",
   // Farms.
   "farm.notMember",
   "farm.notFound",

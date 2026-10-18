@@ -40,10 +40,10 @@ export class InMemoryStore {
         const found = active(this.users).find((u) => u.identityKey === identityKey);
         return found === undefined ? null : user(found);
       },
-      listByUsername: async (username) =>
-        active(this.users)
-          .filter((u) => u.username === username)
-          .map(user),
+      findByProviderUserId: async (providerUserId) => {
+        const found = active(this.users).find((u) => u.providerUserId === providerUserId);
+        return found === undefined ? null : user(found);
+      },
       insert: async (record) => {
         const id = this.id("User") as UserId;
         this.users.push({ id, ...record, isOperator: false });

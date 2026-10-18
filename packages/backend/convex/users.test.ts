@@ -57,7 +57,11 @@ describe("users", () => {
     const t = setup();
     const aibek = await logIn(t, "aibek");
 
-    const { userId } = await t.mutation(internal.users.setOperator, { username: "aibek" });
+    const { userId, username } = await t.mutation(internal.users.setOperator, {
+      clerkUserId: "user_aibek",
+    });
+
+    expect(username).toBe("aibek");
 
     expect(await aibek.query(api.users.viewer, {})).toMatchObject({
       user: { id: userId, isOperator: true },
@@ -69,17 +73,17 @@ describe("users", () => {
       targetId: userId,
     });
 
-    await t.mutation(internal.users.setOperator, { username: "aibek", isOperator: false });
+    await t.mutation(internal.users.setOperator, { clerkUserId: "user_aibek", isOperator: false });
     expect(await aibek.query(api.users.viewer, {})).toMatchObject({
       user: { isOperator: false },
     });
   });
 
-  test("the CLI rejects an unknown username", async () => {
+  test("the CLI rejects a Clerk user id that never logged in", async () => {
     const t = setup();
 
-    expect(await errorCode(t.mutation(internal.users.setOperator, { username: "nobody" }))).toBe(
-      "user.notFound",
-    );
+    expect(
+      await errorCode(t.mutation(internal.users.setOperator, { clerkUserId: "user_nobody" })),
+    ).toBe("user.notFound");
   });
 });

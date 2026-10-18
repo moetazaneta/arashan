@@ -28,10 +28,10 @@ export interface UserReader {
   /** The User of this identity key, or null if the person never logged in. */
   findByIdentity(identityKey: string): Promise<User | null>;
   /**
-   * The Users with this exact username. The app copies the username at each log-in, so two Users
-   * can have the same old username until the next log-in of one of them.
+   * The User with this id at the identity provider, or null if the person never logged in. Unlike
+   * the username, which the app copies only at a log-in, the id never changes.
    */
-  listByUsername(username: string): Promise<User[]>;
+  findByProviderUserId(providerUserId: string): Promise<User | null>;
 }
 
 /** Reads and writes Users. Nothing erases a User. */

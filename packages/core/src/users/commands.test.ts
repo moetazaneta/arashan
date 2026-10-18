@@ -84,16 +84,16 @@ describe("registerUser", () => {
 });
 
 describe("setOperator", () => {
-  test("gives the flag to the User with the username, with an audit entry of the CLI", async () => {
+  test("gives the flag to the User with the Clerk user id, with an audit entry of the CLI", async () => {
     const store = new InMemoryStore();
     store.addUser("aibek");
 
     const result = await setOperator(store.systemContext(), {
-      username: " aibek ",
+      providerUserId: " user_aibek ",
       isOperator: true,
     });
 
-    expect(result).toEqual({ userId: store.users[0]?.id });
+    expect(result).toEqual({ userId: store.users[0]?.id, username: "aibek" });
     expect(store.users[0]?.isOperator).toBe(true);
     expect(store.audit).toEqual([
       {
@@ -106,11 +106,26 @@ describe("setOperator", () => {
     ]);
   });
 
+  test("finds the person by the Clerk user id, also when a stale username points to another", async () => {
+    // Alice renamed herself, and Bob took her old username; neither logged in since, so the app
+    // still has "alice" for Alice.
+    const store = new InMemoryStore();
+    store.addUser("alice");
+    store.addUser("bob");
+
+    await setOperator(store.systemContext(), { providerUserId: "user_bob", isOperator: true });
+
+    expect(store.users.map(({ username, isOperator }) => ({ username, isOperator }))).toEqual([
+      { username: "alice", isOperator: false },
+      { username: "bob", isOperator: true },
+    ]);
+  });
+
   test("takes the flag away", async () => {
     const store = new InMemoryStore();
     store.addUser("aibek", { operator: true });
 
-    await setOperator(store.systemContext(), { username: "aibek", isOperator: false });
+    await setOperator(store.systemContext(), { providerUserId: "user_aibek", isOperator: false });
 
     expect(store.users[0]?.isOperator).toBe(false);
   });
@@ -119,28 +134,16 @@ describe("setOperator", () => {
     const store = new InMemoryStore();
     store.addUser("aibek", { operator: true });
 
-    await setOperator(store.systemContext(), { username: "aibek", isOperator: true });
+    await setOperator(store.systemContext(), { providerUserId: "user_aibek", isOperator: true });
 
     expect(store.audit).toEqual([]);
   });
 
-  test("rejects a username that two Users have, and changes nobody", async () => {
-    const store = new InMemoryStore();
-    store.addUser("aibek");
-    store.addUser("aibek-2");
-    store.users[1]!.username = "aibek";
-
-    await expect(
-      setOperator(store.systemContext(), { username: "aibek", isOperator: true }),
-    ).rejects.toMatchObject({ code: "user.usernameAmbiguous" });
-    expect(store.users.map((user) => user.isOperator)).toEqual([false, false]);
-  });
-
-  test("rejects an unknown username", async () => {
+  test("rejects a Clerk user id that never logged in", async () => {
     const store = new InMemoryStore();
 
     await expect(
-      setOperator(store.systemContext(), { username: "nobody", isOperator: true }),
+      setOperator(store.systemContext(), { providerUserId: "user_nobody", isOperator: true }),
     ).rejects.toMatchObject({ code: "user.notFound" });
   });
 });
