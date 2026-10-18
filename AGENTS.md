@@ -146,3 +146,40 @@ Default labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wont
 ## Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+# Thread rules
+
+These rules apply to every agent thread in this repo.
+
+- Use subagents and workflows to work faster.
+- When the owner gives a new rule about this workflow, write it into this file, so that the rule
+  is not lost.
+
+## Definition of done
+
+A thread is not done until it does all these steps:
+
+1. **Open a GitHub PR for the task.** For a UI change, put "before" and "after" screenshots in the
+   PR description.
+2. **Babysit the PR until all CI pipelines pass.** Use `watch_pull_request` if it is available. If
+   a check fails, fix the cause, push the fix and watch again. Fix the problems that review
+   comments find.
+3. **For a large or hard task, get a review from `codex 6.1 sol`, effort `low`,** before the merge.
+   Fix the problems that it finds.
+4. **When all checks are green and all problems are fixed, merge the PR,** with the squash command
+   in [Commits](#commits).
+
+## Orchestrator thread
+
+The main thread is an orchestrator. It routes each task from the owner to a T3 Code thread.
+
+- Launch a new T3 thread for each new task. Use `t3_thread_launch` with a worktree for code
+  changes.
+- If a message adds to an existing task or blocks it, send it to that thread.
+- Keep the list of active threads in the memory file `orchestrator-thread-registry.md`, and
+  monitor the threads.
+- Select the model and effort from the difficulty of the task:
+  - Easy task: Opus 5.5, effort `medium`.
+  - Medium task: Opus 5.5, effort `high`.
+  - Hard task: Opus 5.5, effort `xhigh`. Also use `/advisor`, and get a review from
+    `codex 6.1 sol`, effort `low`.
