@@ -404,7 +404,8 @@ const SheepRow = memo(function SheepRow({
       ref={(element) => register(row.id, element)}
       data-sheep-id={row.id}
       tabIndex={active ? 0 : -1}
-      className="h-9 scroll-mt-9 cursor-pointer outline-none focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+      // `outline-hidden` keeps the style of the outline, so that the ring of the keyboard focus shows.
+      className="h-9 scroll-mt-9 cursor-pointer outline-hidden focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
     >
       {row.getVisibleCells().map((cell) => (
         <SheepCell key={cell.id} cell={cell} />
