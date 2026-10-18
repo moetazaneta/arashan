@@ -40,7 +40,15 @@ export type CommandName =
   | "shepherd.create"
   | "shepherd.update"
   | "shepherd.archive"
-  | "shepherd.unarchive";
+  | "shepherd.unarchive"
+  | "money.create"
+  | "money.update"
+  | "money.delete"
+  | "moneyCategory.create"
+  | "moneyCategory.update"
+  | "moneyCategory.archive"
+  | "moneyCategory.unarchive"
+  | "moneyCategory.delete";
 
 /** The kind of record that a command changed. */
 export type TargetKind =
@@ -51,7 +59,11 @@ export type TargetKind =
   | "Sheep"
   | "Flock"
   | "Location"
-  | "Shepherd";
+  | "Shepherd"
+  | "Expense"
+  | "Income"
+  | "ExpenseCategory"
+  | "IncomeCategory";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

@@ -64,6 +64,22 @@ export const permissions = {
   "shepherd.update": ["admin", "editor"],
   /** Archive a Shepherd, or take the Shepherd out of the archive. */
   "shepherd.archive": ["admin", "editor"],
+  /** See the Expenses and the Incomes, and their categories. */
+  "money.view": ["admin", "editor"],
+  /** Record an Expense or an Income. */
+  "money.create": ["admin", "editor"],
+  /** Change an Expense or an Income. */
+  "money.update": ["admin", "editor"],
+  /** Make an Expense or an Income Deleted, for a record made by mistake. */
+  "money.delete": ["admin", "editor"],
+  /** Add a category of Expenses or of Incomes. */
+  "moneyCategory.create": ["admin", "editor"],
+  /** Rename a category. */
+  "moneyCategory.update": ["admin", "editor"],
+  /** Archive a category, or take it out of the archive. */
+  "moneyCategory.archive": ["admin", "editor"],
+  /** Make a category that no record uses Deleted. */
+  "moneyCategory.delete": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

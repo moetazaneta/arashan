@@ -26,6 +26,13 @@ import type {
   FarmShepherdReader,
   FarmShepherdRepository,
 } from "./flocks/flock";
+import type {
+  FarmMoneyCategoryReader,
+  FarmMoneyCategoryRepository,
+  FarmMoneyRecordReader,
+  FarmMoneyRecordRepository,
+  MoneyCategorySeedRepository,
+} from "./money/money";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
@@ -44,6 +51,8 @@ export interface Repositories {
   memberships: MembershipRepository;
   invites: InviteRepository;
   passwordResets: PasswordResetRepository;
+  /** The categories of any Farm: a new Farm gets the default lists. */
+  moneyCategories: MoneyCategorySeedRepository;
   audit: AuditLog;
 }
 
@@ -79,6 +88,8 @@ export interface FarmReaders {
   flocks: FarmFlockReader;
   locations: FarmLocationReader;
   shepherds: FarmShepherdReader;
+  moneyCategories: FarmMoneyCategoryReader;
+  moneyRecords: FarmMoneyRecordReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -97,6 +108,8 @@ export interface FarmRepositories {
   flocks: FarmFlockRepository;
   locations: FarmLocationRepository;
   shepherds: FarmShepherdRepository;
+  moneyCategories: FarmMoneyCategoryRepository;
+  moneyRecords: FarmMoneyRecordRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

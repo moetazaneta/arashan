@@ -10,6 +10,7 @@ import type {
 import { DomainError } from "../errors";
 import type { FarmId } from "../ids";
 import { issueInvite, type NewInvite, revokeOpenInvites } from "../members/commands";
+import { ensureMoneyCategories } from "../money/commands";
 import { type Farm, type FarmSettings, validFarmName, validFarmSettings } from "./farm";
 
 /** What the Operator sees of a Farm: no data of the Farm, only whether its first Admin joined. */
@@ -37,7 +38,10 @@ export async function listFarms(ctx: QueryContext): Promise<FarmSummary[]> {
   );
 }
 
-/** The Operator makes a Farm, and gets a one-time invite link for its first Admin. */
+/**
+ * The Operator makes a Farm, and gets a one-time invite link for its first Admin. The Farm starts
+ * with the default lists of Expense categories and Income categories.
+ */
 export async function createFarm(
   ctx: CommandContext,
   input: { name: string } & FarmSettings,
@@ -57,6 +61,7 @@ export async function createFarm(
     command: "farm.create",
     target: { kind: "Farm", id: farmId },
   });
+  await ensureMoneyCategories(ctx, farmId, operator.id);
   return { farmId, invite: { token, expiresAt } };
 }
 
@@ -94,13 +99,21 @@ export function getFarm(ctx: FarmQueryContext): Farm {
   return ctx.farm;
 }
 
-/** An Admin changes the currency, the time zone and the lamb age of the Farm. */
+/**
+ * An Admin changes the currency, the time zone and the lamb age of the Farm. The amounts of the
+ * Expenses and the Incomes are in the currency of the Farm, so the currency stays when the Farm has
+ * one of them, also a Deleted one (`farm.currencyLocked`).
+ */
 export async function updateFarmSettings(
   ctx: FarmCommandContext,
   input: FarmSettings,
 ): Promise<void> {
   authorize(ctx.member, "farm.updateSettings", { farmId: ctx.farm.id });
-  await ctx.repos.farm.updateSettings(validFarmSettings(input));
+  const settings = validFarmSettings(input);
+  if (settings.currency !== ctx.farm.currency && (await ctx.repos.moneyRecords.anyWithDeleted())) {
+    throw new DomainError("farm.currencyLocked");
+  }
+  await ctx.repos.farm.updateSettings(settings);
   await recordFarmAudit(ctx, {
     command: "farm.updateSettings",
     target: { kind: "Farm", id: ctx.farm.id },
