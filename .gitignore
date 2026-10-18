@@ -15,3 +15,6 @@ dist
 
 # AI agent worktrees.
 .claude/worktrees/
+
+# The Vercel CLI link of this checkout (scripts/setup-services.sh).
+.vercel
