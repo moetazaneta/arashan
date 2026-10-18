@@ -1,5 +1,5 @@
 import { dateAt } from "@arashan/core";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vite-plus/test";
 
@@ -58,7 +58,8 @@ test("a Member creates a Location, a Shepherd and a Flock at that Location", asy
   await user.click(screen.getByRole("button", { name: "Добавить место" }));
   const locationDialog = await screen.findByRole("dialog", { name: "Добавить место" });
   const locationName = within(locationDialog).getByRole("textbox", { name: "Название" });
-  expect(document.activeElement).toBe(locationName);
+  // The dialog moves the focus after it opens.
+  await waitFor(() => expect(document.activeElement).toBe(locationName));
   await user.type(locationName, "Верхнее пастбище{Enter}");
   await screen.findByRole("table", { name: "Места" });
   expect(rowsOf("Места")).toEqual(["Верхнее пастбище——"]);
@@ -76,7 +77,7 @@ test("a Member creates a Location, a Shepherd and a Flock at that Location", asy
   await user.click(await screen.findByRole("button", { name: "Создать стадо" }));
   const flockDialog = await screen.findByRole("dialog", { name: "Создать стадо" });
   const flockName = within(flockDialog).getByRole("textbox", { name: "Название" });
-  expect(document.activeElement).toBe(flockName);
+  await waitFor(() => expect(document.activeElement).toBe(flockName));
   await user.type(flockName, "Отара 1");
   const location = within(flockDialog).getByRole("combobox", { name: "Место" });
   expect(location.textContent).toContain("Без места");
