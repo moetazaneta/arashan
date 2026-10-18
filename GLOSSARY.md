@@ -80,6 +80,9 @@ The state of a Sheep in its life on the Farm: Active, Sold, Slaughtered, Dead, o
 **Origin** (рус. происхождение):
 How the Farm knows a Sheep: Born on the Farm, Bought, or External.
 
+**Initial entry** (рус. начальный ввод):
+The registration of a Sheep that was on the Farm before the Farm started to use the app. An Initial entry has Origin Born or Bought, but it needs no birth date and no Purchase.
+
 **External Sheep** (рус. внешний баран):
 A Sheep that was never on the Farm. The Farm records it only as the Mother or the Father of its own Sheep.
 
