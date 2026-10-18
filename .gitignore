@@ -13,5 +13,8 @@ dist
 .env.*
 !.env.example
 
+# The data of a local Convex deployment.
+.convex/
+
 # AI agent worktrees.
 .claude/worktrees/

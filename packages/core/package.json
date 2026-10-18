@@ -1,0 +1,16 @@
+{
+  "name": "@arashan/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The business rules: pure TypeScript, with no Convex and no React.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

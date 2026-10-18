@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // No DOM and no Node.js: the core runs in the browser, in Node.js and in the Convex runtime.
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@arashan/client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The domain hooks for the views: TanStack Query, with the Convex transport inside.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@arashan/backend": "workspace:*",
+    "@arashan/core": "workspace:*",
+    "@convex-dev/react-query": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "convex": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:"
+  }
+}
