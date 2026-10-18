@@ -1,5 +1,6 @@
 import type { AuditEntry } from "../audit/audit";
 import { enterFarm } from "../access/session";
+import { type Breed, breedNameKey, type FarmBreedRepository } from "../breeds/breed";
 import type {
   CommandContext,
   FarmCommandContext,
@@ -9,6 +10,7 @@ import type {
   SystemContext,
 } from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
+import type { FileStorage, StoredFile } from "../files/files";
 import {
   type FarmFlockRepository,
   type FarmLocationRepository,
@@ -21,7 +23,9 @@ import {
   type ShepherdAssignment,
 } from "../flocks/flock";
 import type {
+  BreedId,
   FarmId,
+  FileId,
   FlockId,
   FlockMoveId,
   InviteId,
@@ -53,6 +57,9 @@ export class InMemoryStore {
   readonly passwordResets: Stored<PasswordReset>[] = [];
   readonly sheep: Stored<Sheep>[] = [];
   readonly ownerChanges: Stored<OwnerChange>[] = [];
+  readonly breeds: Stored<Breed>[] = [];
+  /** The files of the file storage, by id. */
+  readonly files = new Map<FileId, StoredFile>();
   readonly flockMoves: Stored<FlockMove>[] = [];
   readonly locations: Stored<Location>[] = [];
   readonly shepherds: Stored<Shepherd>[] = [];
@@ -231,6 +238,8 @@ export class InMemoryStore {
           this.memberships.filter((m) => m.userId === id && m.deletedAt === undefined).length,
       },
       sheep: this.farmSheep(farmId),
+      breeds: this.farmBreeds(farmId),
+      files: this.fileStorage(),
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
@@ -256,6 +265,10 @@ export class InMemoryStore {
       findByTag: async (tag) =>
         ofFarm()
           .filter((s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag))
+          .map(withoutDeletedAt),
+      children: async (parentId) =>
+        ofFarm()
+          .filter((s) => s.motherId === parentId || s.fatherId === parentId)
           .map(withoutDeletedAt),
       ownerChanges: async (sheepId) =>
         this.ownerChanges
@@ -299,6 +312,52 @@ export class InMemoryStore {
         if (found !== undefined) found.deletedAt = deletedAt;
       },
     };
+  }
+
+  /** The Breeds of one Farm, as the backend binds them to it. */
+  private farmBreeds(farmId: FarmId): FarmBreedRepository {
+    const ofFarm = () =>
+      this.breeds.filter((b) => b.farmId === farmId && b.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((b) => b.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async () => ofFarm().map(withoutDeletedAt),
+      findByName: async (name) =>
+        ofFarm()
+          .filter((b) => breedNameKey(b.name) === breedNameKey(name))
+          .map(withoutDeletedAt),
+      insert: async (fields) => {
+        const id = this.id("Breed") as BreedId;
+        this.breeds.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((b) => b.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+      markDeleted: async (id, deletedAt) => {
+        const found = ofFarm().find((b) => b.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
+  /** The file storage: "upload-url-1"…, and a URL of each stored file from its id. */
+  private fileStorage(): FileStorage {
+    return {
+      uploadUrl: async () => `upload-url-${this.nextId++}`,
+      get: async (id) => this.files.get(id) ?? null,
+      url: async (id) => (this.files.has(id) ? `https://files.test/${id}` : null),
+    };
+  }
+
+  /** Puts a file into the storage, as an upload does, and gives its id. */
+  addFile(file: StoredFile = { size: 200_000, contentType: "application/pdf" }): FileId {
+    const id = this.id("File") as FileId;
+    this.files.set(id, file);
+    return id;
   }
 
   /** The Locations of one Farm, as the backend binds them to it. */
@@ -444,6 +503,8 @@ export class InMemoryStore {
         },
       },
       sheep: this.farmSheep(farmId),
+      breeds: this.farmBreeds(farmId),
+      files: this.fileStorage(),
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),

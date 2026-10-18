@@ -85,6 +85,11 @@ describe("registerSheep", () => {
       ownerId: membershipId("editor"),
       notes: "С рыжим пятном",
       weight: { kg: 41.5, date: "2026-10-01" },
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
       flockId: null,
       registeredAt: store.time,
     });
