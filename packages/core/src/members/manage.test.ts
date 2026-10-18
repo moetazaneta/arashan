@@ -4,6 +4,7 @@ import { enterFarm } from "../access/session";
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
 import type { FarmId, MembershipId } from "../ids";
+import { deleteSheep, registerSheep } from "../sheep/commands";
 import { InMemoryStore } from "../testing/in-memory";
 import { getViewer } from "../users/commands";
 import { acceptInvite } from "./commands";
@@ -298,6 +299,57 @@ describe("removeMember", () => {
       code: "farm.notMember",
     });
     expect((await getViewer(editor))?.farms).toEqual([]);
+  });
+
+  test("a Member who owns an Active Sheep cannot be removed", async () => {
+    const { store, admin, farmId, membershipId, as } = await setup();
+    store.addMember("owner", farmId, "editor");
+    const sheepId = await registerSheep(await as(admin), {
+      tag: "A-1",
+      name: null,
+      sex: "ewe",
+      birthDate: null,
+      notes: null,
+      weight: null,
+      ownerId: membershipId("owner"),
+      origin: "born",
+      initialEntry: true,
+    });
+
+    await expect(
+      removeMember(await as(admin), { membershipId: membershipId("owner") }),
+    ).rejects.toMatchObject({ code: "member.ownsActiveSheep" });
+    expect(store.memberships.find((m) => m.id === membershipId("owner"))?.archivedAt).toBe(
+      undefined,
+    );
+
+    // A Sheep that is not Active, such as a Sold one, does not keep the Member.
+    store.sheep.find((s) => s.id === sheepId)!.status = "sold";
+    await removeMember(await as(admin), { membershipId: membershipId("owner") });
+    expect(store.memberships.find((m) => m.id === membershipId("owner"))?.archivedAt).toBe(
+      store.time,
+    );
+  });
+
+  test("a Deleted Sheep does not keep its Owner in the Farm", async () => {
+    const { store, admin, farmId, membershipId, as } = await setup();
+    store.addMember("owner", farmId, "editor");
+    const sheepId = await registerSheep(await as(admin), {
+      tag: "A-1",
+      name: null,
+      sex: "ewe",
+      birthDate: null,
+      notes: null,
+      weight: null,
+      ownerId: membershipId("owner"),
+      origin: "born",
+      initialEntry: true,
+    });
+    await deleteSheep(await as(admin), { sheepId });
+
+    await expect(
+      removeMember(await as(admin), { membershipId: membershipId("owner") }),
+    ).resolves.toBeUndefined();
   });
 
   test("the last Admin cannot be removed, also not by self", async () => {
