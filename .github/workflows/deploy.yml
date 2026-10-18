@@ -60,14 +60,31 @@ jobs:
         if: steps.settings.outputs.ready
         run: vp install --frozen-lockfile
 
-      # The project settings and the variables of the target environment, such as VITE_CONVEX_URL.
+      # The variables of the target environment, such as VITE_CONVEX_URL, into
+      # .vercel/.env.<target>.local.
       - name: Pull the Vercel environment
         if: steps.settings.outputs.ready
         run: vp dlx -s "$VERCEL_CLI" pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
 
+      # `vercel build` refuses a package.json whose engines.node is not a Node.js that Vercel has,
+      # so vp builds the app and this step writes the Build Output API layout itself: the static
+      # files, and a fallback to index.html for the SPA's routes.
       - name: Build
         if: steps.settings.outputs.ready
-        run: vp dlx -s "$VERCEL_CLI" build $PROD_FLAG --token="$VERCEL_TOKEN"
+        run: |
+          set -a
+          . ".vercel/.env.$TARGET.local"
+          set +a
+          vp build
+          rm -rf .vercel/output
+          mkdir -p .vercel/output
+          cp -R apps/web/dist .vercel/output/static
+          cat > .vercel/output/config.json <<'JSON'
+          {
+            "version": 3,
+            "routes": [{ "handle": "filesystem" }, { "src": "/(.*)", "dest": "/index.html" }]
+          }
+          JSON
 
       - name: Deploy
         id: deploy

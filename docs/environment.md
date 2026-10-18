@@ -42,6 +42,8 @@ Before you start, you need:
 | `VERCEL_ORG_ID`              | no     | GitHub variable                                     | The Deploy workflow: selects the Vercel team        |
 | `VERCEL_PROJECT_ID`          | no     | GitHub variable                                     | The Deploy workflow: selects the Vercel project     |
 
+The production deploy key has the permissions `deployment:deploy` and `deployment:env:view`.
+
 Values for each environment:
 
 - **Production** (Vercel production, from `main`): `VITE_CONVEX_URL` is the URL of the production
@@ -71,10 +73,13 @@ pnpm 12. Thus Vercel does not build the repository:
 
 - The Vercel project has no Git connection, and [`vercel.json`](../vercel.json) turns off Git
   deployments.
-- [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) runs `vercel pull`,
-  `vercel build` and `vercel deploy --prebuilt` in GitHub Actions, where `setup-vp` installs the
-  correct Node.js and pnpm. It deploys a preview for each pull request, and comments the URL on the
-  pull request. It deploys production for each push to `main`.
+- [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) builds in GitHub Actions,
+  where `setup-vp` installs the correct Node.js and pnpm. It runs `vercel pull` for the variables
+  of the target environment, then `vp build`. It writes the
+  [Build Output API](https://vercel.com/docs/build-output-api) layout itself, because
+  `vercel build` refuses an `engines.node` that Vercel does not have. Then it runs
+  `vercel deploy --prebuilt`. It deploys a preview for each pull request, and comments the URL on
+  the pull request. It deploys production for each push to `main`.
 - When the secrets are not available, the Deploy workflow deploys nothing and passes. This occurs
   for pull requests from forks and from Dependabot.
 
@@ -84,5 +89,5 @@ of sensitive variables. The two secrets that a build can need, `CONVEX_DEPLOY_KE
 it never needs them at run time.
 
 When the backend deploys from CI, the Build step on `main` gets `CONVEX_DEPLOY_KEY` from the GitHub
-secret, and the build command becomes
+secret, and `vp build` in that step becomes
 `convex deploy --cmd 'vp build' --cmd-url-env-var-name VITE_CONVEX_URL`.

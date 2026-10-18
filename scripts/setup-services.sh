@@ -255,6 +255,7 @@ banner "Arashan: Clerk, Convex and Vercel setup"
 stage "Clerk: make the application"
 say "Clerk identifies the Users: a username and a password, and the email is optional."
 open_url "https://dashboard.clerk.com/apps/new"
+step "If Clerk asks what you build, select Consumer (not B2B)."
 step "Application name: Arashan."
 step "Sign-in options: turn on Username. Turn off Email, Phone and all social providers."
 step "Click 'Create application'. Skip the framework quickstart page."
@@ -262,13 +263,13 @@ pause "Press Enter when the application exists."
 
 stage "Clerk: username, password, optional email"
 say "Make sure that the sign-up asks for a username and a password only."
-open_url "https://dashboard.clerk.com/last-active?path=user-authentication/email-phone-username"
-note "The page is Configure → User & authentication. The labels can be a little different."
-step "Username: on, and required to sign up."
-step "Email address: on for the profile, but not required to sign up. No email verification step."
-step "Phone number: off."
-step "Password: on (the 'Password' tab or section). Keep the default password rules."
-step "Save each section that has a Save button."
+open_url "https://dashboard.clerk.com/last-active?path=user-authentication/user-and-authentication"
+note "The page is Configure → User & authentication. It has the tabs Email, Username and Password."
+step "Username tab: on, and required to sign up."
+step "Email tab: on for the profile, but not required to sign up."
+step "Email tab: 'Verify at sign-up': click Disable, then Save."
+step "Phone: off. Password tab: on, with the default password rules."
+step "Save each tab that has a Save button."
 pause "Press Enter when the settings are saved."
 
 stage "Clerk: connect Convex"
@@ -314,7 +315,8 @@ step "Open Settings → Environment Variables and add the same two variables:"
 note "    CLERK_JWT_ISSUER_DOMAIN = $CLERK_JWT_ISSUER_DOMAIN"
 note "    CLERK_SECRET_KEY        = the Clerk secret key (sk_test_...)"
 pause "Press Enter when the production deployment has both variables."
-step "In Settings, click 'Generate Production Deploy Key'. Name it github-actions. Copy it."
+step "In Settings, click 'Create Deploy Key'. Name it github-actions."
+step "Select the permissions deployment:deploy and deployment:env:view. Copy the key."
 ask_secret_valid CONVEX_DEPLOY_KEY '^prod:.+' "Paste the production deploy key (hidden):" \
   "A production deploy key starts with prod:."
 write_env CONVEX_DEPLOY_KEY "$CONVEX_DEPLOY_KEY"
@@ -332,12 +334,17 @@ stage "Vercel: the project"
 say "The wizard makes the Vercel project '$VERCEL_PROJECT' with the CLI and links this checkout to it."
 note "The first CLI run can take a minute: vp downloads $VERCEL_CLI."
 if confirm "Make or link the Vercel project '$VERCEL_PROJECT' now?"; then
-  vercel project add "$VERCEL_PROJECT" >/dev/null 2>&1 || note "The project exists already."
+  vercel project create "$VERCEL_PROJECT" >/dev/null 2>&1 || note "The project exists already."
   vercel link --yes --project "$VERCEL_PROJECT" >/dev/null ||
     warn "vercel link failed: run 'vp dlx $VERCEL_CLI link --project $VERCEL_PROJECT' and re-run the wizard"
   # Vercel's builders cannot build this repository (docs/environment.md), so no Git connection:
-  # the Deploy workflow deploys each pull request and each push to main.
+  # the Deploy workflow deploys each pull request and each push to main. It fails when there is
+  # no connection, which is the result that we want.
   vercel git disconnect --yes >/dev/null 2>&1 || true
+  # `vercel link` writes a root .env.local with a short-lived VERCEL_OIDC_TOKEN, which nothing uses.
+  # Delete the file only when it has nothing else.
+  if [[ -f .env.local ]] && ! grep -vqE '^(#|$|VERCEL_OIDC_TOKEN=)' .env.local; then rm -f .env.local; fi
+  note "If vercel link added '.env*' to .gitignore, remove that line: .gitignore has the env rules."
 fi
 if [[ -f .vercel/project.json ]]; then
   VERCEL_ORG_ID=$(node -p 'require("./.vercel/project.json").orgId')
