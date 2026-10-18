@@ -8,6 +8,10 @@ import type {
   Tokens,
 } from "./members/invite";
 import type {
+  FarmPasswordResetRepository,
+  PasswordResetRepository,
+} from "./members/password-reset";
+import type {
   FarmMembershipReader,
   FarmMembershipRepository,
   MemberUserReader,
@@ -31,6 +35,7 @@ export interface Repositories {
   farms: FarmRepository;
   memberships: MembershipRepository;
   invites: InviteRepository;
+  passwordResets: PasswordResetRepository;
   audit: AuditLog;
 }
 
@@ -79,6 +84,7 @@ export interface FarmRepositories {
   invites: FarmInviteRepository;
   sheep: FarmSheepRepository;
   history: FarmAuditReader;
+  passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;
 }
 

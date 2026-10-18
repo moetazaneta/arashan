@@ -2,6 +2,7 @@ import { recordAudit } from "../audit/audit";
 import type { CommandContext, QueryContext, SystemContext } from "../context";
 import { DomainError } from "../errors";
 import type { FarmId, UserId } from "../ids";
+import { requireNoPendingPasswordReset } from "../members/password-reset";
 import type { Role } from "../members/membership";
 import type { User } from "./user";
 
@@ -78,6 +79,7 @@ export async function setOperator(
   const user = await ctx.repos.users.findByProviderUserId(input.providerUserId.trim());
   if (user === null) throw new DomainError("user.notFound");
   if (user.isOperator !== input.isOperator) {
+    if (input.isOperator) await requireNoPendingPasswordReset(ctx, user.id);
     await ctx.repos.users.setOperator(user.id, input.isOperator);
     await recordAudit(ctx, {
       actorId: null,

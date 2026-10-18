@@ -40,7 +40,16 @@ export {
   type FarmSettings,
 } from "./farms/farm";
 export { addMonths, dateAt, isCalendarDate, type CalendarDate } from "./dates";
-export type { FarmId, Id, InviteId, MembershipId, OwnerChangeId, SheepId, UserId } from "./ids";
+export type {
+  FarmId,
+  Id,
+  InviteId,
+  MembershipId,
+  OwnerChangeId,
+  PasswordResetId,
+  SheepId,
+  UserId,
+} from "./ids";
 export { acceptInvite, previewInvite, type NewInvite } from "./members/commands";
 export {
   inviteLifetimeMs,
@@ -57,11 +66,18 @@ export {
   listMembers,
   maxPasswordLength,
   minPasswordLength,
-  prepareMemberPassword,
-  recordMemberPassword,
+  finishMemberPassword,
   removeMember,
+  requestMemberPassword,
   type MemberSummary,
 } from "./members/manage";
+export {
+  passwordResetLifetimeMs,
+  type FarmPasswordResetRepository,
+  type PasswordReset,
+  type PasswordResetOutcome,
+  type PasswordResetRepository,
+} from "./members/password-reset";
 export {
   roles,
   type FarmMembershipReader,

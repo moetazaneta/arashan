@@ -642,6 +642,7 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     farm: { updateSettings: notInFake },
     memberships: { ...readers.memberships, setRole: notInFake, archive: notInFake },
     invites: { insert: notInFake },
+    passwordResets: { insert: notInFake },
     sheep: sheepRepository(backend, farmId),
     audit: {
       append: async (entry) => {

@@ -17,7 +17,6 @@ import {
   action as convexAction,
   type DatabaseWriter,
   internalMutation as convexInternalMutation,
-  internalQuery as convexInternalQuery,
   type MutationCtx,
   mutation as convexMutation,
   type QueryCtx,
@@ -34,8 +33,8 @@ import { tokens } from "./tokens";
 // - `farmQuery`, `farmCommand`: a request to one Farm. The builder adds the argument `farmId`, calls
 //   `enterFarm` of the core, and gives the function the Member, the Farm, and repositories bound to
 //   the Farm.
-// - `internalFarmQuery`, `internalFarmCommand`: the same, for an action of a Farm. No client can call
-//   them, and they get the identity of the action that calls them.
+// - `internalFarmCommand`: the same, for an action of a Farm. No client can call it, and it gets the
+//   identity of the action that calls it.
 // - `farmAction`: a public action of one Farm, for a call to another service, such as Clerk. An
 //   action cannot read the database: it calls an internal function of a Farm, which checks the
 //   Membership.
@@ -164,16 +163,12 @@ function splitFarmId<Args extends PropertyValidators>(allArgs: ObjectType<FarmAr
   return { farmId: farmId as FarmId, args: args as unknown as ObjectType<Args> };
 }
 
-type FarmQueryDefinition<Args extends PropertyValidators, Result> = {
+/** A public query of one Farm. Only a Member of the Farm gets past `enterFarm`. */
+export function farmQuery<Args extends PropertyValidators, Result>(definition: {
   args: Args;
   handler: (ctx: FarmQueryContext, args: ObjectType<Args>) => Promise<Result> | Result;
-};
-
-function defineFarmQuery<Args extends PropertyValidators, Result>(
-  builder: typeof convexQuery | typeof convexInternalQuery,
-  definition: FarmQueryDefinition<Args, Result>,
-) {
-  return builder({
+}): RegisteredQuery<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
+  return convexQuery({
     args: withFarmId(definition.args),
     handler: (ctx: QueryCtx, allArgs: ObjectType<FarmArgs<Args>>) =>
       withDomainErrors(async () => {
@@ -185,20 +180,6 @@ function defineFarmQuery<Args extends PropertyValidators, Result>(
         );
       }),
   } as never);
-}
-
-/** A public query of one Farm. Only a Member of the Farm gets past `enterFarm`. */
-export function farmQuery<Args extends PropertyValidators, Result>(
-  definition: FarmQueryDefinition<Args, Result>,
-): RegisteredQuery<"public", ObjectType<FarmArgs<Args>>, Promise<Result>> {
-  return defineFarmQuery(convexQuery, definition) as never;
-}
-
-/** An internal query of one Farm, for a `farmAction`. */
-export function internalFarmQuery<Args extends PropertyValidators, Result>(
-  definition: FarmQueryDefinition<Args, Result>,
-): RegisteredQuery<"internal", ObjectType<FarmArgs<Args>>, Promise<Result>> {
-  return defineFarmQuery(convexInternalQuery, definition) as never;
 }
 
 type FarmCommandDefinition<Args extends PropertyValidators, Result> = {
@@ -250,8 +231,7 @@ export function internalFarmCommand<Args extends PropertyValidators, Result>(
 
 /**
  * A public action of one Farm, for a call to another service. The action itself checks nothing: its
- * handler must call an `internalFarmQuery` or an `internalFarmCommand` (with the `farmId`) before
- * the call, which checks the Membership and the rules of the core. A DomainError of the handler goes
+ * handler must call an `internalFarmCommand` (with the `farmId`) before the call, which checks the Membership and the rules of the core. A DomainError of the handler goes
  * to the client as a `ConvexError`, as in the other builders.
  */
 export function farmAction<Args extends PropertyValidators, Result>(definition: {

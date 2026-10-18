@@ -18,5 +18,15 @@ declare function btoa(data: string): string;
 /** The Fetch API of the runtime, as the call to the Clerk Backend API uses it. */
 declare function fetch(
   url: string,
-  init: { method: string; headers: Record<string, string>; body: string },
+  init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal },
 ): Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+
+declare class AbortSignal {}
+
+declare class AbortController {
+  readonly signal: AbortSignal;
+  abort(): void;
+}
+
+declare function setTimeout(callback: () => void, ms: number): number;
+declare function clearTimeout(id: number): void;

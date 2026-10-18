@@ -31,6 +31,7 @@ export const errorCodes = [
   "member.passwordInvalid",
   "member.passwordNotAllowed",
   "member.passwordRejected",
+  "user.passwordResetPending",
   "member.ownsActiveSheep",
   // Sheep.
   "sheep.notFound",

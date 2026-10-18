@@ -3,6 +3,7 @@ import { recordAudit } from "../audit/audit";
 import type { CommandContext, QueryContext } from "../context";
 import { DomainError } from "../errors";
 import type { FarmId, InviteId, UserId } from "../ids";
+import { requireNoPendingPasswordReset } from "./password-reset";
 import { type Invite, type InviteDraft, inviteLifetimeMs, type Tokens } from "./invite";
 import type { Role } from "./membership";
 
@@ -73,6 +74,7 @@ export async function acceptInvite(
   input: { token: string },
 ): Promise<{ farmId: FarmId }> {
   const { user, invite, membership } = await usableInvite(ctx, input.token);
+  await requireNoPendingPasswordReset(ctx, user.id);
   await ctx.repos.invites.markUsed(invite.id, { at: ctx.now(), by: user.id });
   let membershipId = membership?.id;
   if (membershipId === undefined) {

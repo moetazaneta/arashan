@@ -75,7 +75,7 @@ A function uses the builders in `convex/lib/functions.ts`, not the builders in
 | `command`       | a public mutation           | `CommandContext`                                                  |
 | `farmQuery`     | a public query of a Farm    | `FarmQueryContext`, after `enterFarm`                             |
 | `farmCommand`   | a public mutation of a Farm | `FarmCommandContext`, after `enterFarm`                           |
-| `internalFarmQuery`, `internalFarmCommand` | the same, internal | The same. Only a `farmAction` calls them, with its identity.  |
+| `internalFarmCommand` | an internal mutation of a Farm | The same. Only a `farmAction` calls it, with its identity. |
 | `farmAction`    | a public action of a Farm   | Nothing: it calls an internal function of the Farm first (see below). |
 | `systemCommand` | an internal mutation        | `SystemContext`. Only the CLI calls it (`convex run`).            |
 
@@ -187,9 +187,20 @@ stop the older ones, so that an Admin can invite many people at one time.
   example for a Member with no email who forgot the password. Clerk ends the Member's sessions.
   The account of a User is the same in all Farms, so the core refuses (`member.passwordNotAllowed`)
   the Admin's own account, the Operator's, and the account of a User who is or was a Member of
-  another Farm. The action `members.setPassword` runs in three steps: the internal query
-  `members.passwordTarget` checks the rules and gives the Clerk user id, the action calls Clerk,
-  and the internal mutation `members.recordPassword` appends the audit entry.
+  another Farm. The action `members.setPassword` runs in three steps:
+  1. The internal mutation `members.requestPassword` checks the rules, and writes a pending
+     `passwordResets` row and the audit entry `member.requestPassword`, in one transaction.
+  2. The action calls Clerk, and waits at most 20 seconds.
+  3. The internal mutation `members.finishPassword` writes the outcome and its audit entry: `done`
+     (`member.setPassword`, Clerk answered 2xx), `failed` (`member.setPasswordFailed`, Clerk answered
+     4xx and changed nothing) or `unknown` (`member.setPasswordUnknown`: a timeout, a network error
+     or an answer 5xx, so Clerk can still set the password). It checks no permission again: the
+     history must show the outcome whatever happened in the meantime.
+
+  While a reset of a User is unfinished (`pending` or `unknown`, for at most
+  `passwordResetLifetimeMs`, 24 hours), `invites.accept` and `users:setOperator` refuse that User
+  with `user.passwordResetPending`. Thus the rule above still holds when Clerk sets the password. A
+  normal reset finishes in seconds.
 
 ## Sheep
 

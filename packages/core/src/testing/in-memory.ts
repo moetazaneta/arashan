@@ -9,9 +9,18 @@ import type {
   SystemContext,
 } from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
-import type { FarmId, InviteId, MembershipId, OwnerChangeId, SheepId, UserId } from "../ids";
+import type {
+  FarmId,
+  InviteId,
+  MembershipId,
+  OwnerChangeId,
+  PasswordResetId,
+  SheepId,
+  UserId,
+} from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type { Membership, MembershipRepository } from "../members/membership";
+import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
 import { type FarmSheepRepository, type OwnerChange, type Sheep, tagKey } from "../sheep/sheep";
 import type { Identity, User, UserRepository } from "../users/user";
 
@@ -25,6 +34,7 @@ export class InMemoryStore {
   readonly farms: Stored<Farm>[] = [];
   readonly memberships: Stored<Membership>[] = [];
   readonly invites: Stored<Invite>[] = [];
+  readonly passwordResets: Stored<PasswordReset>[] = [];
   readonly sheep: Stored<Sheep>[] = [];
   readonly ownerChanges: Stored<OwnerChange>[] = [];
   readonly audit: AuditEntry[] = [];
@@ -136,11 +146,27 @@ export class InMemoryStore {
       },
     };
 
+    const passwordResets: PasswordResetRepository = {
+      get: async (id) => {
+        const found = active(this.passwordResets).find((r) => r.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      listUnfinished: async (userId) =>
+        active(this.passwordResets)
+          .filter((r) => r.userId === userId && (r.status === "pending" || r.status === "unknown"))
+          .map(withoutDeletedAt),
+      finish: async (id, outcome) => {
+        const found = this.passwordResets.find((r) => r.id === id);
+        if (found !== undefined) found.status = outcome;
+      },
+    };
+
     return {
       users,
       farms,
       memberships,
       invites,
+      passwordResets,
       audit: { append: async (entry) => void this.audit.push(entry) },
     };
   }
@@ -260,6 +286,13 @@ export class InMemoryStore {
         },
       },
       invites: { insert: (invite) => repos.invites.insert({ ...invite, farmId }) },
+      passwordResets: {
+        insert: async (reset) => {
+          const id = this.id("PasswordReset") as PasswordResetId;
+          this.passwordResets.push({ id, farmId, status: "pending", ...reset });
+          return id;
+        },
+      },
       sheep: this.farmSheep(farmId),
       audit: repos.audit,
     };

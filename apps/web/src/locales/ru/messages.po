@@ -32,6 +32,10 @@ msgstr "Администратор есть"
 msgid "Администратор управляет фермой и её участниками. В ферме всегда есть хотя бы один администратор."
 msgstr "Администратор управляет фермой и её участниками. В ферме всегда есть хотя бы один администратор."
 
+#: src/errors.ts
+msgid "Администратор фермы меняет пароль этой учётной записи, и это ещё не закончилось. Попробуйте позже."
+msgstr "Администратор фермы меняет пароль этой учётной записи, и это ещё не закончилось. Попробуйте позже."
+
 #: src/routes/operator/farms.tsx
 msgid "Администратор фермы сможет потом изменить эти настройки."
 msgstr "Администратор фермы сможет потом изменить эти настройки."
@@ -325,6 +329,11 @@ msgstr "Заметки не длиннее {maxSheepNotesLength} символо�
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
+msgid "Запрошен новый пароль"
+msgstr "Запрошен новый пароль"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
 msgid "Зарегистрирован"
 msgstr "Зарегистрирован"
 
@@ -462,6 +471,11 @@ msgstr "Начальный ввод"
 msgid "Не удалось войти"
 msgstr "Не удалось войти"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Неизвестно, задан ли новый пароль"
+msgstr "Неизвестно, задан ли новый пароль"
+
 #: src/components/sheep/sheep-details.tsx
 msgid "Нет"
 msgstr "Нет"
@@ -494,6 +508,11 @@ msgstr "Новый пароль"
 #: src/routes/farms/$farmId/members.tsx
 msgid "Новый пароль для {username}"
 msgstr "Новый пароль для {username}"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Новый пароль не задан"
+msgstr "Новый пароль не задан"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."

@@ -36,7 +36,13 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "member.invite": msg({ context: "history", message: "Создана ссылка для редактора" }),
   "member.changeRole": msg({ context: "history", message: "Изменена роль участника" }),
   "member.remove": msg({ context: "history", message: "Участник удалён" }),
+  "member.requestPassword": msg({ context: "history", message: "Запрошен новый пароль" }),
   "member.setPassword": msg({ context: "history", message: "Задан новый пароль" }),
+  "member.setPasswordFailed": msg({ context: "history", message: "Новый пароль не задан" }),
+  "member.setPasswordUnknown": msg({
+    context: "history",
+    message: "Неизвестно, задан ли новый пароль",
+  }),
   "sheep.register": msg({ context: "history", message: "Зарегистрирован" }),
   "sheep.update": msg({ context: "history", message: "Изменён" }),
   "sheep.changeOwner": msg({ context: "history", message: "Сменён владелец" }),

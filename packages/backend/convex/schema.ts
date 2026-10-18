@@ -108,6 +108,27 @@ export default defineSchema({
     ...deletable,
   }).index("by_farmId_deletedAt_sheepId", ["farmId", "deletedAt", "sheepId"]),
 
+  // An Admin's request to set a new password for a Member through Clerk (`members.setPassword`).
+  passwordResets: defineTable({
+    farmId: v.id("farms"),
+    membershipId: v.id("memberships"),
+    /** The User who gets the new password. */
+    userId: v.id("users"),
+    /** The Admin who asked for it. */
+    actorId: v.id("users"),
+    createdAt: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("done"),
+      v.literal("failed"),
+      v.literal("unknown"),
+    ),
+    ...deletable,
+  })
+    .index("by_farmId_deletedAt", ["farmId", "deletedAt"])
+    // The unfinished resets of a User in all Farms: they block the User's account changes.
+    .index("by_userId_deletedAt_status", ["userId", "deletedAt", "status"]),
+
   // Append-only: no command changes or erases an entry, so this table has no `deletable`.
   auditLog: defineTable({
     at: v.number(),

@@ -223,6 +223,8 @@ function MembersCards({ farmId }: { farmId: FarmId }) {
                   onRoleChange={(role) =>
                     changeRole.mutate({ membershipId: member.membershipId, role })
                   }
+                  // The error of a Role change is old news when the Admin starts another action.
+                  onAction={() => changeRole.reset()}
                 />
               ))}
             </TableBody>
@@ -239,11 +241,13 @@ function MemberRow({
   member,
   changing,
   onRoleChange,
+  onAction,
 }: {
   farmId: FarmId;
   member: MemberSummary;
   changing: boolean;
   onRoleChange: (role: Role) => void;
+  onAction: () => void;
 }) {
   const { t } = useLingui();
   const isYou = useViewer().user.id === member.userId;
@@ -290,8 +294,10 @@ function MemberRow({
       </TableCell>
       <TableCell>
         <div className="flex justify-end gap-2">
-          {member.canSetPassword && <PasswordDialog farmId={farmId} member={member} />}
-          <RemoveDialog farmId={farmId} member={member} isYou={isYou} />
+          {member.canSetPassword && (
+            <PasswordDialog farmId={farmId} member={member} onOpen={onAction} />
+          )}
+          <RemoveDialog farmId={farmId} member={member} isYou={isYou} onOpen={onAction} />
         </div>
       </TableCell>
     </TableRow>
@@ -299,7 +305,15 @@ function MemberRow({
 }
 
 /** An Admin sets a new password for a Member who cannot log in, for example with no email. */
-function PasswordDialog({ farmId, member }: { farmId: FarmId; member: MemberSummary }) {
+function PasswordDialog({
+  farmId,
+  member,
+  onOpen,
+}: {
+  farmId: FarmId;
+  member: MemberSummary;
+  onOpen: () => void;
+}) {
   const { t } = useLingui();
   const setPassword = useSetMemberPassword(farmId);
   const [open, setOpen] = useState(false);
@@ -323,7 +337,10 @@ function PasswordDialog({ farmId, member }: { farmId: FarmId; member: MemberSumm
         variant="outline"
         size="sm"
         aria-label={t`Новый пароль для ${username}`}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onOpen();
+          setOpen(true);
+        }}
       >
         <Trans>Новый пароль</Trans>
       </Button>
@@ -403,10 +420,12 @@ function RemoveDialog({
   farmId,
   member,
   isYou,
+  onOpen,
 }: {
   farmId: FarmId;
   member: MemberSummary;
   isYou: boolean;
+  onOpen: () => void;
 }) {
   const { t } = useLingui();
   const remove = useRemoveMember(farmId);
@@ -427,7 +446,10 @@ function RemoveDialog({
         size="sm"
         className="text-destructive"
         aria-label={t`Удалить ${username} из фермы`}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onOpen();
+          setOpen(true);
+        }}
       >
         <Trans>Удалить</Trans>
       </Button>

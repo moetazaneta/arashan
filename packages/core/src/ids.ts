@@ -10,3 +10,4 @@ export type MembershipId = Id<"Membership">;
 export type InviteId = Id<"Invite">;
 export type SheepId = Id<"Sheep">;
 export type OwnerChangeId = Id<"OwnerChange">;
+export type PasswordResetId = Id<"PasswordReset">;

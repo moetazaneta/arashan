@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { api } from "./_generated/api";
-import { errorCode, farmWithEditor, logIn, setup, type Test } from "./test.setup";
+import { errorCode, farmWithEditor, logIn, makeFarm, setup, type Test } from "./test.setup";
 
 async function auditLog(t: Test) {
   return t.run((ctx) => ctx.db.query("auditLog").collect());
@@ -149,6 +149,19 @@ describe("members.setPassword", () => {
     });
   }
 
+  async function passwordResets(t: Test) {
+    return t.run((ctx) => ctx.db.query("passwordResets").collect());
+  }
+
+  /** The commands of the audit log after the entry number `from`. */
+  async function auditSince(t: Test, from: number) {
+    return (await auditLog(t)).slice(from).map(({ command, targetKind, targetId }) => ({
+      command,
+      targetKind,
+      targetId,
+    }));
+  }
+
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -161,10 +174,11 @@ describe("members.setPassword", () => {
     vi.unstubAllEnvs();
   });
 
-  test("an Admin sets the password through Clerk, then the audit log has the entry", async () => {
+  test("an Admin sets the password through Clerk; the reset is done, with two audit entries", async () => {
     const t = setup();
     const { admin, farmId, membershipId } = await farmWithEditor(t);
     const editorId = await membershipId("editor");
+    const before = (await auditLog(t)).length;
 
     await admin.action(api.members.setPassword, { farmId, membershipId: editorId, password });
 
@@ -174,38 +188,28 @@ describe("members.setPassword", () => {
     expect(init).toMatchObject({
       method: "PATCH",
       headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
+      signal: expect.any(AbortSignal),
     });
     expect(JSON.parse(init.body)).toEqual({ password, sign_out_of_other_sessions: true });
-    expect((await auditLog(t)).at(-1)).toMatchObject({
-      farmId,
-      command: "member.setPassword",
-      targetKind: "Membership",
-      targetId: editorId,
-    });
+    expect(await passwordResets(t)).toMatchObject([
+      { farmId, membershipId: editorId, status: "done" },
+    ]);
+    expect(await auditSince(t, before)).toEqual([
+      { command: "member.requestPassword", targetKind: "Membership", targetId: editorId },
+      { command: "member.setPassword", targetKind: "Membership", targetId: editorId },
+    ]);
   });
 
-  test("a password that Clerk refuses is a domain error, with no audit entry", async () => {
+  /**
+   * Sets the password of the Editor with the Clerk answer that `stub` gives, and gives the error of
+   * the action, the reset rows, the new audit commands, and the error of the Editor's accept of a
+   * link to another Farm after it (null if the Editor joined).
+   */
+  async function setPasswordWith(stub: () => void) {
     const t = setup();
-    const { admin, farmId, membershipId } = await farmWithEditor(t);
-    clerkResponds(422, { errors: [{ code: "form_password_pwned" }] });
-    const before = (await auditLog(t)).length;
-
-    expect(
-      await errorCode(
-        admin.action(api.members.setPassword, {
-          farmId,
-          membershipId: await membershipId("editor"),
-          password,
-        }),
-      ),
-    ).toBe("member.passwordRejected");
-    expect(await auditLog(t)).toHaveLength(before);
-  });
-
-  test("another failure of Clerk is no domain error, and writes no audit entry", async () => {
-    const t = setup();
-    const { admin, farmId, membershipId } = await farmWithEditor(t);
-    clerkResponds(500, null);
+    const { admin, editor, farmId, membershipId } = await farmWithEditor(t);
+    const other = await makeFarm(t, "Другая");
+    stub();
     const before = (await auditLog(t)).length;
 
     const error = await errorCode(
@@ -215,13 +219,81 @@ describe("members.setPassword", () => {
         password,
       }),
     );
-    expect(error).toBeInstanceOf(Error);
-    expect(await auditLog(t)).toHaveLength(before);
+
+    return {
+      error,
+      resets: await passwordResets(t),
+      commands: (await auditSince(t, before)).map((entry) => entry.command),
+      acceptAfter: await errorCode(editor.mutation(api.invites.accept, { token: other.token })),
+    };
+  }
+
+  test("a password that Clerk refuses is a domain error; the reset failed and blocks nothing", async () => {
+    const result = await setPasswordWith(() =>
+      clerkResponds(422, { errors: [{ code: "form_password_pwned" }] }),
+    );
+
+    expect(result.error).toBe("member.passwordRejected");
+    expect(result.resets).toMatchObject([{ status: "failed" }]);
+    expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordFailed"]);
+    expect(result.acceptAfter).toBeNull();
   });
 
-  test("a short password never reaches Clerk", async () => {
+  test("another refusal of Clerk is no domain error; the reset failed and blocks nothing", async () => {
+    const result = await setPasswordWith(() =>
+      clerkResponds(404, { errors: [{ code: "not_found" }] }),
+    );
+
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.resets).toMatchObject([{ status: "failed" }]);
+    expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordFailed"]);
+    expect(result.acceptAfter).toBeNull();
+  });
+
+  const unknownAnswers: [string, () => void][] = [
+    ["an error of the Clerk server", () => clerkResponds(500, null)],
+    [
+      "no answer from Clerk",
+      () => fetchMock.mockRejectedValue(new Error("The operation was aborted.")),
+    ],
+  ];
+  for (const [answer, stub] of unknownAnswers) {
+    test(`after ${answer}, the reset is unknown and still blocks the Member`, async () => {
+      const result = await setPasswordWith(stub);
+
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.resets).toMatchObject([{ status: "unknown" }]);
+      expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordUnknown"]);
+      expect(result.acceptAfter).toBe("user.passwordResetPending");
+    });
+  }
+
+  test("while Clerk sets the password, the Member cannot join another Farm", async () => {
+    const t = setup();
+    const { admin, editor, farmId, membershipId } = await farmWithEditor(t);
+    const other = await makeFarm(t, "Другая");
+    let duringCall: unknown;
+    fetchMock.mockImplementation(async () => {
+      duringCall = await errorCode(editor.mutation(api.invites.accept, { token: other.token }));
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+
+    await admin.action(api.members.setPassword, {
+      farmId,
+      membershipId: await membershipId("editor"),
+      password,
+    });
+
+    expect(duringCall).toBe("user.passwordResetPending");
+    await expect(editor.mutation(api.invites.accept, { token: other.token })).resolves.toEqual({
+      farmId: other.farmId,
+    });
+  });
+
+  test("a short password never reaches Clerk, and writes nothing", async () => {
     const t = setup();
     const { admin, farmId, membershipId } = await farmWithEditor(t);
+    const before = (await auditLog(t)).length;
 
     expect(
       await errorCode(
@@ -233,6 +305,8 @@ describe("members.setPassword", () => {
       ),
     ).toBe("member.passwordInvalid");
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(await passwordResets(t)).toEqual([]);
+    expect(await auditLog(t)).toHaveLength(before);
   });
 
   test("an Admin cannot set the own password, nor that of a Member of another Farm", async () => {
@@ -255,13 +329,15 @@ describe("members.setPassword", () => {
       ).toBe("member.passwordNotAllowed");
     }
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(await passwordResets(t)).toEqual([]);
   });
 
-  test("an Editor, a removed Member and a stranger never reach Clerk", async () => {
+  test("an Editor, a removed Member and a stranger never reach Clerk, and write nothing", async () => {
     const t = setup();
     const { admin, editor, farmId, membershipId } = await farmWithEditor(t);
     const adminId = await membershipId("admin");
     const stranger = await logIn(t, "stranger");
+    const before = (await auditLog(t)).length;
 
     expect(
       await errorCode(
@@ -278,6 +354,7 @@ describe("members.setPassword", () => {
         t.action(api.members.setPassword, { farmId, membershipId: adminId, password }),
       ),
     ).toBe("auth.signedOut");
+    expect(await auditLog(t)).toHaveLength(before);
     const editorId = await membershipId("editor");
     await admin.mutation(api.members.remove, { farmId, membershipId: editorId });
     expect(
@@ -286,5 +363,6 @@ describe("members.setPassword", () => {
       ),
     ).toBe("member.notFound");
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(await passwordResets(t)).toEqual([]);
   });
 });
