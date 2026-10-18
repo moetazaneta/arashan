@@ -38,3 +38,8 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
+# What a dependency may do beyond installing, set with `pnpm approve`. An agent skill from an approved
+# package is linked into .agents/skills and .claude/skills on install, where git ignores it.
+permissions:
+  "@tanstack/router-plugin":
+    skills: true
