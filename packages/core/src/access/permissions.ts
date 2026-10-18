@@ -40,6 +40,30 @@ export const permissions = {
   "sheep.changeOwner": ["admin", "editor"],
   /** Make a Sheep Deleted, for a record made by mistake. */
   "sheep.delete": ["admin", "editor"],
+  /** Move Sheep into a Flock or out of all Flocks, on a date. */
+  "sheep.move": ["admin", "editor"],
+  /** See the Flocks, the Locations and the Shepherds, and the Flock history of a Sheep. */
+  "flock.view": ["admin", "editor"],
+  /** Make a Flock. */
+  "flock.create": ["admin", "editor"],
+  /** Change the name or the Location of a Flock. */
+  "flock.update": ["admin", "editor"],
+  /** Archive a Flock, or take it out of the archive. */
+  "flock.archive": ["admin", "editor"],
+  /** Assign a Shepherd to a Flock, change the dates of an assignment, or remove it. */
+  "flock.assignShepherd": ["admin", "editor"],
+  /** Make a Location. */
+  "location.create": ["admin", "editor"],
+  /** Change the name or the notes of a Location. */
+  "location.update": ["admin", "editor"],
+  /** Archive a Location, or take it out of the archive. */
+  "location.archive": ["admin", "editor"],
+  /** Add a Shepherd. */
+  "shepherd.create": ["admin", "editor"],
+  /** Change the name, the phone or the notes of a Shepherd. */
+  "shepherd.update": ["admin", "editor"],
+  /** Archive a Shepherd, or take the Shepherd out of the archive. */
+  "shepherd.archive": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

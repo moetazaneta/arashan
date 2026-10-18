@@ -3,7 +3,15 @@ import type { CommandName } from "../audit/audit";
 import type { FarmQueryContext } from "../context";
 import type { CalendarDate } from "../dates";
 import { DomainError } from "../errors";
-import type { MembershipId, SheepId, UserId } from "../ids";
+import type { Flock } from "../flocks/flock";
+import {
+  type FlockRef,
+  flockRefOf,
+  flocksById,
+  type SheepFlockStay,
+  sheepFlockStays,
+} from "../flocks/queries";
+import type { FlockId, MembershipId, SheepId, UserId } from "../ids";
 import type { Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
 
 // The queries of the Sheep registry: the table, the card, the history, and the Owners to choose from.
@@ -34,6 +42,8 @@ export interface SheepRow {
   initialEntry: boolean;
   status: SheepStatus;
   owner: OwnerRef | null;
+  /** The Flock that the Sheep is in now, or null. */
+  flock: FlockRef | null;
   weight: Weighing | null;
   notes: string | null;
   registeredAt: number;
@@ -46,9 +56,10 @@ export interface OwnerPeriod {
   since: CalendarDate | null;
 }
 
-/** A Sheep as its card shows it: the fields, and the Owners, the newest first. */
+/** A Sheep as its card shows it: the fields, the Owners and the stays in Flocks, the newest first. */
 export interface SheepCard extends SheepRow {
   owners: OwnerPeriod[];
+  flocks: SheepFlockStay[];
 }
 
 /** One audit entry of a Sheep, for the tab «История». */
@@ -65,10 +76,10 @@ export interface SheepHistoryEntry {
  */
 export async function listSheep(ctx: FarmQueryContext): Promise<SheepRow[]> {
   authorize(ctx.member, "sheep.view", { farmId: ctx.farm.id });
-  const owners = await ownerNames(ctx);
+  const [owners, flocks] = await Promise.all([ownerNames(ctx), flocksById(ctx)]);
   return (await ctx.repos.sheep.list())
     .filter((sheep) => sheep.origin !== "external")
-    .map((sheep) => toRow(sheep, owners))
+    .map((sheep) => toRow(sheep, owners, flocks))
     .sort(byTagThenName);
 }
 
@@ -83,8 +94,8 @@ export async function getSheep(
   authorize(ctx.member, "sheep.view", { farmId: ctx.farm.id });
   const sheep = await ctx.repos.sheep.get(input.sheepId);
   if (sheep === null || sheep.origin === "external") return null;
-  const owners = await ownerNames(ctx);
-  const row = toRow(sheep, owners);
+  const [owners, flocks] = await Promise.all([ownerNames(ctx), flocksById(ctx)]);
+  const row = toRow(sheep, owners, flocks);
   const changes = await ctx.repos.sheep.ownerChanges(sheep.id);
   const periods: OwnerPeriod[] = [];
   const first = changes[0]?.previousOwnerId ?? sheep.ownerId;
@@ -92,7 +103,7 @@ export async function getSheep(
   for (const change of changes) {
     periods.push({ owner: ownerOf(owners, change.ownerId), since: change.date });
   }
-  return { ...row, owners: periods.reverse() };
+  return { ...row, owners: periods.reverse(), flocks: await sheepFlockStays(ctx, sheep.id) };
 }
 
 /** The audit entries of a Sheep: who changed it and when, the newest first. */
@@ -158,7 +169,11 @@ function ownerOf(names: Map<MembershipId, string>, id: MembershipId): OwnerRef {
   return { id, name: names.get(id) ?? "" };
 }
 
-function toRow(sheep: Sheep, owners: Map<MembershipId, string>): SheepRow {
+function toRow(
+  sheep: Sheep,
+  owners: Map<MembershipId, string>,
+  flocks: Map<FlockId, Flock>,
+): SheepRow {
   return {
     id: sheep.id,
     tag: sheep.tag,
@@ -169,6 +184,7 @@ function toRow(sheep: Sheep, owners: Map<MembershipId, string>): SheepRow {
     initialEntry: sheep.initialEntry,
     status: sheep.status,
     owner: sheep.ownerId === null ? null : ownerOf(owners, sheep.ownerId),
+    flock: sheep.flockId === null ? null : flockRefOf(flocks, sheep.flockId),
     weight: sheep.weight,
     notes: sheep.notes,
     registeredAt: sheep.registeredAt,

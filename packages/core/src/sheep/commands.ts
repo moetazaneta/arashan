@@ -65,6 +65,7 @@ export async function registerSheep(
     initialEntry: input.initialEntry,
     status: "active",
     ownerId: input.ownerId,
+    flockId: null,
     registeredAt: ctx.now(),
   });
   await recordSheepAudit(ctx, "sheep.register", sheepId);

@@ -23,10 +23,35 @@ export type CommandName =
   | "sheep.register"
   | "sheep.update"
   | "sheep.changeOwner"
-  | "sheep.delete";
+  | "sheep.delete"
+  | "sheep.move"
+  | "sheep.undoMove"
+  | "flock.create"
+  | "flock.update"
+  | "flock.archive"
+  | "flock.unarchive"
+  | "flock.assignShepherd"
+  | "flock.updateAssignment"
+  | "flock.removeAssignment"
+  | "location.create"
+  | "location.update"
+  | "location.archive"
+  | "location.unarchive"
+  | "shepherd.create"
+  | "shepherd.update"
+  | "shepherd.archive"
+  | "shepherd.unarchive";
 
 /** The kind of record that a command changed. */
-export type TargetKind = "User" | "Farm" | "Membership" | "Invite" | "Sheep";
+export type TargetKind =
+  | "User"
+  | "Farm"
+  | "Membership"
+  | "Invite"
+  | "Sheep"
+  | "Flock"
+  | "Location"
+  | "Shepherd";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

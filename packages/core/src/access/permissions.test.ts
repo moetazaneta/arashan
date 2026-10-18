@@ -25,6 +25,18 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "sheep.update": { admin: true, editor: true },
   "sheep.changeOwner": { admin: true, editor: true },
   "sheep.delete": { admin: true, editor: true },
+  "sheep.move": { admin: true, editor: true },
+  "flock.view": { admin: true, editor: true },
+  "flock.create": { admin: true, editor: true },
+  "flock.update": { admin: true, editor: true },
+  "flock.archive": { admin: true, editor: true },
+  "flock.assignShepherd": { admin: true, editor: true },
+  "location.create": { admin: true, editor: true },
+  "location.update": { admin: true, editor: true },
+  "location.archive": { admin: true, editor: true },
+  "shepherd.create": { admin: true, editor: true },
+  "shepherd.update": { admin: true, editor: true },
+  "shepherd.archive": { admin: true, editor: true },
 };
 
 describe("can", () => {
