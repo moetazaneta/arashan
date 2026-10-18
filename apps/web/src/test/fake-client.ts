@@ -175,6 +175,7 @@ export function updateFake(change: (backend: FakeBackend) => void) {
 
 export function resetFake() {
   backend = emptyBackend();
+  uploadGate = null;
   version += 1;
 }
 
@@ -856,8 +857,24 @@ export const useRegisterExternalSheep = (farmId: FarmId) =>
   );
 
 /** The upload of a scan: the fake storage keeps its size and type, and gives its id. */
+// An upload of a scan waits for this, if a test holds the uploads (`holdUploads`).
+let uploadGate: Promise<void> | null = null;
+
+/** Holds each upload of a scan until the test calls the function that this gives. */
+export function holdUploads(): () => void {
+  let release = () => {};
+  uploadGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  return () => {
+    uploadGate = null;
+    release();
+  };
+}
+
 export const useUploadPassportScan = (farmId: FarmId) =>
-  useMutation("uploadPassportScan", (backend, file: File): FileId => {
+  useMutation("uploadPassportScan", async (backend, file: File): Promise<FileId> => {
+    if (uploadGate !== null) await uploadGate;
     enterFakeFarm(backend, farmId);
     const id = nextId(backend, "file") as FileId;
     backend.files.set(id, { size: file.size, contentType: file.type === "" ? null : file.type });

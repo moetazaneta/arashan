@@ -10,6 +10,7 @@ import {
   addSheep,
   aFarm,
   aMember,
+  holdUploads,
   signIn,
 } from "@/test/fake-client";
 import { renderApp } from "@/test/render-app";
@@ -294,6 +295,29 @@ test("«Всё неизвестное — арашан» makes the Sheep 100 % A
   await screen.findByRole("heading", { name: "50" });
   expect(plain(cardField("Состав породы").textContent)).toBe("Арашан 100 %");
   expect(cardField("Ветпаспорт").textContent).toBe("KG-1, выдан 10.01.2025 · Скан");
+});
+
+test("an upload of a scan that ends later keeps what the Member typed in the meantime", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  renderApp(`/farms/${farm.id}/sheep`);
+  const release = holdUploads();
+
+  const panel = await openRegisterPanel(user);
+  await user.upload(
+    within(panel).getByLabelText("Скан"),
+    new File(["%PDF-1.7"], "passport.pdf", { type: "application/pdf" }),
+  );
+  await user.type(within(panel).getByRole("textbox", { name: "Бирка" }), "77");
+  await user.type(within(panel).getByRole("textbox", { name: "Номер ветпаспорта" }), "KG-7");
+  release();
+
+  expect(await within(panel).findByText("passport.pdf")).toBeTruthy();
+  expect(within(panel).getByRole("textbox", { name: "Бирка" })).toHaveProperty("value", "77");
+  expect(within(panel).getByRole("textbox", { name: "Номер ветпаспорта" })).toHaveProperty(
+    "value",
+    "KG-7",
+  );
 });
 
 test("the mode «Внешний» adds a parent that the forms offer but the table does not show", async () => {

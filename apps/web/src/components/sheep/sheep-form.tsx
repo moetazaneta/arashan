@@ -78,6 +78,7 @@ import {
   ParentsFields,
   PassportFields,
   type PedigreeDraft,
+  type ScanDraft,
   pedigreeDraftOf,
   pedigreeFieldCodes,
   pedigreeOf,
@@ -364,6 +365,7 @@ function RegisterForm({
         if (next.sex !== null) setSexMissing(false);
         reset();
       }}
+      onScan={(scan) => setDraft((current) => ({ ...current, scan }))}
       onSave={save}
       top={
         <ToggleGroup
@@ -525,6 +527,7 @@ function EditForm({
         setDraft(next);
         update.reset();
       }}
+      onScan={(scan) => setDraft((current) => ({ ...current, scan }))}
       onSave={save}
     />
   );
@@ -547,6 +550,7 @@ function SheepForm({
   showOrigin,
   submitLabel,
   onChange,
+  onScan,
   onSave,
   top,
   intro,
@@ -573,6 +577,8 @@ function SheepForm({
   showOrigin: boolean;
   submitLabel: string;
   onChange: (draft: SheepDraft) => void;
+  /** Puts an uploaded scan into the draft of the time when the upload ends. */
+  onScan: (scan: ScanDraft) => void;
   onSave: () => void;
   top?: ReactNode;
   intro?: ReactNode;
@@ -784,6 +790,7 @@ function SheepForm({
                       pure={preview === null || isPureArashan(preview)}
                       today={today}
                       upload={upload}
+                      onScan={onScan}
                     />
                     <GradeFields
                       id={id}

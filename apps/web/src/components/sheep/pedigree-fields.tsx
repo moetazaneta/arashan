@@ -588,11 +588,17 @@ export function PassportFields({
   pure,
   today,
   upload,
+  onScan,
 }: FieldsProps & {
   /** False if the composition that the Sheep gets is not 100 percent Arashan. */
   pure: boolean;
   today: string;
   upload: ReturnType<typeof useUploadPassportScan>;
+  /**
+   * Puts a new scan into the draft. The upload ends later, so this changes only the scan of the
+   * draft of that time, not the draft of the time when the upload started.
+   */
+  onScan: (scan: ScanDraft) => void;
 }) {
   const { t } = useLingui();
   const codeMessage = useCodeMessage();
@@ -620,7 +626,7 @@ export function PassportFields({
     }
     upload.mutate(file, {
       onSuccess: (scanId) => {
-        set({ scan: { id: scanId, fileName: file.name, url: null } });
+        onScan({ id: scanId, fileName: file.name, url: null });
         // The name shows above; the input is ready for another file.
         if (fileRef.current !== null) fileRef.current.value = "";
       },
