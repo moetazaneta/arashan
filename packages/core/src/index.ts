@@ -9,7 +9,7 @@ export {
 } from "./access/permissions";
 export { enterFarm, requireOperator, requireUser } from "./access/session";
 export { getAppVersion } from "./app/version";
-export type { AuditEntry, AuditLog, CommandName, TargetKind } from "./audit/audit";
+export type { AuditEntry, AuditLog, CommandName, FarmAuditReader, TargetKind } from "./audit/audit";
 export type {
   CommandContext,
   FarmCommandContext,
@@ -39,7 +39,8 @@ export {
   type FarmRepository,
   type FarmSettings,
 } from "./farms/farm";
-export type { FarmId, Id, InviteId, MembershipId, UserId } from "./ids";
+export { addMonths, dateAt, isCalendarDate, type CalendarDate } from "./dates";
+export type { FarmId, Id, InviteId, MembershipId, OwnerChangeId, SheepId, UserId } from "./ids";
 export { acceptInvite, previewInvite, type NewInvite } from "./members/commands";
 export {
   inviteLifetimeMs,
@@ -71,5 +72,49 @@ export {
   type MembershipRepository,
   type Role,
 } from "./members/membership";
+export {
+  changeSheepOwner,
+  deleteSheep,
+  registerSheep,
+  requireOwner,
+  updateSheep,
+  type RegisteredOrigin,
+  type SheepDetails,
+  type SheepRegistration,
+  type SheepUpdate,
+} from "./sheep/commands";
+export {
+  getSheep,
+  getSheepHistory,
+  listSheep,
+  listSheepOwners,
+  type OwnerOption,
+  type OwnerPeriod,
+  type OwnerRef,
+  type SheepCard,
+  type SheepHistoryEntry,
+  type SheepRow,
+} from "./sheep/queries";
+export {
+  isLamb,
+  maxSheepNameLength,
+  maxSheepNotesLength,
+  maxTagLength,
+  maxWeightKg,
+  origins,
+  sexes,
+  sheepStatuses,
+  tagKey,
+  withLamb,
+  type FarmSheepReader,
+  type FarmSheepRepository,
+  type Origin,
+  type OwnerChange,
+  type Sex,
+  type Sheep,
+  type SheepFields,
+  type SheepStatus,
+  type Weighing,
+} from "./sheep/sheep";
 export { getViewer, registerUser, setOperator, type Viewer } from "./users/commands";
 export type { Identity, User, UserReader, UserRepository } from "./users/user";

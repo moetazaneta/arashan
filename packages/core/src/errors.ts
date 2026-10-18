@@ -31,6 +31,24 @@ export const errorCodes = [
   "member.passwordInvalid",
   "member.passwordNotAllowed",
   "member.passwordRejected",
+  "member.ownsActiveSheep",
+  // Sheep.
+  "sheep.notFound",
+  "sheep.tagTaken",
+  "sheep.tagTooLong",
+  "sheep.nameTooLong",
+  "sheep.notesTooLong",
+  "sheep.dateInvalid",
+  "sheep.birthDateRequired",
+  "sheep.birthDateInFuture",
+  "sheep.purchaseRequired",
+  "sheep.originLocked",
+  "sheep.ownerNotMember",
+  "sheep.weightInvalid",
+  "sheep.weighingDateInvalid",
+  "sheep.notActive",
+  "sheep.sameOwner",
+  "sheep.ownerChangeDateInvalid",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];
