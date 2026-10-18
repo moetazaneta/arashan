@@ -344,6 +344,8 @@ export async function moveSheep(
   for (const sheepId of sheepIds) {
     const sheep = await ctx.repos.sheep.get(sheepId);
     if (sheep === null || sheep.origin === "external") throw new DomainError("sheep.notFound");
+    // A Sheep that is not Active fails the command, also when it is already out of all Flocks.
+    if (sheep.status !== "active") throw new DomainError("sheep.notActive");
     if (sheep.flockId === input.flockId) continue;
     await requireMove(ctx, sheep, input.date);
     moving.push(sheep);

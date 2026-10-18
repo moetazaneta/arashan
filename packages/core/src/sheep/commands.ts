@@ -80,8 +80,9 @@ export interface SheepUpdate extends SheepDetails {
 
 /**
  * A Member changes the fields of a Sheep. The same rules apply as for a new Sheep, and the birth date
- * is not after a change of the Owner (`sheep.birthDateAfterOwnerChange`). The Owner changes only with
- * `changeSheepOwner`, which records the date. A change that changes nothing writes nothing.
+ * is not after a change of the Owner (`sheep.birthDateAfterOwnerChange`) or a move into a Flock or
+ * out of it (`sheep.birthDateAfterFlockMove`). The Owner changes only with `changeSheepOwner`, which
+ * records the date. A change that changes nothing writes nothing.
  */
 export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): Promise<void> {
   authorize(ctx.member, "sheep.update", { farmId: ctx.farm.id });
@@ -95,6 +96,10 @@ export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): 
     const changes = await ctx.repos.sheep.ownerChanges(sheep.id);
     if (changes.some((change) => change.date < birthDate)) {
       throw new DomainError("sheep.birthDateAfterOwnerChange");
+    }
+    const moves = await ctx.repos.sheep.flockMoves(sheep.id);
+    if (moves.some((move) => move.date < birthDate)) {
+      throw new DomainError("sheep.birthDateAfterFlockMove");
     }
   }
   await requireFreeTag(ctx, details.tag, sheep.id);
