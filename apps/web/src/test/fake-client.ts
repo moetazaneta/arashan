@@ -1031,6 +1031,11 @@ export function auditEntries(): readonly AuditEntry[] {
   return backend.audit;
 }
 
+/** The current record of a Sheep, for a test that checks the result of a command. */
+export function sheepState(sheepId: SheepId): Readonly<Sheep> | null {
+  return backend.sheep.find((sheep) => sheep.id === sheepId) ?? null;
+}
+
 export const useFlocks = (farmId: FarmId) =>
   useCoreQuery(`flocks ${farmId}`, (backend) => listFlocks(queryContext(backend, farmId)));
 
