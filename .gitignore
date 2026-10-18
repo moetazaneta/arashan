@@ -1,0 +1,17 @@
+.DS_Store
+
+node_modules
+dist
+*.local
+*.tsbuildinfo
+
+# TanStack Router's temporary files. The route tree itself, apps/web/src/routeTree.gen.ts, is
+# committed.
+.tanstack/
+
+.env
+.env.*
+!.env.example
+
+# AI agent worktrees.
+.claude/worktrees/
