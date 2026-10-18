@@ -449,6 +449,10 @@ msgstr "Выбрать барана без бирки"
 msgid "Выбрать всех баранов"
 msgstr "Выбрать всех баранов"
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Выбрать файл"
+msgstr "Выбрать файл"
+
 #: src/components/app-shell.tsx
 #: src/routes/__root.tsx
 #: src/routes/invite/$token.tsx
@@ -627,6 +631,10 @@ msgstr "Задать пароль"
 #: src/components/sheep/sheep-form.tsx
 msgid "Закрыть"
 msgstr "Закрыть"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Заменить файл"
+msgstr "Заменить файл"
 
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx

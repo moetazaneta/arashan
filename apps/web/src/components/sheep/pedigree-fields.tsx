@@ -701,16 +701,28 @@ export function PassportFields({
           </div>
         )}
         <div className="flex items-center gap-2">
-          <Input
+          {/* The browser writes the text of a file input in its own language, so the input stays
+              hidden and a button of the form opens it. */}
+          <input
             ref={fileRef}
             id={`${id}-passport-scan`}
             type="file"
             accept={scanContentTypes.join(",")}
-            className="min-w-0 flex-1"
+            className="sr-only"
+            tabIndex={-1}
             disabled={upload.isPending}
             aria-invalid={scanError !== null}
             onChange={(event) => onFile(event.target.files?.[0])}
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={upload.isPending}
+            onClick={() => fileRef.current?.click()}
+          >
+            {draft.scan === null ? <Trans>Выбрать файл</Trans> : <Trans>Заменить файл</Trans>}
+          </Button>
           {upload.isPending && <Spinner aria-label={t`Скан загружается`} />}
         </div>
         <FieldDescription className="text-xs">
@@ -718,7 +730,8 @@ export function PassportFields({
         </FieldDescription>
         <FieldError>{scanError}</FieldError>
       </Field>
-      {!pure && (
+      {/* The error of the Passport says the same, and more. */}
+      {!pure && passportError === null && (
         <FieldDescription>
           <Trans>Ветпаспорт может быть только у барана со 100 % арашан.</Trans>
         </FieldDescription>
