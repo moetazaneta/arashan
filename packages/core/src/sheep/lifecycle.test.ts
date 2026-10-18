@@ -6,7 +6,7 @@ import { archiveFlock, createFlock, moveSheep } from "../flocks/commands";
 import { getSheepResponsible } from "../flocks/queries";
 import type { FarmId, SheepId } from "../ids";
 import { removeMember } from "../members/manage";
-import { changeSheepOwner, registerSheep, type SheepRegistration } from "./commands";
+import { changeSheepOwner, registerSheep, type SheepRegistration, updateSheep } from "./commands";
 import {
   changeSheepStatus,
   markSheepFound,
@@ -457,5 +457,31 @@ describe("undoSheepStatusChange", () => {
     await expect(undoSheepStatusChange(ctx, { sheepId })).rejects.toThrow(
       "sheep.noStatusChangeToUndo",
     );
+  });
+});
+
+describe("updateSheep after a change of the Status", () => {
+  test("the birth date is not after a change of the Status", async () => {
+    const { ctx, register } = await setup();
+    const sheepId = await register({ birthDate: "2026-01-01" });
+    await changeSheepStatus(ctx, {
+      sheepIds: [sheepId],
+      status: "lost",
+      date: "2026-05-01",
+      reason: null,
+    });
+    const update = (birthDate: string) =>
+      updateSheep(ctx, {
+        sheepId,
+        tag: null,
+        name: null,
+        sex: "ewe",
+        birthDate,
+        notes: null,
+        weight: null,
+      });
+
+    await expect(update("2026-05-02")).rejects.toThrow("sheep.birthDateAfterStatusChange");
+    await update("2026-05-01");
   });
 });
