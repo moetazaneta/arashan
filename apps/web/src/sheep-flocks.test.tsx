@@ -74,7 +74,7 @@ test("a Member selects two Sheep by their checkboxes and moves them into a Flock
   expect(screen.getByText("Выбрано: 2")).toBeTruthy();
 
   const dialog = await moveSelected(user, "Верхнее");
-  expect(within(dialog).getByRole("heading").textContent).toBe("Перевести в стадо 2 баранов");
+  expect(within(dialog).getByRole("heading").textContent).toBe("Перевести в стадо 2 барана");
   await user.click(within(dialog).getByRole("button", { name: "Перевести" }));
 
   expect(await screen.findByText("Переведено баранов: 2")).toBeTruthy();

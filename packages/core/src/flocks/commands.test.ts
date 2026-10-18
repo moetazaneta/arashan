@@ -1092,6 +1092,27 @@ describe("moveSheep", () => {
     expect(store.flockMoves.at(-1)?.date).toBe("2026-10-19");
   });
 
+  test("a Sheep that is not Active fails a move out of all Flocks too", async () => {
+    const { store, ctx, register, flock } = await setup();
+    const inFlock = await register();
+    await moveSheep(ctx, { sheepIds: [inFlock], flockId: await flock(), date: "2026-10-01" });
+    const sold = await register();
+    sheepOf(store, sold).status = "sold";
+    const moves = copy(store.flockMoves);
+    const audit = copy(store.audit);
+
+    await expect(
+      moveSheep(ctx, { sheepIds: [inFlock, sold], flockId: null, date: "2026-10-18" }),
+    ).rejects.toMatchObject({ code: "sheep.notActive" });
+    await expect(
+      moveSheep(ctx, { sheepIds: [sold], flockId: null, date: "2026-10-18" }),
+    ).rejects.toMatchObject({ code: "sheep.notActive" });
+
+    expect(store.flockMoves).toEqual(moves);
+    expect(store.audit).toEqual(audit);
+    expect(sheepOf(store, inFlock).flockId).not.toBeNull();
+  });
+
   test("if one Sheep cannot move, no Sheep moves", async () => {
     const { store, ctx, register, flock } = await setup();
     const flockId = await flock();

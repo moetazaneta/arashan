@@ -115,6 +115,7 @@ const fieldCodes = {
     "sheep.birthDateRequired",
     "sheep.birthDateInFuture",
     "sheep.birthDateAfterOwnerChange",
+    "sheep.birthDateAfterFlockMove",
   ],
   owner: ["sheep.ownerNotMember"],
   weight: ["sheep.weightInvalid", "sheep.weighingDateInvalid"],
