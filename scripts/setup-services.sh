@@ -280,6 +280,11 @@ step "Copy the Frontend API URL that the page shows (https://<words>.clerk.accou
 ask_valid CLERK_JWT_ISSUER_DOMAIN '^https://[^/[:space:]]+$' "Paste the Frontend API URL:" \
   "Expected https://<host> with no path and no trailing slash."
 write_env CLERK_JWT_ISSUER_DOMAIN "$CLERK_JWT_ISSUER_DOMAIN"
+say "Convex reads the username of a User from the session token. By default the token has none."
+open_url "https://dashboard.clerk.com/last-active?path=sessions"
+step "Sessions → 'Customize session token' → Edit. Keep the claims that are there, such as aud."
+step 'Add the claim "preferred_username": "{{user.username}}", then click Save.'
+pause "Press Enter when the session token has the claim."
 
 stage "Clerk: API keys"
 open_url "https://dashboard.clerk.com/last-active?path=api-keys"

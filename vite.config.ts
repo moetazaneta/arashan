@@ -63,6 +63,11 @@ export default defineConfig({
                   message:
                     "A view uses only the hooks of @arashan/client, never the backend (ADR 0006).",
                 },
+                {
+                  group: ["@clerk/*"],
+                  message:
+                    "A view gets the session and the sign-in form from @arashan/client, never from Clerk (ADR 0003, ADR 0006).",
+                },
               ],
             },
           ],

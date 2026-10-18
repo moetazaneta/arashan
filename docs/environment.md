@@ -35,7 +35,7 @@ Before you start, you need:
 | ---------------------------- | ------ | --------------------------------------------------- | --------------------------------------------------- |
 | `VITE_CONVEX_URL`            | no     | Vercel (production, preview); local env file        | The web app: the Convex client                      |
 | `VITE_CLERK_PUBLISHABLE_KEY` | no     | Vercel (production, preview); GitHub variable; `apps/web/.env.local` | The web app: `ClerkProvider`         |
-| `CLERK_JWT_ISSUER_DOMAIN`    | no     | Convex (dev, prod); GitHub variable                 | `convex/auth.config.ts`: validates the Clerk JWT    |
+| `CLERK_JWT_ISSUER_DOMAIN`    | no     | Convex (dev, prod, local); GitHub variable          | `convex/auth.config.ts`: validates the Clerk JWT    |
 | `CLERK_SECRET_KEY`           | yes    | Convex (dev, prod); GitHub secret                   | Convex actions that call the Clerk Backend API      |
 | `CONVEX_DEPLOY_KEY`          | yes    | GitHub secret                                       | `convex deploy` to the production deployment        |
 | `VERCEL_TOKEN`               | yes    | GitHub secret                                       | The Deploy workflow: the Vercel CLI                 |
@@ -52,7 +52,17 @@ Values for each environment:
   development Convex deployment. Previews do not get their own Convex deployment, and CI pushes no
   functions to it.
 - **Local**: `VITE_CLERK_PUBLISHABLE_KEY` is in `apps/web/.env.local`, because Vite reads the env
-  files from the app's root. `VITE_CONVEX_URL` comes from the local Convex deployment.
+  files from the app's root. `VITE_CONVEX_URL` comes from the local Convex deployment. A new
+  checkout or worktree has no `apps/web/.env.local`: copy it from another checkout, or run the
+  wizard. Without the key, the app stops with an error.
+- **Local deployment**: `vp dev` sets `CLERK_JWT_ISSUER_DOMAIN` on a local Convex deployment that
+  does not have it. It takes the value from `VITE_CLERK_PUBLISHABLE_KEY`, which encodes the Frontend
+  API host (`pk_test_` + base64 of `<host>$`).
+- **CI**: the backend job pushes the functions to a new local deployment. It sets
+  `CLERK_JWT_ISSUER_DOMAIN` to a placeholder, because a push does not contact the issuer.
+
+Each deployment needs `CLERK_JWT_ISSUER_DOMAIN`: `convex/auth.config.ts` reads it, and Convex refuses
+each push to a deployment that does not have it.
 
 Variables with the `VITE_` prefix go into the browser bundle. Never give a secret this prefix.
 
@@ -66,6 +76,27 @@ Variables with the `VITE_` prefix go into the browser bundle. Never give a secre
 - The Clerk **Convex integration** is on. Convex accepts the Clerk session token, and
   `convex/auth.config.ts` uses `CLERK_JWT_ISSUER_DOMAIN` with `applicationID: "convex"`. There is
   no custom JWT template.
+- **The session token carries the username.** By default it has none. In the Clerk dashboard, open
+  Sessions → Customize session token, keep the claims that are there (such as `aud`), and add
+  `"preferred_username": "{{user.username}}"`. Convex gives it as `identity.preferredUsername`.
+  Without it, each log-in fails with `user.usernameMissing`.
+- There is no open sign-up for a Farm: anybody can make an account, but a User has no Farm until a
+  Member's invite link adds the User (docs/architecture.md, "Invites").
+
+## The Operator
+
+The Operator makes the Farms (screen «Фермы»). The flag is not a Role in a Farm, and only the CLI
+sets it, for a User who logged in at least once:
+
+```sh
+# The local deployment.
+vp -C packages/backend exec convex run users:setOperator '{"username": "<username>"}'
+# The production deployment: with the production deploy key in CONVEX_DEPLOY_KEY.
+vp -C packages/backend exec convex run --prod users:setOperator '{"username": "<username>"}'
+```
+
+`'{"username": "<username>", "isOperator": false}'` takes the flag away. The command fails if no User
+or more than one User has the username.
 
 ## Deployment
 

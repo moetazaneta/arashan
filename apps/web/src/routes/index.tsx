@@ -1,24 +1,38 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Trans } from "@lingui/react/macro";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { FenceIcon } from "lucide-react";
 
-import { AppVersion } from "@/components/app-version";
-import { LocaleSwitch } from "@/components/locale-switch";
-import { SamplesCard } from "@/components/samples-card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { farmToOpen, useViewer } from "@/viewer";
 
 export const Route = createFileRoute("/")({
   component: Home,
 });
 
+/** Opens the Farm that the User used last. A User who is a Member of no Farm sees only a message. */
 function Home() {
+  const farmId = farmToOpen(useViewer());
+  if (farmId !== null) return <Navigate to="/farms/$farmId" params={{ farmId }} replace />;
+
   return (
-    <main className="mx-auto flex min-h-svh max-w-xl flex-col gap-6 p-6">
-      <header className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">Arashan</h1>
-          <AppVersion />
-        </div>
-        <LocaleSwitch />
-      </header>
-      <SamplesCard />
-    </main>
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <FenceIcon />
+        </EmptyMedia>
+        <EmptyTitle>
+          <Trans>У вас пока нет фермы</Trans>
+        </EmptyTitle>
+        <EmptyDescription>
+          <Trans>Попросите администратора фермы прислать ссылку-приглашение.</Trans>
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }

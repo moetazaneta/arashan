@@ -67,17 +67,23 @@ jobs:
       - name: Install locked dependencies
         run: vp install --frozen-lockfile
 
-      # With no account and no deployment, `convex dev --once` makes an anonymous local deployment.
-      # It downloads the Convex backend, type checks the functions, pushes them and the schema to it,
-      # and writes convex/_generated. The download of the backend sometimes fails, so the step tries
-      # three times.
+      # With no account and no deployment, `convex init` makes an anonymous local deployment and
+      # downloads the Convex backend. convex/auth.config.ts reads CLERK_JWT_ISSUER_DOMAIN, and a push
+      # fails until the deployment has it, so the step sets it before `convex dev --once` type checks
+      # the functions, pushes them and the schema, and writes convex/_generated. The push does not
+      # contact the issuer, so a placeholder is enough. The download of the backend sometimes fails,
+      # so the step tries three times.
       - name: Push the functions
         working-directory: packages/backend
         env:
           CONVEX_AGENT_MODE: anonymous
+          CLERK_JWT_ISSUER_DOMAIN: https://clerk.ci.invalid
         run: |
           for attempt in 1 2 3; do
-            vp exec convex dev --once && exit 0
+            vp exec convex init &&
+              vp exec convex env set CLERK_JWT_ISSUER_DOMAIN "$CLERK_JWT_ISSUER_DOMAIN" &&
+              vp exec convex dev --once &&
+              exit 0
             sleep 10
           done
           exit 1

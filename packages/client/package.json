@@ -10,6 +10,9 @@
   "dependencies": {
     "@arashan/backend": "workspace:*",
     "@arashan/core": "workspace:*",
+    "@clerk/localizations": "catalog:",
+    "@clerk/react": "catalog:",
+    "@clerk/ui": "catalog:",
     "@convex-dev/react-query": "catalog:",
     "@tanstack/react-query": "catalog:",
     "convex": "catalog:"

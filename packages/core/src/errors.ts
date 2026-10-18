@@ -4,10 +4,28 @@
  * if a code has no message. To add an error, add its code here and its message in the web app.
  */
 export const errorCodes = [
-  // The sample module.
-  "sample.nameRequired",
-  "sample.nameTaken",
-  "sample.notFound",
+  // Who makes the request.
+  "auth.signedOut",
+  "auth.operatorOnly",
+  "access.denied",
+  // Users.
+  "user.notRegistered",
+  "user.usernameMissing",
+  "user.notFound",
+  "user.usernameAmbiguous",
+  // Farms.
+  "farm.notMember",
+  "farm.notFound",
+  "farm.hasMembers",
+  "farm.nameRequired",
+  "farm.currencyInvalid",
+  "farm.timeZoneInvalid",
+  "farm.lambAgeInvalid",
+  // Invites.
+  "invite.notFound",
+  "invite.used",
+  "invite.expired",
+  "invite.alreadyMember",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

@@ -28,6 +28,10 @@ _Avoid_: Holder
 **Operator** (рус. оператор):
 The person who runs the app for all Farms. Only the Operator creates a Farm.
 
+**Invite** (рус. приглашение):
+A one-time link that makes a logged-in User a Member of one Farm, with one Role. It works for 7 days after it is made. The first Invite of a Farm comes from the Operator and gives the Role Admin.
+_Avoid_: Invitation code, ссылка (when you mean the Invite)
+
 **Shepherd** (рус. чабан):
 A hired person who herds one or more Flocks. A Shepherd is not a User and cannot log in.
 _Avoid_: Worker, hired worker, employee, наёмный
@@ -156,3 +160,7 @@ A record that is correct but not in use now, for example a Shepherd who left. Hi
 
 **Deleted** (рус. удалён):
 A record that someone made by mistake. Reports do not show Deleted records, but a Member can restore them. The app never erases a record.
+
+**Audit entry** (рус. запись журнала):
+A record of one change: who made it, when, with which command, and to which record. The audit log keeps all audit entries, and nothing changes or erases them. The history of a record shows its audit entries.
+_Avoid_: Log line, event

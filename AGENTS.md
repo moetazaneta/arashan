@@ -76,13 +76,18 @@ how a query and a command go through them, and how to add a slice. Read it befor
 | `packages/core` (`@arashan/core`)       | The business rules in pure TypeScript: no Convex, no React, no dependencies.        |
 
 - **The layer boundaries are lint rules.** A view in `apps/web/src` imports only `@arashan/client`
-  and the types of `@arashan/core`, never Convex or `@arashan/backend` (ADR 0006). The core imports
-  no framework and no other layer (ADR 0001). Rules go in the core, never in a Convex function or a
-  view.
+  and the types of `@arashan/core`, never Convex, Clerk or `@arashan/backend` (ADR 0006). The core
+  imports no framework and no other layer (ADR 0001). Rules go in the core, never in a Convex
+  function or a view.
 - **The core gives error codes, never text.** A new code goes in `packages/core/src/errors.ts`, and
   its message in `apps/web/src/errors.ts`.
 - **No command erases a record** (ADR 0005). Each table spreads `deletable`, and each read of a
-  repository hides the Deleted records.
+  repository hides the Deleted records. The exception is the append-only `auditLog`.
+- **Each request of a Farm goes through `farmQuery` or `farmCommand`**, which check the Membership
+  with `enterFarm` of the core and bind the repositories to the Farm. Each command of a Farm calls
+  `authorize` with a row of the permission matrix (`packages/core/src/access/permissions.ts`).
+- **Each command that writes a record appends an audit entry.** The command builders fail a command
+  that does not. See "The audit log" in [`docs/architecture.md`](./docs/architecture.md).
 
 - **An app holds only what is particular to it**, such as its screens. Code that is not part of
   one app goes in a package under `packages/`, named `@arashan/<name>`, even while only one app
