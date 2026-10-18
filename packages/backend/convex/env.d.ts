@@ -15,6 +15,12 @@ declare class TextEncoder {
 
 declare function btoa(data: string): string;
 
+/** A file in memory, as a test puts it into the file storage (`ctx.storage.store`). */
+declare class Blob {
+  constructor(parts: (string | Uint8Array)[]);
+  readonly size: number;
+}
+
 /** The Fetch API of the runtime, as the call to the Clerk Backend API uses it. */
 declare function fetch(
   url: string,

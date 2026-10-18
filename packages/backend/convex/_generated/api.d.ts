@@ -9,6 +9,7 @@
  */
 
 import type * as app from "../app.js";
+import type * as breeds from "../breeds.js";
 import type * as farms from "../farms.js";
 import type * as invites from "../invites.js";
 import type * as lib_clerk from "../lib/clerk.js";
@@ -28,6 +29,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   app: typeof app;
+  breeds: typeof breeds;
   farms: typeof farms;
   invites: typeof invites;
   "lib/clerk": typeof lib_clerk;
