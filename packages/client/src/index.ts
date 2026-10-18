@@ -45,12 +45,15 @@ export { SignInForm, useSession, useSignOut } from "./session";
 export type { Session } from "./session-state";
 export {
   useChangeSheepOwner,
+  useChangeSheepStatus,
   useDeleteSheep,
+  useMarkSheepFound,
   useRegisterSheep,
   useSheep,
   useSheepHistory,
   useSheepList,
   useSheepOwners,
+  useUndoSheepStatusChange,
   useUpdateSheep,
   type SheepCardData,
   type SheepListItem,
@@ -60,6 +63,7 @@ export {
 export {
   dateAt,
   defaultLambAgeMonths,
+  exitStatuses,
   inviteLifetimeMs,
   maxLambAgeMonths,
   maxNameLength,
@@ -70,6 +74,8 @@ export {
   maxSheepNotesLength,
   maxTagLength,
   maxSheepPerMove,
+  maxSheepPerStatusChange,
+  maxStatusReasonLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
