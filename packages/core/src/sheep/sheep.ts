@@ -1,7 +1,15 @@
 import { addMonths, type CalendarDate } from "../dates";
 import type { FarmSettings } from "../farms/farm";
 import type { FlockMove } from "../flocks/flock";
-import type { FarmId, FlockId, FlockMoveId, MembershipId, OwnerChangeId, SheepId } from "../ids";
+import type {
+  FarmId,
+  FlockId,
+  FlockMoveId,
+  MembershipId,
+  OwnerChangeId,
+  SheepId,
+  StatusChangeId,
+} from "../ids";
 
 /** The sex of a Sheep: a Ram or an Ewe. */
 export const sexes = ["ram", "ewe"] as const;
@@ -17,6 +25,13 @@ export type Origin = (typeof origins)[number];
 /** The state of a Sheep in its life on the Farm. Only an Active Sheep is on the Farm now. */
 export const sheepStatuses = ["active", "sold", "slaughtered", "dead", "lost"] as const;
 export type SheepStatus = (typeof sheepStatuses)[number];
+
+/**
+ * The Statuses that a Member gives to an Active Sheep when it leaves the Farm without a Sale.
+ * Slaughtered and Dead are final; a Lost Sheep can come back (it was found). Sold comes with a Sale.
+ */
+export const exitStatuses = ["slaughtered", "dead", "lost"] as const;
+export type ExitStatus = (typeof exitStatuses)[number];
 
 /** The weight of a Sheep in kilograms, and the date of the weighing. */
 export interface Weighing {
@@ -64,10 +79,37 @@ export interface OwnerChange {
   at: number;
 }
 
+/**
+ * A change of the Status of a Sheep, on a date: the Sheep stopped being Active, or a Lost Sheep came
+ * back. The changes of a Sheep are the history of its Status. A wrong change is undone: it becomes
+ * Deleted, and the Sheep gets its Status from before.
+ */
+export interface StatusChange {
+  id: StatusChangeId;
+  sheepId: SheepId;
+  /** The Status before the change. */
+  from: SheepStatus;
+  /** The Status after the change. */
+  to: SheepStatus;
+  /** The date when it happened, for example the day when the Sheep died. */
+  date: CalendarDate;
+  /** Why, in the words of the Member, or null. */
+  reason: string | null;
+  /**
+   * The move out of all Flocks that the change made: a Sheep that stops being Active leaves its
+   * Flock on that date. Null if the Sheep was in no Flock, and for a Lost Sheep that came back.
+   */
+  flockMoveId: FlockMoveId | null;
+  /** When a Member recorded the change, in milliseconds since the Unix epoch. */
+  at: number;
+}
+
 /** The longest Tag, name and notes. */
 export const maxTagLength = 30;
 export const maxSheepNameLength = 60;
 export const maxSheepNotesLength = 2000;
+/** The longest reason of a change of the Status. */
+export const maxStatusReasonLength = 500;
 /** The heaviest weight in kilograms that the app accepts. */
 export const maxWeightKg = 300;
 
@@ -153,6 +195,8 @@ export interface FarmSheepReader {
   listInFlock(flockId: FlockId): Promise<Sheep[]>;
   /** The moves of the Sheep between Flocks, in the order in which a Member recorded them. */
   flockMoves(sheepId: SheepId): Promise<FlockMove[]>;
+  /** The changes of the Status of the Sheep, in the order in which a Member recorded them. */
+  statusChanges(sheepId: SheepId): Promise<StatusChange[]>;
 }
 
 /** The fields of a Sheep that a command writes. */
@@ -167,6 +211,9 @@ export interface FarmSheepRepository extends FarmSheepReader {
   insertFlockMove(move: Omit<FlockMove, "id">): Promise<FlockMoveId>;
   /** Makes a move Deleted: a Member undid it. */
   markFlockMoveDeleted(id: FlockMoveId, deletedAt: number): Promise<void>;
+  insertStatusChange(change: Omit<StatusChange, "id">): Promise<StatusChangeId>;
+  /** Makes a change of the Status Deleted: a Member undid it. */
+  markStatusChangeDeleted(id: StatusChangeId, deletedAt: number): Promise<void>;
   /** Makes the Sheep Deleted. A Member can restore it later. */
   markDeleted(id: SheepId, deletedAt: number): Promise<void>;
 }

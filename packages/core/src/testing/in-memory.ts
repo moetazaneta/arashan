@@ -31,13 +31,20 @@ import type {
   PasswordResetId,
   SheepId,
   ShepherdAssignmentId,
+  StatusChangeId,
   ShepherdId,
   UserId,
 } from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type { Membership, MembershipRepository } from "../members/membership";
 import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
-import { type FarmSheepRepository, type OwnerChange, type Sheep, tagKey } from "../sheep/sheep";
+import {
+  type FarmSheepRepository,
+  type OwnerChange,
+  type Sheep,
+  type StatusChange,
+  tagKey,
+} from "../sheep/sheep";
 import type { Identity, User, UserRepository } from "../users/user";
 
 // The repositories in memory, for the tests of the core. They hide Deleted records, as the real ones
@@ -54,6 +61,7 @@ export class InMemoryStore {
   readonly sheep: Stored<Sheep>[] = [];
   readonly ownerChanges: Stored<OwnerChange>[] = [];
   readonly flockMoves: Stored<FlockMove>[] = [];
+  readonly statusChanges: Stored<StatusChange>[] = [];
   readonly locations: Stored<Location>[] = [];
   readonly shepherds: Stored<Shepherd>[] = [];
   readonly flocks: Stored<Flock>[] = [];
@@ -271,6 +279,10 @@ export class InMemoryStore {
         this.flockMoves
           .filter((m) => m.sheepId === sheepId && m.deletedAt === undefined)
           .map(withoutDeletedAt),
+      statusChanges: async (sheepId) =>
+        this.statusChanges
+          .filter((c) => c.sheepId === sheepId && c.deletedAt === undefined)
+          .map(withoutDeletedAt),
       insert: async (fields) => {
         const id = this.id("Sheep") as SheepId;
         this.sheep.push({ id, farmId, ...fields });
@@ -292,6 +304,15 @@ export class InMemoryStore {
       },
       markFlockMoveDeleted: async (id, deletedAt) => {
         const found = this.flockMoves.find((m) => m.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
+      insertStatusChange: async (change) => {
+        const id = this.id("StatusChange") as StatusChangeId;
+        this.statusChanges.push({ id, ...change });
+        return id;
+      },
+      markStatusChangeDeleted: async (id, deletedAt) => {
+        const found = this.statusChanges.find((c) => c.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
       },
       markDeleted: async (id, deletedAt) => {

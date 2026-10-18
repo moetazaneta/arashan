@@ -122,6 +122,7 @@ export type {
   SheepId,
   ShepherdAssignmentId,
   ShepherdId,
+  StatusChangeId,
   UserId,
 } from "./ids";
 export { acceptInvite, previewInvite, type NewInvite } from "./members/commands";
@@ -174,6 +175,14 @@ export {
   type SheepUpdate,
 } from "./sheep/commands";
 export {
+  changeSheepStatus,
+  markSheepFound,
+  maxSheepPerStatusChange,
+  recordStatusChange,
+  undoSheepStatusChange,
+  type ExitInput,
+} from "./sheep/lifecycle";
+export {
   getSheep,
   getSheepHistory,
   listSheep,
@@ -184,11 +193,14 @@ export {
   type SheepCard,
   type SheepHistoryEntry,
   type SheepRow,
+  type StatusChangeRow,
 } from "./sheep/queries";
 export {
+  exitStatuses,
   isLamb,
   maxSheepNameLength,
   maxSheepNotesLength,
+  maxStatusReasonLength,
   maxTagLength,
   maxWeightKg,
   origins,
@@ -203,7 +215,9 @@ export {
   type Sex,
   type Sheep,
   type SheepFields,
+  type ExitStatus,
   type SheepStatus,
+  type StatusChange,
   type Weighing,
 } from "./sheep/sheep";
 export { getViewer, registerUser, setOperator, type Viewer } from "./users/commands";

@@ -11,7 +11,7 @@ import {
   type SheepFlockStay,
   sheepFlockStays,
 } from "../flocks/queries";
-import type { FlockId, MembershipId, SheepId, UserId } from "../ids";
+import type { FlockId, MembershipId, SheepId, StatusChangeId, UserId } from "../ids";
 import type { Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
 
 // The queries of the Sheep registry: the table, the card, the history, and the Owners to choose from.
@@ -56,10 +56,23 @@ export interface OwnerPeriod {
   since: CalendarDate | null;
 }
 
-/** A Sheep as its card shows it: the fields, the Owners and the stays in Flocks, the newest first. */
+/** One change of the Status of a Sheep, as its card shows it. */
+export interface StatusChangeRow {
+  id: StatusChangeId;
+  from: SheepStatus;
+  to: SheepStatus;
+  date: CalendarDate;
+  reason: string | null;
+}
+
+/**
+ * A Sheep as its card shows it: the fields, the Owners, the stays in Flocks and the changes of the
+ * Status, the newest first.
+ */
 export interface SheepCard extends SheepRow {
   owners: OwnerPeriod[];
   flocks: SheepFlockStay[];
+  statusChanges: StatusChangeRow[];
 }
 
 /** One audit entry of a Sheep, for the tab «История». */
@@ -103,7 +116,15 @@ export async function getSheep(
   for (const change of changes) {
     periods.push({ owner: ownerOf(owners, change.ownerId), since: change.date });
   }
-  return { ...row, owners: periods.reverse(), flocks: await sheepFlockStays(ctx, sheep.id) };
+  const statusChanges = (await ctx.repos.sheep.statusChanges(sheep.id))
+    .map(({ id, from, to, date, reason }) => ({ id, from, to, date, reason }))
+    .reverse();
+  return {
+    ...row,
+    owners: periods.reverse(),
+    flocks: await sheepFlockStays(ctx, sheep.id),
+    statusChanges,
+  };
 }
 
 /** The audit entries of a Sheep: who changed it and when, the newest first. */

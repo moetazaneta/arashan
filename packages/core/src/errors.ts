@@ -54,6 +54,12 @@ export const errorCodes = [
   "sheep.moveDateInvalid",
   "sheep.tooManyToMove",
   "sheep.noMoveToUndo",
+  "sheep.notLost",
+  "sheep.statusDateInvalid",
+  "sheep.reasonTooLong",
+  "sheep.tooManyToChangeStatus",
+  "sheep.noStatusChangeToUndo",
+  "sheep.inFlock",
   // Locations.
   "location.notFound",
   "location.nameRequired",

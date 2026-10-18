@@ -26,6 +26,7 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "sheep.changeOwner": { admin: true, editor: true },
   "sheep.delete": { admin: true, editor: true },
   "sheep.move": { admin: true, editor: true },
+  "sheep.changeStatus": { admin: true, editor: true },
   "flock.view": { admin: true, editor: true },
   "flock.create": { admin: true, editor: true },
   "flock.update": { admin: true, editor: true },
