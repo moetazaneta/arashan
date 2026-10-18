@@ -11,9 +11,21 @@ msgstr ""
 msgid "{kg} кг, взвешен {weighed}"
 msgstr "{kg} кг, взвешен {weighed}"
 
+#: src/components/sheep/sheep-details.tsx
+msgid "{label}, бонитировка {graded}"
+msgstr "{label}, бонитировка {graded}"
+
 #: src/routes/farms/$farmId/index.tsx
 msgid "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
 msgstr "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
+
+#: src/components/sheep/sheep-details.tsx
+msgid "{number}, выдан {issued}"
+msgstr "{number}, выдан {issued}"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "PDF или фото: JPEG, PNG, WebP."
+msgstr "PDF или фото: JPEG, PNG, WebP."
 
 #: src/routes/invite/$token.tsx
 msgid "администратор"
@@ -44,6 +56,27 @@ msgstr "Администратор фермы сможет потом измен
 msgid "Активен"
 msgstr "Активен"
 
+#: src/components/sheep/composition.tsx
+msgid "Арашан"
+msgstr "Арашан"
+
+#: src/errors.ts
+msgid "Арашан — основная порода фермы, её нельзя изменить."
+msgstr "Арашан — основная порода фермы, её нельзя изменить."
+
+#: src/components/sheep/pedigree-tree.tsx
+msgid "арашан {share}"
+msgstr "арашан {share}"
+
+#: src/components/sheep/sheep-table.tsx
+msgid "Арашан, %"
+msgstr "Арашан, %"
+
+#: src/components/sheep/pedigree-tree.tsx
+msgctxt "pedigree"
+msgid "Баран"
+msgstr "Баран"
+
 #: src/components/sheep/sheep-form.tsx
 msgid "Баран добавлен: <0>{addedLabel}</0>"
 msgstr "Баран добавлен: <0>{addedLabel}</0>"
@@ -51,6 +84,10 @@ msgstr "Баран добавлен: <0>{addedLabel}</0>"
 #: src/components/farm-settings-fields.tsx
 msgid "Баран младше этого возраста — ягнёнок."
 msgstr "Баран младше этого возраста — ягнёнок."
+
+#: src/errors.ts
+msgid "Баран не может быть своим предком."
+msgstr "Баран не может быть своим предком."
 
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "Баран пропадёт из списков. Его можно будет восстановить."
@@ -68,6 +105,7 @@ msgid "Бараны"
 msgstr "Бараны"
 
 #: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/sheep-ref.tsx
 msgid "без бирки"
 msgstr "без бирки"
 
@@ -81,6 +119,10 @@ msgstr "Без бирки"
 msgid "Бирка"
 msgstr "Бирка"
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Бирка или кличка"
+msgstr "Бирка или кличка"
+
 #: src/errors.ts
 msgid "Бирка не длиннее {maxTagLength} символов."
 msgstr "Бирка не длиннее {maxTagLength} символов."
@@ -88,6 +130,18 @@ msgstr "Бирка не длиннее {maxTagLength} символов."
 #: src/routes/farms/$farmId/members.tsx
 msgid "Бывшие участники"
 msgstr "Бывшие участники"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "В архив"
+msgstr "В архив"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "в архиве"
+msgstr "в архиве"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "В архиве"
+msgstr "В архиве"
 
 #: src/errors.ts
 msgid "В ферме должен остаться хотя бы один администратор. Сначала назначьте администратором другого участника."
@@ -111,6 +165,10 @@ msgid "Введите вес в килограммах, больше нуля и
 msgstr "Введите вес в килограммах, больше нуля и не больше {maxWeightKg}."
 
 #: src/errors.ts
+msgid "Введите дату выдачи ветпаспорта: не в будущем и не раньше рождения."
+msgstr "Введите дату выдачи ветпаспорта: не в будущем и не раньше рождения."
+
+#: src/errors.ts
 msgid "Введите дату полностью: день, месяц и год."
 msgstr "Введите дату полностью: день, месяц и год."
 
@@ -119,12 +177,24 @@ msgid "Введите дату рождения. Если её никто не �
 msgstr "Введите дату рождения. Если её никто не знает, запишите барана как начальный ввод."
 
 #: src/errors.ts
+msgid "Введите название породы."
+msgstr "Введите название породы."
+
+#: src/errors.ts
 msgid "Введите название фермы."
 msgstr "Введите название фермы."
 
 #: src/errors.ts
+msgid "Введите номер ветпаспорта."
+msgstr "Введите номер ветпаспорта."
+
+#: src/errors.ts
 msgid "Введите целое число месяцев от {minLambAgeMonths} до {maxLambAgeMonths}."
 msgstr "Введите целое число месяцев от {minLambAgeMonths} до {maxLambAgeMonths}."
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Вернуть из архива"
+msgstr "Вернуть из архива"
 
 #: src/components/app-version.tsx
 msgid "Версия {version}"
@@ -138,6 +208,19 @@ msgstr "Вес"
 #: src/components/sheep/sheep-table.tsx
 msgid "Вес, кг"
 msgstr "Вес, кг"
+
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "Ветпаспорт"
+msgstr "Ветпаспорт"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Ветпаспорт может быть только у барана со 100 % арашан."
+msgstr "Ветпаспорт может быть только у барана со 100 % арашан."
+
+#: src/errors.ts
+msgid "Ветпаспорт может быть только у барана со 100 % арашан. Укажите состав породы."
+msgstr "Ветпаспорт может быть только у барана со 100 % арашан. Укажите состав породы."
 
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
@@ -153,9 +236,25 @@ msgstr "Владелец должен быть участником фермы. 
 msgid "Владельцы"
 msgstr "Владельцы"
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/pedigree-tree.tsx
+#: src/components/sheep/sheep-ref.tsx
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "внешний"
+msgstr "внешний"
+
 #: src/components/sheep/labels.ts
+#: src/components/sheep/sheep-form.tsx
 msgid "Внешний"
 msgstr "Внешний"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Внешний баран добавлен: <0>{addedLabel}</0>"
+msgstr "Внешний баран добавлен: <0>{addedLabel}</0>"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Внешний баран никогда не был на ферме: например, отец с другой фермы. Его записывают только как родителя."
+msgstr "Внешний баран никогда не был на ферме: например, отец с другой фермы. Его записывают только как родителя."
 
 #: src/routes/farms/$farmId/index.tsx
 msgid "Возраст ягнёнка"
@@ -173,6 +272,10 @@ msgstr "Войдите, чтобы открыть записи вашей фер
 msgid "Войдите, чтобы продолжить."
 msgstr "Войдите, чтобы продолжить."
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Всё неизвестное — арашан"
+msgstr "Всё неизвестное — арашан"
+
 #: src/routes/operator/farms.tsx
 msgid "Все фермы"
 msgstr "Все фермы"
@@ -180,6 +283,11 @@ msgstr "Все фермы"
 #: src/routes/invite/$token.tsx
 msgid "Вступить в ферму"
 msgstr "Вступить в ферму"
+
+#: src/components/sheep/labels.ts
+msgctxt "grade"
+msgid "Второй"
+msgstr "Второй"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Вы"
@@ -247,6 +355,14 @@ msgstr "Готово"
 msgid "Да"
 msgstr "Да"
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Дата бонитировки"
+msgstr "Дата бонитировки"
+
+#: src/errors.ts
+msgid "Дата бонитировки не может быть в будущем или раньше рождения."
+msgstr "Дата бонитировки не может быть в будущем или раньше рождения."
+
 #: src/components/sheep/sheep-form.tsx
 msgid "Дата взвешивания"
 msgstr "Дата взвешивания"
@@ -254,6 +370,10 @@ msgstr "Дата взвешивания"
 #: src/errors.ts
 msgid "Дата взвешивания не может быть в будущем или раньше рождения."
 msgstr "Дата взвешивания не может быть в будущем или раньше рождения."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Дата выдачи"
+msgstr "Дата выдачи"
 
 #: src/errors.ts
 msgid "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
@@ -273,15 +393,47 @@ msgstr "Дата рождения"
 msgid "Дата рождения не может быть в будущем."
 msgstr "Дата рождения не может быть в будущем."
 
+#: src/components/sheep/pedigree-tree.tsx
+msgid "Деды"
+msgstr "Деды"
+
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Действия"
 msgstr "Действия"
 
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Действия с породой {name}"
+msgstr "Действия с породой {name}"
+
+#: src/components/sheep/sheep-details.tsx
+msgid "Дети"
+msgstr "Дети"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Добавить"
+msgstr "Добавить"
+
 #: src/components/sheep/sheep-form.tsx
 #: src/routes/farms/$farmId/sheep/index.tsx
 msgid "Добавить барана"
 msgstr "Добавить барана"
+
+#: src/components/sheep/sheep-form.tsx
+msgid "Добавить внешнего барана"
+msgstr "Добавить внешнего барана"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Добавить породу"
+msgstr "Добавить породу"
+
+#: src/errors.ts
+msgid "Доли пород больше, чем можно указать вручную: остальное дают родители. Уменьшите доли."
+msgstr "Доли пород больше, чем можно указать вручную: остальное дают родители. Уменьшите доли."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Доля, %"
+msgstr "Доля, %"
 
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
@@ -291,6 +443,10 @@ msgstr "Дополнительно"
 #: src/components/sheep/sheep-form.tsx
 msgid "Если дату никто не знает, оставьте поле пустым."
 msgstr "Если дату никто не знает, оставьте поле пустым."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Если родителя нет в списке, добавьте его как внешнего барана: «Добавить барана» → «Внешний»."
+msgstr "Если родителя нет в списке, добавьте его как внешнего барана: «Добавить барана» → «Внешний»."
 
 #: src/routes/operator/farms.tsx
 msgid "Ждёт администратора"
@@ -326,6 +482,11 @@ msgstr "Заметки"
 #: src/errors.ts
 msgid "Заметки не длиннее {maxSheepNotesLength} символов. Сократите текст."
 msgstr "Заметки не длиннее {maxSheepNotesLength} символов. Сократите текст."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Записан как внешний"
+msgstr "Записан как внешний"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -398,6 +559,12 @@ msgstr "Как записать барана"
 msgid "Карточка"
 msgstr "Карточка"
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+#: src/components/sheep/sheep-table.tsx
+msgid "Класс"
+msgstr "Класс"
+
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -429,6 +596,19 @@ msgstr "Куплен"
 msgid "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 msgstr "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "Мать"
+msgstr "Мать"
+
+#: src/errors.ts
+msgid "Мать должна быть самкой."
+msgstr "Мать должна быть самкой."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Можно указать до {limitText}."
+msgstr "Можно указать до {limitText}."
+
 #: src/components/home-link.tsx
 msgid "На главную"
 msgstr "На главную"
@@ -436,6 +616,14 @@ msgstr "На главную"
 #: src/routes/operator/farms.tsx
 msgid "Название"
 msgstr "Название"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Название породы"
+msgstr "Название породы"
+
+#: src/errors.ts
+msgid "Название породы не длиннее {maxBreedNameLength} символов."
+msgstr "Название породы не длиннее {maxBreedNameLength} символов."
 
 #: src/components/farm-settings-fields.tsx
 msgid "Например, Asia/Bishkek"
@@ -471,14 +659,42 @@ msgstr "Начальный ввод"
 msgid "Не удалось войти"
 msgstr "Не удалось войти"
 
+#: src/components/sheep/pedigree-tree.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "неизвестен"
+msgstr "неизвестен"
+
+#: src/components/sheep/pedigree-tree.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "неизвестна"
+msgstr "неизвестна"
+
+#: src/components/sheep/composition.tsx
+msgid "неизвестно"
+msgstr "неизвестно"
+
 #: src/components/sheep/labels.ts
 msgctxt "history"
 msgid "Неизвестно, задан ли новый пароль"
 msgstr "Неизвестно, задан ли новый пароль"
 
 #: src/components/sheep/sheep-details.tsx
+msgctxt "value"
+msgid "нет"
+msgstr "нет"
+
+#: src/components/sheep/sheep-details.tsx
 msgid "Нет"
 msgstr "Нет"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgctxt "grade"
+msgid "Нет"
+msgstr "Нет"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Новая порода"
+msgstr "Новая порода"
 
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
@@ -514,15 +730,41 @@ msgctxt "history"
 msgid "Новый пароль не задан"
 msgstr "Новый пароль не задан"
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Номер ветпаспорта"
+msgstr "Номер ветпаспорта"
+
+#: src/errors.ts
+msgid "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
+msgstr "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
 msgstr "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "основная"
+msgstr "основная"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "От {minPasswordLength} до {maxPasswordLength} символов."
 msgstr "От {minPasswordLength} до {maxPasswordLength} символов."
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "Отец"
+msgstr "Отец"
+
+#: src/errors.ts
+msgid "Отец должен быть самцом."
+msgstr "Отец должен быть самцом."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Открыть скан"
+msgstr "Открыть скан"
+
 #: src/components/sheep/sheep-dialogs.tsx
+#: src/routes/farms/$farmId/breeds.tsx
 #: src/routes/farms/$farmId/members.tsx
 msgid "Отмена"
 msgstr "Отмена"
@@ -551,6 +793,19 @@ msgstr "Пароль должен быть длиной от {minPasswordLength}
 msgid "Пароль изменён."
 msgstr "Пароль изменён."
 
+#: src/components/sheep/labels.ts
+msgctxt "grade"
+msgid "Первый"
+msgstr "Первый"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Переименовать"
+msgstr "Переименовать"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Переименовать породу"
+msgstr "Переименовать породу"
+
 #: src/components/farm-settings-fields.tsx
 msgid "По нему приложение решает, когда начинается день."
 msgstr "По нему приложение решает, когда начинается день."
@@ -578,9 +833,56 @@ msgstr "Пользователь зарегистрирован"
 msgid "Попросите администратора фермы прислать ссылку-приглашение."
 msgstr "Попросите администратора фермы прислать ссылку-приглашение."
 
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Порода"
+msgstr "Порода"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода в архиве"
+msgstr "Порода в архиве"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода возвращена из архива"
+msgstr "Порода возвращена из архива"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода добавлена"
+msgstr "Порода добавлена"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода переименована"
+msgstr "Порода переименована"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Порода пропадёт из списка и из форм."
+msgstr "Порода пропадёт из списка и из форм."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода удалена"
+msgstr "Порода удалена"
+
+#: src/errors.ts
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Породу используют бараны: её можно только отправить в архив."
+msgstr "Породу используют бараны: её можно только отправить в архив."
+
+#: src/components/app-shell.tsx
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Породы"
+msgstr "Породы"
+
 #: src/components/sheep/labels.ts
 msgid "Потерян"
 msgstr "Потерян"
+
+#: src/components/sheep/pedigree-tree.tsx
+msgid "Прадеды"
+msgstr "Прадеды"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "при регистрации"
@@ -602,6 +904,10 @@ msgstr "Приглашение принято"
 #: src/routes/__root.tsx
 msgid "Проверьте адрес или вернитесь на главную."
 msgstr "Проверьте адрес или вернитесь на главную."
+
+#: src/errors.ts
+msgid "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
+msgstr "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
 
 #: src/components/sheep/labels.ts
 msgid "Продан"
@@ -632,6 +938,18 @@ msgstr "Редактор"
 #: src/routes/farms/$farmId/members.tsx
 msgid "Редактор ведёт все записи фермы, но не управляет участниками и настройками. Ссылка работает один раз, 7 дней."
 msgstr "Редактор ведёт все записи фермы, но не управляет участниками и настройками. Ссылка работает один раз, 7 дней."
+
+#: src/components/sheep/pedigree-tree.tsx
+msgid "Родители"
+msgstr "Родители"
+
+#: src/errors.ts
+msgid "Родитель должен родиться раньше потомка. Проверьте даты рождения."
+msgstr "Родитель должен родиться раньше потомка. Проверьте даты рождения."
+
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+msgid "Родословная"
+msgstr "Родословная"
 
 #: src/components/sheep/labels.ts
 #: src/components/sheep/sheep-form.tsx
@@ -668,6 +986,19 @@ msgstr "Самка"
 msgid "Система"
 msgstr "Система"
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "Скан"
+msgstr "Скан"
+
+#: src/errors.ts
+msgid "Скан должен быть файлом PDF, JPEG, PNG или WebP, не больше {maxScanMb} МБ."
+msgstr "Скан должен быть файлом PDF, JPEG, PNG или WebP, не больше {maxScanMb} МБ."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Скан загружается"
+msgstr "Скан загружается"
+
 #: src/components/invite-link-card.tsx
 msgid "Скопировано"
 msgstr "Скопировано"
@@ -703,7 +1034,17 @@ msgstr "Создана ссылка для редактора"
 msgid "Создать ферму"
 msgstr "Создать ферму"
 
+#: src/components/sheep/pedigree-fields.tsx
+#: src/components/sheep/sheep-details.tsx
+msgid "Состав породы"
+msgstr "Состав породы"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Состав считается по родителям."
+msgstr "Состав считается по родителям."
+
 #: src/components/sheep/sheep-form.tsx
+#: src/routes/farms/$farmId/breeds.tsx
 #: src/routes/farms/$farmId/settings.tsx
 msgid "Сохранить"
 msgstr "Сохранить"
@@ -738,6 +1079,18 @@ msgid "Столбцы"
 msgstr "Столбцы"
 
 #: src/errors.ts
+msgid "Такая порода уже есть в списке, возможно в архиве."
+msgstr "Такая порода уже есть в списке, возможно в архиве."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Такого барана нет."
+msgstr "Такого барана нет."
+
+#: src/errors.ts
+msgid "Такого барана нет. Возможно, его удалили. Выберите другого родителя."
+msgstr "Такого барана нет. Возможно, его удалили. Выберите другого родителя."
+
+#: src/errors.ts
 msgid "Такого барана нет. Возможно, его уже удалили."
 msgstr "Такого барана нет. Возможно, его уже удалили."
 
@@ -754,6 +1107,10 @@ msgid "Такого часового пояса нет."
 msgstr "Такого часового пояса нет."
 
 #: src/errors.ts
+msgid "Такой породы нет. Возможно, её удалили."
+msgstr "Такой породы нет. Возможно, её удалили."
+
+#: src/errors.ts
 msgid "Такой ссылки-приглашения нет. Проверьте, что ссылка скопирована целиком."
 msgstr "Такой ссылки-приглашения нет. Проверьте, что ссылка скопирована целиком."
 
@@ -764,6 +1121,10 @@ msgstr "Такой страницы нет"
 #: src/errors.ts
 msgid "Такой фермы нет."
 msgstr "Такой фермы нет."
+
+#: src/components/sheep/sheep-form.tsx
+msgid "У барана есть потомки, поэтому пол не меняется."
+msgstr "У барана есть потомки, поэтому пол не меняется."
 
 #: src/errors.ts
 msgid "У вас нет доступа к этой ферме."
@@ -781,6 +1142,26 @@ msgstr "У вас пока нет фермы"
 msgid "У вашей учётной записи нет имени пользователя. Выйдите и войдите по имени пользователя."
 msgstr "У вашей учётной записи нет имени пользователя. Выйдите и войдите по имени пользователя."
 
+#: src/errors.ts
+msgid "У потомка этого барана есть ветпаспорт, а после изменения он перестанет быть чистым арашаном. Сначала уберите ветпаспорт потомка."
+msgstr "У потомка этого барана есть ветпаспорт, а после изменения он перестанет быть чистым арашаном. Сначала уберите ветпаспорт потомка."
+
+#: src/errors.ts
+msgid "У этого барана есть потомки, поэтому его пол нельзя изменить."
+msgstr "У этого барана есть потомки, поэтому его пол нельзя изменить."
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Убрать ветпаспорт"
+msgstr "Убрать ветпаспорт"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Убрать породу"
+msgstr "Убрать породу"
+
+#: src/components/sheep/pedigree-fields.tsx
+msgid "Убрать скан"
+msgstr "Убрать скан"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Удалён"
 msgstr "Удалён"
@@ -790,7 +1171,16 @@ msgctxt "history"
 msgid "Удалён"
 msgstr "Удалён"
 
+#: src/components/sheep/composition.tsx
+msgid "удалённая порода"
+msgstr "удалённая порода"
+
 #: src/routes/farms/$farmId/members.tsx
+msgid "Удалить"
+msgstr "Удалить"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgctxt "breed"
 msgid "Удалить"
 msgstr "Удалить"
 
@@ -810,6 +1200,10 @@ msgstr "Удалить {username} из фермы?"
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "Удалить барана?"
 msgstr "Удалить барана?"
+
+#: src/routes/farms/$farmId/breeds.tsx
+msgid "Удалить породу {name}?"
+msgstr "Удалить породу {name}?"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участник больше не сможет открыть ферму. Его записи и история останутся."
@@ -868,9 +1262,18 @@ msgstr "Что"
 msgid "Что-то пошло не так. Попробуйте ещё раз."
 msgstr "Что-то пошло не так. Попробуйте ещё раз."
 
+#: src/components/sheep/labels.ts
+msgctxt "grade"
+msgid "Элита"
+msgstr "Элита"
+
 #: src/errors.ts
 msgid "Эта бирка уже есть у другого барана фермы. Проверьте номер."
 msgstr "Эта бирка уже есть у другого барана фермы. Проверьте номер."
+
+#: src/errors.ts
+msgid "Эта порода в архиве. Верните её из архива на странице «Породы» или выберите другую."
+msgstr "Эта порода в архиве. Верните её из архива на странице «Породы» или выберите другую."
 
 #: src/errors.ts
 msgid "Это может сделать только оператор."
@@ -887,6 +1290,10 @@ msgstr "Этого барана уже нет на ферме, у него не�
 #: src/errors.ts
 msgid "Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы."
 msgstr "Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы."
+
+#: src/errors.ts
+msgid "Этот баран — родитель других баранов, его нельзя удалить."
+msgstr "Этот баран — родитель других баранов, его нельзя удалить."
 
 #: src/errors.ts
 msgid "Этот пароль слишком простой или есть в утёкших базах. Придумайте другой."

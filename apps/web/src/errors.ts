@@ -1,7 +1,10 @@
 import type { ErrorCode } from "@arashan/core";
 import {
+  maxBreedNameLength,
   maxLambAgeMonths,
+  maxPassportNumberLength,
   maxPasswordLength,
+  maxScanBytes,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxTagLength,
@@ -13,6 +16,9 @@ import {
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
+
+/** The largest scan of a Passport, in megabytes. */
+const maxScanMb = Math.floor(maxScanBytes / (1024 * 1024));
 
 // The message for each domain error code. The type check fails if a code of the core has no message.
 const errorMessages: Record<ErrorCode, MessageDescriptor> = {
@@ -56,6 +62,29 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "sheep.notActive": msg`Этого барана уже нет на ферме, у него нельзя сменить владельца.`,
   "sheep.sameOwner": msg`Баран уже у этого владельца. Выберите другого.`,
   "sheep.ownerChangeDateInvalid": msg`Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца.`,
+  "sheep.isParent": msg`Этот баран — родитель других баранов, его нельзя удалить.`,
+  "sheep.breedsInvalid": msg`Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется.`,
+  "sheep.breedsTooLarge": msg`Доли пород больше, чем можно указать вручную: остальное дают родители. Уменьшите доли.`,
+  "sheep.gradeDateInvalid": msg`Дата бонитировки не может быть в будущем или раньше рождения.`,
+  "pedigree.parentNotFound": msg`Такого барана нет. Возможно, его удалили. Выберите другого родителя.`,
+  "pedigree.motherNotEwe": msg`Мать должна быть самкой.`,
+  "pedigree.fatherNotRam": msg`Отец должен быть самцом.`,
+  "pedigree.parentBornAfterChild": msg`Родитель должен родиться раньше потомка. Проверьте даты рождения.`,
+  "pedigree.ownAncestor": msg`Баран не может быть своим предком.`,
+  "pedigree.parentSexLocked": msg`У этого барана есть потомки, поэтому его пол нельзя изменить.`,
+  "passport.numberRequired": msg`Введите номер ветпаспорта.`,
+  "passport.numberTooLong": msg`Номер ветпаспорта не длиннее ${maxPassportNumberLength} символов.`,
+  "passport.issueDateInvalid": msg`Введите дату выдачи ветпаспорта: не в будущем и не раньше рождения.`,
+  "passport.scanInvalid": msg`Скан должен быть файлом PDF, JPEG, PNG или WebP, не больше ${maxScanMb} МБ.`,
+  "passport.notArashan": msg`Ветпаспорт может быть только у барана со 100 % арашан. Укажите состав породы.`,
+  "passport.descendantNotArashan": msg`У потомка этого барана есть ветпаспорт, а после изменения он перестанет быть чистым арашаном. Сначала уберите ветпаспорт потомка.`,
+  "breed.notFound": msg`Такой породы нет. Возможно, её удалили.`,
+  "breed.nameRequired": msg`Введите название породы.`,
+  "breed.nameTooLong": msg`Название породы не длиннее ${maxBreedNameLength} символов.`,
+  "breed.nameTaken": msg`Такая порода уже есть в списке, возможно в архиве.`,
+  "breed.inUse": msg`Породу используют бараны: её можно только отправить в архив.`,
+  "breed.arashanLocked": msg`Арашан — основная порода фермы, её нельзя изменить.`,
+  "breed.archived": msg`Эта порода в архиве. Верните её из архива на странице «Породы» или выберите другую.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;
@@ -72,6 +101,15 @@ export function useError(error: unknown): ErrorInfo | null {
   if (error === null || error === undefined) return null;
   const code = toDomainError(error)?.code ?? null;
   return { code, message: i18n._(code === null ? unknownErrorMessage : errorMessages[code]) };
+}
+
+/**
+ * The message for a domain error code, in the language of the UI: for a check that the view makes
+ * itself before it sends a command, such as the size of a file.
+ */
+export function useCodeMessage(): (code: ErrorCode) => string {
+  const { i18n } = useLingui();
+  return (code) => i18n._(errorMessages[code]);
 }
 
 /** The message for an error from a hook, in the language of the UI, or null if there is no error. */

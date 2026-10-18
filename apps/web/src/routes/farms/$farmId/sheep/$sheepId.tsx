@@ -6,12 +6,14 @@ import { ChevronLeftIcon, SearchXIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Loading } from "@/components/loading";
+import { PedigreeTree } from "@/components/sheep/pedigree-tree";
 import { ChangeOwnerDialog, DeleteSheepDialog } from "@/components/sheep/sheep-dialogs";
 import { SheepDetails } from "@/components/sheep/sheep-details";
 import { EditSheepSheet } from "@/components/sheep/sheep-form";
 import { SheepHistory } from "@/components/sheep/sheep-history";
 import { StatusCell } from "@/components/sheep/sheep-table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +23,10 @@ export const Route = createFileRoute("/farms/$farmId/sheep/$sheepId")({
   component: SheepCardPage,
 });
 
-/** The card of a Sheep: its fields, its Owners and its history, and what a Member can do to it. */
+/**
+ * The card of a Sheep: its fields, its Owners, its pedigree and its history, and what a Member can do
+ * to it. An External Sheep has a card too, but no Owner.
+ */
 function SheepCardPage() {
   const { farmId, sheepId } = Route.useParams() as { farmId: FarmId; sheepId: SheepId };
   // The layout shows this page only after the Farm loaded.
@@ -88,7 +93,9 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <Button variant="outline" onClick={() => setEditing(true)}>
             <Trans>Изменить</Trans>
           </Button>
-          {sheep.status === "active" && <ChangeOwnerDialog farm={farm} sheep={sheep} />}
+          {sheep.status === "active" && sheep.origin !== "external" && (
+            <ChangeOwnerDialog farm={farm} sheep={sheep} />
+          )}
           <DeleteSheepDialog
             farm={farm}
             sheep={sheep}
@@ -103,12 +110,18 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <TabsTrigger value="card">
             <Trans>Карточка</Trans>
           </TabsTrigger>
+          <TabsTrigger value="pedigree">
+            <Trans>Родословная</Trans>
+          </TabsTrigger>
           <TabsTrigger value="history">
             <Trans>История</Trans>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="card" className="pt-4">
           <SheepDetails farm={farm} sheep={sheep} />
+        </TabsContent>
+        <TabsContent value="pedigree" className="pt-4">
+          <PedigreeTree farm={farm} sheepId={sheep.id} />
         </TabsContent>
         <TabsContent value="history" className="pt-4">
           <SheepHistory farm={farm} sheepId={sheep.id} />
@@ -119,7 +132,10 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   );
 }
 
-/** The Tag (or «Без бирки») and the name of the Sheep, with its Status and the Lamb mark. */
+/**
+ * The Tag (or «Без бирки») and the name of the Sheep, with its Status and the Lamb mark. An External
+ * Sheep has no Status on the Farm: it shows «внешний» in its place.
+ */
 function SheepTitle({ sheep }: { sheep: SheepCardData }) {
   const { t } = useLingui();
   const title = sheep.tag ?? t`Без бирки`;
@@ -134,7 +150,13 @@ function SheepTitle({ sheep }: { sheep: SheepCardData }) {
         )}
       </h1>
       <p className="flex items-center gap-2 text-sm">
-        <StatusCell status={sheep.status} />
+        {sheep.origin === "external" ? (
+          <Badge variant="secondary">
+            <Trans>внешний</Trans>
+          </Badge>
+        ) : (
+          <StatusCell status={sheep.status} />
+        )}
         {sheep.lamb && (
           <span className="text-muted-foreground">
             · <Trans>ягнёнок</Trans>

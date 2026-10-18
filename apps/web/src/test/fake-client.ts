@@ -1,15 +1,21 @@
 import type * as Client from "@arashan/client";
 import type {
   AuditEntry,
+  Breed,
+  BreedId,
   CalendarDate,
+  ExternalSheepRegistration,
   Farm,
   FarmCommandContext,
   FarmId,
   FarmQueryContext,
   FarmRepositories,
   FarmSettings,
+  FarmBreedRepository,
   FarmSheepRepository,
   FarmSummary,
+  FileId,
+  FileStorage,
   Member,
   MemberSummary,
   Membership,
@@ -21,19 +27,29 @@ import type {
   SheepId,
   SheepRegistration,
   SheepUpdate,
+  StoredFile,
   UserId,
   Viewer,
 } from "@arashan/core";
 import {
+  addBreed as addCoreBreed,
+  breedNameKey,
   changeSheepOwner,
+  deleteBreed,
   deleteSheep,
   DomainError,
   getSheep,
   getSheepHistory,
+  getSheepPedigree,
   inviteLifetimeMs,
+  listBreeds,
+  listParentOptions,
   listSheep,
   listSheepOwners,
+  registerExternalSheep,
   registerSheep,
+  renameBreed,
+  setBreedArchived,
   tagKey,
   updateSheep,
   withLamb,
@@ -45,18 +61,31 @@ import { createElement, useEffect, useState, useSyncExternalStore } from "react"
 // it after each test.
 
 export {
+  arashanBreedId,
+  arashanShare,
+  compositionOf,
   dateAt,
   defaultLambAgeMonths,
+  grades,
   inviteLifetimeMs,
+  isPureArashan,
+  knownParents,
+  manualLimit,
+  maxBreedNameLength,
   maxLambAgeMonths,
+  maxPassportNumberLength,
   maxPasswordLength,
+  maxScanBytes,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  pedigreeDepth,
+  scanContentTypes,
   sexes,
+  wholeShare,
 } from "@arashan/core";
 
 export const fakeAppVersion = "1.2.3";
@@ -81,7 +110,13 @@ type CommandName =
   | "registerSheep"
   | "updateSheep"
   | "changeSheepOwner"
-  | "deleteSheep";
+  | "deleteSheep"
+  | "registerExternalSheep"
+  | "uploadPassportScan"
+  | "addBreed"
+  | "renameBreed"
+  | "setBreedArchived"
+  | "deleteBreed";
 
 interface FakeBackend {
   session: Client.Session;
@@ -96,6 +131,11 @@ interface FakeBackend {
   sheep: Sheep[];
   deletedSheep: Set<SheepId>;
   ownerChanges: OwnerChange[];
+  /** The Breeds of all Farms that the Members added, also the Deleted ones. */
+  breeds: Breed[];
+  deletedBreeds: Set<BreedId>;
+  /** The uploaded files, such as the scans of Passports. */
+  files: Map<FileId, StoredFile>;
   audit: AuditEntry[];
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
@@ -112,6 +152,9 @@ const emptyBackend = (): FakeBackend => ({
   sheep: [],
   deletedSheep: new Set(),
   ownerChanges: [],
+  breeds: [],
+  deletedBreeds: new Set(),
+  files: new Map(),
   audit: [],
   failures: {},
   tokens: 0,
@@ -474,14 +517,21 @@ export function passwordOf(membershipId: MembershipId): string | undefined {
 // rules of the core apply, such as a Tag that another Sheep has. The Members of a Farm come from
 // `addMembers`; the User of `signIn` is always a Member of the User's Farms.
 
-/** A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram. */
+/**
+ * A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram with no
+ * parents. An External Sheep (`origin: "external"`) has no Owner. The fake does not check the rules
+ * of the core here, such as the sex of a parent.
+ */
 export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "farmId">> = {}) {
   let id!: SheepId;
   updateFake((backend) => {
     const viewer = viewerOf(backend);
+    const external = change.origin === "external";
     const ownerId =
       change.ownerId === undefined
-        ? (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
+        ? external
+          ? null
+          : (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
         : change.ownerId;
     id = nextId(backend, "sheep") as SheepId;
     backend.sheep.push({
@@ -492,10 +542,15 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       sex: "ram",
       birthDate: null,
       origin: "born",
-      initialEntry: true,
+      initialEntry: !external,
       status: "active",
       notes: null,
       weight: null,
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
       registeredAt: Date.now(),
       ...change,
       ownerId,
@@ -504,11 +559,47 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       at: Date.now(),
       actorId: viewer?.user.id ?? null,
       farmId: farm.id,
-      command: "sheep.register",
+      command: external ? "sheep.registerExternal" : "sheep.register",
       target: { kind: "Sheep", id },
     });
   });
   return id;
+}
+
+/** A Breed that a Member added to the list of the Farm. */
+export function addBreed(
+  farm: FakeFarm,
+  name: string,
+  change: Partial<Pick<Breed, "archivedAt">> = {},
+) {
+  let id!: BreedId;
+  updateFake((backend) => {
+    id = nextId(backend, "breed") as BreedId;
+    backend.breeds.push({
+      id,
+      farmId: farm.id,
+      name,
+      archivedAt: null,
+      createdAt: Date.now(),
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A file in the fake storage, such as the scan of a Passport, and its id. */
+export function addFile(file: StoredFile = { size: 1024, contentType: "application/pdf" }) {
+  let id!: FileId;
+  updateFake((backend) => {
+    id = nextId(backend, "file") as FileId;
+    backend.files.set(id, file);
+  });
+  return id;
+}
+
+/** The Sheep in the fake backend, also a Deleted one, for a test that checks what a command wrote. */
+export function sheepOf(id: SheepId): Sheep | undefined {
+  return backend.sheep.find((sheep) => sheep.id === id);
 }
 
 function nextId(backend: FakeBackend, kind: string): string {
@@ -581,7 +672,13 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     },
     list: async () => ofFarm().map((s) => ({ ...s })),
     findByTag: async (tag) =>
-      ofFarm().filter((s) => s.tag !== null && tagKey(s.tag) === tagKey(tag)),
+      ofFarm().filter(
+        (s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag),
+      ),
+    children: async (parentId) =>
+      ofFarm()
+        .filter((s) => s.motherId === parentId || s.fatherId === parentId)
+        .map((s) => ({ ...s })),
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
@@ -605,6 +702,41 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
   };
 }
 
+function breedRepository(backend: FakeBackend, farmId: FarmId): FarmBreedRepository {
+  const ofFarm = () =>
+    backend.breeds.filter((b) => b.farmId === farmId && !backend.deletedBreeds.has(b.id));
+  const find = (id: BreedId) => ofFarm().find((b) => b.id === id);
+  return {
+    get: async (id) => {
+      const found = find(id);
+      return found === undefined ? null : { ...found };
+    },
+    list: async () => ofFarm().map((b) => ({ ...b })),
+    findByName: async (name) => ofFarm().filter((b) => breedNameKey(b.name) === breedNameKey(name)),
+    insert: async (fields) => {
+      const id = nextId(backend, "breed") as BreedId;
+      backend.breeds.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = find(id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    markDeleted: async (id) => {
+      backend.deletedBreeds.add(id);
+    },
+  };
+}
+
+/** The file storage of the fake. A browser would get a file from its URL. */
+function fileStorage(backend: FakeBackend): FileStorage {
+  return {
+    url: async (id) => (backend.files.has(id) ? `https://files.test/${id}` : null),
+    uploadUrl: async () => "https://upload.test",
+    get: async (id) => backend.files.get(id) ?? null,
+  };
+}
+
 function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["repos"] {
   const memberships = () => membershipsOf(backend, farmId);
   return {
@@ -621,6 +753,8 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
       countFarms: async () => 1,
     },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     history: {
       listForTarget: async (target) =>
         backend.audit.filter(
@@ -644,6 +778,8 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     invites: { insert: notInFake },
     passwordResets: { insert: notInFake },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     audit: {
       append: async (entry) => {
         backend.audit.push(entry);
@@ -702,4 +838,51 @@ export const useChangeSheepOwner = (farmId: FarmId) =>
 export const useDeleteSheep = (farmId: FarmId) =>
   useMutation("deleteSheep", (backend, sheepId: SheepId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useParentOptions = (farmId: FarmId) =>
+  useCoreQuery(`parents ${farmId}`, (backend) => listParentOptions(queryContext(backend, farmId)));
+
+export const useSheepPedigree = (farmId: FarmId, sheepId: SheepId) =>
+  useCoreQuery(`pedigree ${farmId} ${sheepId}`, (backend) =>
+    getSheepPedigree(queryContext(backend, farmId), { sheepId }),
+  );
+
+export const useRegisterExternalSheep = (farmId: FarmId) =>
+  useMutation("registerExternalSheep", (backend, input: ExternalSheepRegistration) =>
+    registerExternalSheep(commandContext(backend, farmId), input),
+  );
+
+/** The upload of a scan: the fake storage keeps its size and type, and gives its id. */
+export const useUploadPassportScan = (farmId: FarmId) =>
+  useMutation("uploadPassportScan", (backend, file: File): FileId => {
+    enterFakeFarm(backend, farmId);
+    const id = nextId(backend, "file") as FileId;
+    backend.files.set(id, { size: file.size, contentType: file.type === "" ? null : file.type });
+    return id;
+  });
+
+// The Breeds of a Farm, with the commands and queries of the core.
+
+export const useBreeds = (farmId: FarmId) =>
+  useCoreQuery(`breeds ${farmId}`, (backend) => listBreeds(queryContext(backend, farmId)));
+
+export const useAddBreed = (farmId: FarmId) =>
+  useMutation("addBreed", (backend, input: { name: string }) =>
+    addCoreBreed(commandContext(backend, farmId), input),
+  );
+
+export const useRenameBreed = (farmId: FarmId) =>
+  useMutation("renameBreed", (backend, input: { breedId: BreedId; name: string }) =>
+    renameBreed(commandContext(backend, farmId), input),
+  );
+
+export const useSetBreedArchived = (farmId: FarmId) =>
+  useMutation("setBreedArchived", (backend, input: { breedId: BreedId; archived: boolean }) =>
+    setBreedArchived(commandContext(backend, farmId), input),
+  );
+
+export const useDeleteBreed = (farmId: FarmId) =>
+  useMutation("deleteBreed", (backend, breedId: BreedId) =>
+    deleteBreed(commandContext(backend, farmId), { breedId }),
   );
