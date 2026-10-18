@@ -43,6 +43,7 @@ export const errorCodes = [
   "sheep.birthDateRequired",
   "sheep.birthDateInFuture",
   "sheep.birthDateAfterOwnerChange",
+  "sheep.birthDateAfterFlockMove",
   "sheep.purchaseRequired",
   "sheep.originLocked",
   "sheep.ownerNotMember",
@@ -77,6 +78,35 @@ export const errorCodes = [
   "breed.inUse",
   "breed.arashanLocked",
   "breed.archived",
+  "sheep.moveDateInvalid",
+  "sheep.tooManyToMove",
+  "sheep.noMoveToUndo",
+  // Locations.
+  "location.notFound",
+  "location.nameRequired",
+  "location.nameTooLong",
+  "location.nameTaken",
+  "location.notesTooLong",
+  "location.archived",
+  "location.inUse",
+  // Shepherds.
+  "shepherd.notFound",
+  "shepherd.nameRequired",
+  "shepherd.nameTooLong",
+  "shepherd.phoneTooLong",
+  "shepherd.notesTooLong",
+  "shepherd.archived",
+  // Flocks.
+  "flock.notFound",
+  "flock.nameRequired",
+  "flock.nameTooLong",
+  "flock.nameTaken",
+  "flock.archived",
+  "flock.notEmpty",
+  "flock.assignmentNotFound",
+  "flock.assignmentDatesInvalid",
+  "flock.assignmentOverlaps",
+  "flock.endDateInvalid",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

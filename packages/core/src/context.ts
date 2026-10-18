@@ -20,6 +20,14 @@ import type {
   MembershipReader,
   MembershipRepository,
 } from "./members/membership";
+import type {
+  FarmFlockReader,
+  FarmFlockRepository,
+  FarmLocationReader,
+  FarmLocationRepository,
+  FarmShepherdReader,
+  FarmShepherdRepository,
+} from "./flocks/flock";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
@@ -73,6 +81,9 @@ export interface FarmReaders {
   breeds: FarmBreedReader;
   /** The file storage, such as the scans of Passports. */
   files: FileReader;
+  flocks: FarmFlockReader;
+  locations: FarmLocationReader;
+  shepherds: FarmShepherdReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -90,6 +101,9 @@ export interface FarmRepositories {
   sheep: FarmSheepRepository;
   breeds: FarmBreedRepository;
   files: FileStorage;
+  flocks: FarmFlockRepository;
+  locations: FarmLocationRepository;
+  shepherds: FarmShepherdRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

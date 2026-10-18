@@ -1,6 +1,15 @@
 import { addMonths, type CalendarDate } from "../dates";
 import type { FarmSettings } from "../farms/farm";
-import type { FarmId, FileId, MembershipId, OwnerChangeId, SheepId } from "../ids";
+import type { FlockMove } from "../flocks/flock";
+import type {
+  FarmId,
+  FileId,
+  FlockId,
+  FlockMoveId,
+  MembershipId,
+  OwnerChangeId,
+  SheepId,
+} from "../ids";
 import type { BreedShare } from "../pedigree/composition";
 
 /** The sex of a Sheep: a Ram or an Ewe. */
@@ -76,6 +85,11 @@ export interface Sheep {
   manualBreeds: BreedShare[];
   passport: Passport | null;
   grade: Grading | null;
+  /**
+   * The Flock that the Sheep is in now, or null. Only an Active Sheep is in a Flock. A move changes
+   * it and records the move (`FlockMove`), the history of the Flock membership.
+   */
+  flockId: FlockId | null;
   /** When a Member registered the Sheep, in milliseconds since the Unix epoch. */
   registeredAt: number;
 }
@@ -202,6 +216,10 @@ export interface FarmSheepReader {
   ownerChanges(sheepId: SheepId): Promise<OwnerChange[]>;
   /** True if the Member is the Owner of at least one Active Sheep of the Farm. */
   ownsActiveSheep(ownerId: MembershipId): Promise<boolean>;
+  /** The Sheep that are in the Flock now. */
+  listInFlock(flockId: FlockId): Promise<Sheep[]>;
+  /** The moves of the Sheep between Flocks, in the order in which a Member recorded them. */
+  flockMoves(sheepId: SheepId): Promise<FlockMove[]>;
 }
 
 /** The fields of a Sheep that a command writes. */
@@ -213,6 +231,9 @@ export interface FarmSheepRepository extends FarmSheepReader {
   /** Changes the fields that `fields` has. A field that it does not have stays the same. */
   update(id: SheepId, fields: Partial<SheepFields>): Promise<void>;
   insertOwnerChange(change: Omit<OwnerChange, "id">): Promise<OwnerChangeId>;
+  insertFlockMove(move: Omit<FlockMove, "id">): Promise<FlockMoveId>;
+  /** Makes a move Deleted: a Member undid it. */
+  markFlockMoveDeleted(id: FlockMoveId, deletedAt: number): Promise<void>;
   /** Makes the Sheep Deleted. A Member can restore it later. */
   markDeleted(id: SheepId, deletedAt: number): Promise<void>;
 }

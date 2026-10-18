@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { Loading } from "@/components/loading";
 import { PedigreeTree } from "@/components/sheep/pedigree-tree";
+import { MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { ChangeOwnerDialog, DeleteSheepDialog } from "@/components/sheep/sheep-dialogs";
 import { SheepDetails } from "@/components/sheep/sheep-details";
 import { EditSheepSheet } from "@/components/sheep/sheep-form";
@@ -84,6 +85,7 @@ function Gone({ farmId }: { farmId: FarmId }) {
 function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   return (
     <>
@@ -93,6 +95,11 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <Button variant="outline" onClick={() => setEditing(true)}>
             <Trans>Изменить</Trans>
           </Button>
+          {sheep.status === "active" && sheep.origin !== "external" && (
+            <Button variant="outline" onClick={() => setMoving(true)}>
+              <Trans>Перевести в стадо</Trans>
+            </Button>
+          )}
           {sheep.status === "active" && sheep.origin !== "external" && (
             <ChangeOwnerDialog farm={farm} sheep={sheep} />
           )}
@@ -124,10 +131,19 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <PedigreeTree farm={farm} sheepId={sheep.id} />
         </TabsContent>
         <TabsContent value="history" className="pt-4">
-          <SheepHistory farm={farm} sheepId={sheep.id} />
+          <SheepHistory farm={farm} sheep={sheep} />
         </TabsContent>
       </Tabs>
       <EditSheepSheet farm={farm} sheep={sheep} open={editing} onOpenChange={setEditing} />
+      {sheep.origin !== "external" && (
+        <MoveSheepDialog
+          farm={farm}
+          sheepIds={[sheep.id]}
+          currentFlockId={sheep.flock?.id ?? null}
+          open={moving}
+          onOpenChange={setMoving}
+        />
+      )}
     </>
   );
 }

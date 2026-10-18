@@ -55,6 +55,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Trans>Породы</Trans>
               </Link>
             )}
+            {farm !== undefined && (
+              <Link to="/farms/$farmId/flocks" params={{ farmId: farm.id }} className={navLink}>
+                <Trans>Стада</Trans>
+              </Link>
+            )}
             {farm?.role === "admin" && (
               <>
                 <Link to="/farms/$farmId/members" params={{ farmId: farm.id }} className={navLink}>

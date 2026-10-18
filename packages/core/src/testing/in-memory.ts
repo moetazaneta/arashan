@@ -11,15 +11,31 @@ import type {
 } from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
 import type { FileStorage, StoredFile } from "../files/files";
+import {
+  type FarmFlockRepository,
+  type FarmLocationRepository,
+  type FarmShepherdRepository,
+  type Flock,
+  type FlockMove,
+  type Location,
+  nameKey,
+  type Shepherd,
+  type ShepherdAssignment,
+} from "../flocks/flock";
 import type {
   BreedId,
   FarmId,
   FileId,
+  FlockId,
+  FlockMoveId,
   InviteId,
+  LocationId,
   MembershipId,
   OwnerChangeId,
   PasswordResetId,
   SheepId,
+  ShepherdAssignmentId,
+  ShepherdId,
   UserId,
 } from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
@@ -44,6 +60,11 @@ export class InMemoryStore {
   readonly breeds: Stored<Breed>[] = [];
   /** The files of the file storage, by id. */
   readonly files = new Map<FileId, StoredFile>();
+  readonly flockMoves: Stored<FlockMove>[] = [];
+  readonly locations: Stored<Location>[] = [];
+  readonly shepherds: Stored<Shepherd>[] = [];
+  readonly flocks: Stored<Flock>[] = [];
+  readonly assignments: Stored<ShepherdAssignment & { farmId: FarmId }>[] = [];
   readonly audit: AuditEntry[] = [];
   private nextId = 1;
 
@@ -219,6 +240,9 @@ export class InMemoryStore {
       sheep: this.farmSheep(farmId),
       breeds: this.farmBreeds(farmId),
       files: this.fileStorage(),
+      flocks: this.farmFlocks(farmId),
+      locations: this.farmLocations(farmId),
+      shepherds: this.farmShepherds(farmId),
       history: {
         listForTarget: async (target) =>
           this.audit.filter(
@@ -252,6 +276,14 @@ export class InMemoryStore {
           .map(withoutDeletedAt),
       ownsActiveSheep: async (ownerId) =>
         ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
+      listInFlock: async (flockId) =>
+        ofFarm()
+          .filter((s) => s.flockId === flockId)
+          .map(withoutDeletedAt),
+      flockMoves: async (sheepId) =>
+        this.flockMoves
+          .filter((m) => m.sheepId === sheepId && m.deletedAt === undefined)
+          .map(withoutDeletedAt),
       insert: async (fields) => {
         const id = this.id("Sheep") as SheepId;
         this.sheep.push({ id, farmId, ...fields });
@@ -265,6 +297,15 @@ export class InMemoryStore {
         const id = this.id("OwnerChange") as OwnerChangeId;
         this.ownerChanges.push({ id, ...change });
         return id;
+      },
+      insertFlockMove: async (move) => {
+        const id = this.id("FlockMove") as FlockMoveId;
+        this.flockMoves.push({ id, ...move });
+        return id;
+      },
+      markFlockMoveDeleted: async (id, deletedAt) => {
+        const found = this.flockMoves.find((m) => m.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
       },
       markDeleted: async (id, deletedAt) => {
         const found = ofFarm().find((s) => s.id === id);
@@ -319,6 +360,115 @@ export class InMemoryStore {
     return id;
   }
 
+  /** The Locations of one Farm, as the backend binds them to it. */
+  private farmLocations(farmId: FarmId): FarmLocationRepository {
+    const ofFarm = () =>
+      this.locations.filter((l) => l.farmId === farmId && l.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((l) => l.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async () => ofFarm().map(withoutDeletedAt),
+      findByName: async (name) =>
+        ofFarm()
+          .filter((l) => nameKey(l.name) === nameKey(name))
+          .map(withoutDeletedAt),
+      insert: async (fields) => {
+        const id = this.id("Location") as LocationId;
+        this.locations.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((l) => l.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+    };
+  }
+
+  /** The Shepherds of one Farm, as the backend binds them to it. */
+  private farmShepherds(farmId: FarmId): FarmShepherdRepository {
+    const ofFarm = () =>
+      this.shepherds.filter((s) => s.farmId === farmId && s.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((s) => s.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async () => ofFarm().map(withoutDeletedAt),
+      insert: async (fields) => {
+        const id = this.id("Shepherd") as ShepherdId;
+        this.shepherds.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((s) => s.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+    };
+  }
+
+  /** The Flocks of one Farm and their assignments, as the backend binds them to it. */
+  private farmFlocks(farmId: FarmId): FarmFlockRepository {
+    const ofFarm = () =>
+      this.flocks.filter((f) => f.farmId === farmId && f.deletedAt === undefined);
+    const assignments = () =>
+      this.assignments.filter((a) => a.farmId === farmId && a.deletedAt === undefined);
+    const assignment = ({ id, flockId, shepherdId, from, to }: ShepherdAssignment) => ({
+      id,
+      flockId,
+      shepherdId,
+      from,
+      to,
+    });
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((f) => f.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async () => ofFarm().map(withoutDeletedAt),
+      findByName: async (name) =>
+        ofFarm()
+          .filter((f) => nameKey(f.name) === nameKey(name))
+          .map(withoutDeletedAt),
+      getAssignment: async (id) => {
+        const found = assignments().find((a) => a.id === id);
+        return found === undefined ? null : assignment(found);
+      },
+      listAssignments: async () => assignments().map(assignment),
+      assignmentsOfFlock: async (flockId) =>
+        assignments()
+          .filter((a) => a.flockId === flockId)
+          .map(assignment),
+      assignmentsOfShepherd: async (shepherdId) =>
+        assignments()
+          .filter((a) => a.shepherdId === shepherdId)
+          .map(assignment),
+      insert: async (fields) => {
+        const id = this.id("Flock") as FlockId;
+        this.flocks.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((f) => f.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+      insertAssignment: async (fields) => {
+        const id = this.id("ShepherdAssignment") as ShepherdAssignmentId;
+        this.assignments.push({ id, farmId, ...fields });
+        return id;
+      },
+      updateAssignment: async (id, dates) => {
+        const found = assignments().find((a) => a.id === id);
+        if (found !== undefined) Object.assign(found, dates);
+      },
+      markAssignmentDeleted: async (id, deletedAt) => {
+        const found = assignments().find((a) => a.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
   /** The repositories of one Farm, as the backend binds them to it. */
   farmRepositories(farmId: FarmId): FarmRepositories {
     const readers = this.farmReaders(farmId);
@@ -355,6 +505,9 @@ export class InMemoryStore {
       sheep: this.farmSheep(farmId),
       breeds: this.farmBreeds(farmId),
       files: this.fileStorage(),
+      flocks: this.farmFlocks(farmId),
+      locations: this.farmLocations(farmId),
+      shepherds: this.farmShepherds(farmId),
       audit: repos.audit,
     };
   }

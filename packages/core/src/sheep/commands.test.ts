@@ -2,6 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
+import { createFlock, moveSheep } from "../flocks/commands";
 import type { FarmId, MembershipId, SheepId } from "../ids";
 import { InMemoryStore } from "../testing/in-memory";
 import {
@@ -89,6 +90,7 @@ describe("registerSheep", () => {
       manualBreeds: [],
       passport: null,
       grade: null,
+      flockId: null,
       registeredAt: store.time,
     });
     expect(store.audit.at(-1)).toEqual({
@@ -418,6 +420,21 @@ describe("updateSheep", () => {
     ).rejects.toMatchObject({ code: "sheep.birthDateAfterOwnerChange" });
     await updateSheep(await as(editor), { ...update, birthDate: "2026-02-01" });
     expect(stored(store, sheepId)?.birthDate).toBe("2026-02-01");
+  });
+
+  test("the birth date is not after a move into a Flock or out of it", async () => {
+    const { store, editor, as, register } = await setup();
+    const ctx = await as(editor);
+    const sheepId = await register();
+    const flockId = await createFlock(ctx, { name: "Стадо", locationId: null });
+    await moveSheep(ctx, { sheepIds: [sheepId], flockId, date: "2026-10-01" });
+    const update = { ...details(), sheepId };
+
+    await expect(updateSheep(ctx, { ...update, birthDate: "2026-10-10" })).rejects.toMatchObject({
+      code: "sheep.birthDateAfterFlockMove",
+    });
+    await updateSheep(ctx, { ...update, birthDate: "2026-10-01" });
+    expect(stored(store, sheepId)?.birthDate).toBe("2026-10-01");
   });
 
   test("a Deleted Sheep or a Sheep of another Farm is not found", async () => {

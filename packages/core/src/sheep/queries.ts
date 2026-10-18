@@ -3,7 +3,15 @@ import type { CommandName } from "../audit/audit";
 import type { FarmQueryContext } from "../context";
 import type { CalendarDate } from "../dates";
 import { DomainError } from "../errors";
-import type { FileId, MembershipId, SheepId, UserId } from "../ids";
+import type { Flock } from "../flocks/flock";
+import {
+  type FlockRef,
+  flockRefOf,
+  flocksById,
+  type SheepFlockStay,
+  sheepFlockStays,
+} from "../flocks/queries";
+import type { FileId, FlockId, MembershipId, SheepId, UserId } from "../ids";
 import type { BreedComposition, BreedShare } from "../pedigree/composition";
 import { cachedLookup, compositions, type SheepLookup } from "../pedigree/pedigree";
 import type { Grading, Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
@@ -37,6 +45,8 @@ export interface SheepRow {
   initialEntry: boolean;
   status: SheepStatus;
   owner: OwnerRef | null;
+  /** The Flock that the Sheep is in now, or null. */
+  flock: FlockRef | null;
   weight: Weighing | null;
   notes: string | null;
   composition: BreedComposition;
@@ -78,7 +88,7 @@ export interface OwnerPeriod {
 
 /**
  * A Sheep as its card shows it: the fields, the Owners (the newest first), the parents and the
- * children, the parts of the Breed composition by hand, and the Passport.
+ * Flock stays (the newest first), children, the parts of the Breed composition by hand, and the Passport.
  */
 export interface SheepCard extends SheepRow {
   owners: OwnerPeriod[];
@@ -88,6 +98,7 @@ export interface SheepCard extends SheepRow {
   children: SheepRef[];
   manualBreeds: BreedShare[];
   passport: PassportView | null;
+  flocks: SheepFlockStay[];
 }
 
 /** A Sheep in the pedigree tree, with its parents up to the depth of the tree. */
@@ -116,13 +127,13 @@ export interface SheepHistoryEntry {
  */
 export async function listSheep(ctx: FarmQueryContext): Promise<SheepRow[]> {
   authorize(ctx.member, "sheep.view", { farmId: ctx.farm.id });
-  const owners = await ownerNames(ctx);
+  const [owners, flocks] = await Promise.all([ownerNames(ctx), flocksById(ctx)]);
   const all = await ctx.repos.sheep.list();
   const compositionOf = compositions(lookupIn(all));
   const rows = await Promise.all(
     all
       .filter((sheep) => sheep.origin !== "external")
-      .map(async (sheep) => toRow(sheep, owners, await compositionOf(sheep))),
+      .map(async (sheep) => toRow(sheep, owners, await compositionOf(sheep), flocks)),
   );
   return rows.sort(byTagThenName);
 }
@@ -189,8 +200,8 @@ export async function getSheep(
   const lookup = cachedLookup((id) => ctx.repos.sheep.get(id));
   const sheep = await lookup(input.sheepId);
   if (sheep === null) return null;
-  const owners = await ownerNames(ctx);
-  const row = toRow(sheep, owners, await compositions(lookup)(sheep));
+  const [owners, flocks] = await Promise.all([ownerNames(ctx), flocksById(ctx)]);
+  const row = toRow(sheep, owners, await compositions(lookup)(sheep), flocks);
   const parent = async (id: SheepId | null) => {
     const found = id === null ? null : await lookup(id);
     return found === null ? null : toRef(found);
@@ -209,6 +220,7 @@ export async function getSheep(
   return {
     ...row,
     owners: periods.reverse(),
+    flocks: await sheepFlockStays(ctx, sheep.id),
     mother: await parent(sheep.motherId),
     father: await parent(sheep.fatherId),
     children: children.map(toRef),
@@ -306,6 +318,7 @@ function toRow(
   sheep: Sheep,
   owners: Map<MembershipId, string>,
   composition: BreedComposition,
+  flocks: Map<FlockId, Flock>,
 ): SheepRow {
   return {
     id: sheep.id,
@@ -317,6 +330,7 @@ function toRow(
     initialEntry: sheep.initialEntry,
     status: sheep.status,
     owner: sheep.ownerId === null ? null : ownerOf(owners, sheep.ownerId),
+    flock: sheep.flockId === null ? null : flockRefOf(flocks, sheep.flockId),
     weight: sheep.weight,
     notes: sheep.notes,
     composition,

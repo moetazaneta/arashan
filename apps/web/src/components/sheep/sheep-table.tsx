@@ -25,12 +25,15 @@ import {
   type MouseEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -47,8 +50,9 @@ import { cn } from "@/lib/utils";
 import { gradeLabels, originLabels, sexLabels, statusLabels } from "./labels";
 
 // The table «Бараны»: dense rows, sorting by a click on a header, the columns that a Member chose,
-// and the keyboard. It must show a few hundred Sheep at once without a delay, so the columns, the
-// features and the formatters are made one time, and a row renders again only when it changes.
+// the selection for the bulk actions, and the keyboard. It must show a few hundred Sheep at once
+// without a delay, so the columns, the features and the formatters are made one time, and a row
+// renders again only when it changes.
 
 interface SheepColumnMeta {
   /** The header of the column, and its name in the column settings. */
@@ -116,6 +120,13 @@ const columns = helper.columns([
     sortUndefined: "last",
     cell: ({ row }) => <DateCell date={row.original.birthDate} />,
   }),
+  helper.accessor((sheep) => sheep.flock?.name, {
+    id: "flock",
+    meta: { label: msg`Стадо` },
+    sortFn: byText,
+    sortUndefined: "last",
+    cell: ({ row }) => <TextCell text={row.original.flock?.name ?? null} />,
+  }),
   helper.accessor((sheep) => sheep.owner?.name, {
     id: "owner",
     meta: { label: msg`Владелец` },
@@ -166,6 +177,14 @@ const columns = helper.columns([
 
 const getRowId = (sheep: SheepListItem) => sheep.id;
 const noSheep: SheepListItem[] = [];
+
+/** No Sheep selected. */
+export const noSelection: ReadonlySet<SheepId> = new Set();
+
+/** Only an Active Sheep can be selected for a bulk action. */
+export function canSelectSheep(sheep: SheepListItem): boolean {
+  return sheep.status === "active";
+}
 
 // The visible columns. The other columns are in the column settings. A Member's choice stays in this
 // browser.
@@ -246,16 +265,25 @@ export function ColumnSettings({
  * The Sheep of the Farm, one per row. A click or `Enter` on a row opens its card. The arrows move
  * between the rows, `Home` and `End` go to the first and the last one, `PageUp` and `PageDown` move
  * by 10 rows. Only one row is in the tab order: the one that had the focus last.
+ *
+ * The checkbox of a row, or `Space` on the row, selects the Sheep for a bulk action; the checkbox in
+ * the header selects all the Sheep that can be selected. The page keeps the selection, and the table
+ * drops from it each Sheep that leaves the data or stops being Active.
  */
 export function SheepTable({
   data,
   columnVisibility,
   onOpen,
+  selection,
+  onSelectionChange,
 }: {
   /** The Sheep, or undefined while they load. */
   data: SheepListItem[] | undefined;
   columnVisibility: ColumnVisibilityState;
   onOpen: (sheepId: SheepId) => void;
+  /** The selected Sheep. */
+  selection: ReadonlySet<SheepId>;
+  onSelectionChange: (selection: ReadonlySet<SheepId>) => void;
 }) {
   const { t, i18n } = useLingui();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -272,6 +300,33 @@ export function SheepTable({
     .getVisibleLeafColumns()
     .map((column) => column.id)
     .join(" ");
+
+  // The Sheep that can be selected. The selection keeps only them, also when the data changes.
+  const selectable = useMemo(
+    () => new Set((data ?? noSheep).filter(canSelectSheep).map((sheep) => sheep.id)),
+    [data],
+  );
+  useLayoutEffect(() => {
+    if (data === undefined) return;
+    const kept = [...selection].filter((id) => selectable.has(id));
+    if (kept.length !== selection.size) onSelectionChange(new Set(kept));
+  }, [data, selectable, selection, onSelectionChange]);
+  const selectedCount = [...selection].filter((id) => selectable.has(id)).length;
+  const allSelected = selectable.size > 0 && selectedCount === selectable.size;
+
+  // A row toggles its Sheep with the latest selection, so that the rows need no new callback when
+  // the selection changes, and render again only when their own state changes.
+  const latestSelection = useRef({ selection, onSelectionChange });
+  useLayoutEffect(() => {
+    latestSelection.current = { selection, onSelectionChange };
+  });
+  const toggle = useCallback((id: SheepId) => {
+    const { selection, onSelectionChange } = latestSelection.current;
+    const next = new Set(selection);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onSelectionChange(next);
+  }, []);
 
   // The row with the focus, by the id of its Sheep: a change of the data keeps it.
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -291,6 +346,8 @@ export function SheepTable({
 
   function onKeyDown(event: KeyboardEvent<HTMLTableSectionElement>) {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    // `Enter` and `Space` on a checkbox are the checkbox's own.
+    const onRow = event.target instanceof HTMLTableRowElement;
     const index = rows.findIndex((row) => row.id === activeId);
     switch (event.key) {
       case "ArrowDown":
@@ -312,7 +369,12 @@ export function SheepTable({
         focusRow(index - pageRows);
         break;
       case "Enter":
+        if (!onRow) return;
         if (activeId !== null) onOpen(activeId as SheepId);
+        break;
+      case " ":
+        if (!onRow) return;
+        if (activeId !== null && selectable.has(activeId as SheepId)) toggle(activeId as SheepId);
         break;
       default:
         return;
@@ -326,6 +388,10 @@ export function SheepTable({
   }
 
   function onClick(event: MouseEvent<HTMLTableSectionElement>) {
+    // A click in the cell of the checkbox selects the Sheep, and does not open its card.
+    if (event.target instanceof Element && event.target.closest("[data-select-cell]") !== null) {
+      return;
+    }
     const id = rowIdOf(event.target);
     if (id !== null) onOpen(id as SheepId);
   }
@@ -336,6 +402,15 @@ export function SheepTable({
       <thead>
         {table.getHeaderGroups().map((group) => (
           <tr key={group.id}>
+            <TableHead className={cn(stickyHead, "w-8")}>
+              <Checkbox
+                aria-label={t`Выбрать всех баранов`}
+                checked={allSelected}
+                indeterminate={selectedCount > 0 && !allSelected}
+                disabled={selectable.size === 0}
+                onCheckedChange={() => onSelectionChange(allSelected ? noSelection : selectable)}
+              />
+            </TableHead>
             {group.headers.map((header) => {
               const { column } = header;
               const meta = column.columnDef.meta;
@@ -347,10 +422,7 @@ export function SheepTable({
                   aria-sort={
                     sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined
                   }
-                  className={cn(
-                    "sticky top-0 z-10 h-9 bg-background text-xs text-muted-foreground shadow-[inset_0_-1px_0_var(--color-border)]",
-                    meta?.numeric === true && "text-right",
-                  )}
+                  className={cn(stickyHead, meta?.numeric === true && "text-right")}
                 >
                   <button
                     type="button"
@@ -374,6 +446,7 @@ export function SheepTable({
         {data === undefined
           ? skeletonRows.map((key) => (
               <TableRow key={key} className="h-9 hover:bg-transparent">
+                <TableCell className="px-2 py-0" />
                 {table.getVisibleLeafColumns().map((column) => (
                   <TableCell key={column.id} className="px-2 py-0">
                     <Skeleton className="h-3.5 w-16" />
@@ -386,6 +459,9 @@ export function SheepTable({
                 key={row.id}
                 row={row}
                 active={row.id === activeId}
+                selected={selectable.has(row.original.id) && selection.has(row.original.id)}
+                selectable={selectable.has(row.original.id)}
+                onToggle={toggle}
                 visibleColumns={visibleColumns}
                 register={registerRow}
               />
@@ -398,6 +474,10 @@ export function SheepTable({
 /** How many rows `PageUp` and `PageDown` move. */
 const pageRows = 10;
 
+/** A cell of the header: it stays at the top when the page scrolls, and draws the rule under it. */
+const stickyHead =
+  "sticky top-0 z-10 h-9 bg-background text-xs text-muted-foreground shadow-[inset_0_-1px_0_var(--color-border)]";
+
 const skeletonRows = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 /** The id of the Sheep of the row that contains the element, or null. */
@@ -407,28 +487,48 @@ function rowIdOf(target: EventTarget): string | null {
 }
 
 /**
- * One Sheep. It renders again only when its data, its focus or the visible columns change, not when
- * the focus moves between other rows.
+ * One Sheep. It renders again only when its data, its focus, its selection or the visible columns
+ * change, not when the focus or the selection of other rows changes.
  */
 const SheepRow = memo(function SheepRow({
   row,
   active,
+  selected,
+  selectable,
+  onToggle,
   register,
 }: {
   row: SheepTableRow;
   active: boolean;
+  selected: boolean;
+  selectable: boolean;
+  onToggle: (sheepId: SheepId) => void;
   /** The ids of the visible columns: a new value renders the row again. */
   visibleColumns: string;
   register: (id: string, element: HTMLTableRowElement | null) => void;
 }) {
+  const { t } = useLingui();
+  const tag = row.original.tag;
+
   return (
     <TableRow
       ref={(element) => register(row.id, element)}
       data-sheep-id={row.id}
+      data-state={selected ? "selected" : undefined}
       tabIndex={active ? 0 : -1}
       // `outline-hidden` keeps the style of the outline, so that the ring of the keyboard focus shows.
-      className="h-9 scroll-mt-9 cursor-pointer outline-hidden focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+      className="h-9 scroll-mt-9 cursor-pointer outline-hidden focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid data-[state=selected]:bg-selection data-[state=selected]:hover:bg-selection data-[state=selected]:focus-visible:bg-selection"
     >
+      {/* The row has the focus, not its checkbox: `Space` on the row toggles it. */}
+      <TableCell data-select-cell className="w-8 cursor-default px-2 py-0">
+        <Checkbox
+          tabIndex={-1}
+          aria-label={tag === null ? t`Выбрать барана без бирки` : t`Выбрать барана ${tag}`}
+          checked={selected}
+          disabled={!selectable}
+          onCheckedChange={() => onToggle(row.original.id)}
+        />
+      </TableCell>
       {row.getVisibleCells().map((cell) => (
         <SheepCell key={cell.id} cell={cell} />
       ))}

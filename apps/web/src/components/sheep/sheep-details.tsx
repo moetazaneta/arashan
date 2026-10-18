@@ -1,6 +1,7 @@
 import { type SheepCardData, wholeShare } from "@arashan/client";
 import type { Farm, Grading, OwnerPeriod, PassportView, Weighing } from "@arashan/core";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { Link } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { type ReactNode, useId } from "react";
 
@@ -53,6 +54,19 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
         <FieldRow label={<Trans>Дата рождения</Trans>}>{date(sheep.birthDate)}</FieldRow>
         {!external && (
           <>
+            <FieldRow label={<Trans>Стадо</Trans>}>
+              {sheep.flock === null ? (
+                <NoValue />
+              ) : (
+                <Link
+                  to="/farms/$farmId/flocks/$flockId"
+                  params={{ farmId: farm.id, flockId: sheep.flock.id }}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {sheep.flock.name}
+                </Link>
+              )}
+            </FieldRow>
             <FieldRow label={<Trans>Владелец</Trans>}>{sheep.owner?.name ?? <NoValue />}</FieldRow>
             <FieldRow label={<Trans>Статус</Trans>}>
               <StatusCell status={sheep.status} />

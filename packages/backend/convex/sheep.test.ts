@@ -58,6 +58,61 @@ async function sheepAudit(t: Test) {
 }
 
 describe("sheep", () => {
+  test("pedigree and Passport fields survive Flock moves, and Flock fields survive Sheep edits", async () => {
+    const t = setup();
+    const { admin, farmId, register } = await registry(t);
+    const fatherId = await admin.mutation(api.sheep.registerExternal, {
+      farmId,
+      ...external,
+      manualBreeds: pureArashan,
+    });
+    const sheepId = await register({
+      fatherId,
+      manualBreeds: [{ breedId: "arashan", share: 500_000 }],
+      passport: { number: "P-7", issueDate: "2025-04-01", scanId: null },
+      grade: { grade: "elite", date: "2025-04-01" },
+    });
+    const flockId = await admin.mutation(api.flocks.create, {
+      farmId,
+      name: "North",
+      locationId: null,
+    });
+    await admin.mutation(api.flocks.moveSheep, {
+      farmId,
+      sheepIds: [sheepId],
+      flockId,
+      date: "2025-06-01",
+    });
+    await admin.mutation(api.sheep.update, { farmId, sheepId, ...unchanged, name: "Ram" });
+
+    expect(await admin.query(api.sheep.get, { farmId, sheepId })).toMatchObject({
+      name: "Ram",
+      father: { id: fatherId },
+      composition: { breeds: [{ breedId: "arashan", share: 1_000_000 }], unknown: 0 },
+      passport: { number: "P-7", issueDate: "2025-04-01", scan: null },
+      grade: { grade: "elite", date: "2025-04-01" },
+      flock: { id: flockId },
+      flocks: [{ flock: { id: flockId }, from: "2025-06-01", to: null }],
+    });
+    expect(await sheepRow(t, sheepId)).toMatchObject({
+      fatherId,
+      flockId,
+      passportNumber: "P-7",
+      grade: "elite",
+    });
+    expect(
+      await errorCode(
+        admin.mutation(api.flocks.moveSheep, {
+          farmId,
+          sheepIds: [fatherId],
+          flockId,
+          date: "2025-06-01",
+        }),
+      ),
+    ).toBe("sheep.notFound");
+    expect((await sheepRow(t, fatherId))?.flockId).toBeUndefined();
+  });
+
   test("a registered Sheep comes back from the list, with null for each absent field", async () => {
     const t = setup();
     const { admin, farmId, adminId, register } = await registry(t);
@@ -76,6 +131,7 @@ describe("sheep", () => {
         initialEntry: false,
         status: "active",
         owner: { id: adminId, name: "admin" },
+        flock: null,
         weight: null,
         notes: null,
         composition: { breeds: [], unknown: 1_000_000 },
@@ -93,6 +149,7 @@ describe("sheep", () => {
         initialEntry: false,
         status: "active",
         owner: { id: adminId, name: "admin" },
+        flock: null,
         weight: { kg: 42.5, date: "2025-09-01" },
         notes: "Хромает",
         composition: { breeds: [], unknown: 1_000_000 },

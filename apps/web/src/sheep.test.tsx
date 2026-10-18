@@ -29,20 +29,26 @@ function sheepRows() {
     .map((row) => row.textContent);
 }
 
+/** The Tag of a row of the table «Бараны»: the text of its cell in the column «Бирка». */
+function tagOf(row: HTMLElement) {
+  const table = screen.getByRole("table", { name: "Бараны" });
+  const column = within(table)
+    .getAllByRole("columnheader")
+    .findIndex((header) => header.textContent === "Бирка");
+  return within(row).getAllByRole("cell")[column]?.textContent ?? null;
+}
+
 /** The Tags in the table «Бараны», from the top. */
 function sheepTags() {
   const table = screen.getByRole("table", { name: "Бараны" });
-  return within(table)
-    .getAllByRole("row")
-    .slice(1)
-    .map((row) => within(row).getAllByRole("cell")[0]?.textContent);
+  return within(table).getAllByRole("row").slice(1).map(tagOf);
 }
 
 /** The Tag of the row that has the focus. */
 function focusedTag() {
   const row = document.activeElement;
   if (!(row instanceof HTMLTableRowElement)) return null;
-  return within(row).getAllByRole("cell")[0]?.textContent ?? null;
+  return tagOf(row);
 }
 
 test("a Member registers a Sheep as an Initial entry and sees it in the table", async () => {
@@ -73,7 +79,8 @@ test("a Member registers a Sheep as an Initial entry and sees it in the table", 
 
   await user.click(within(panel).getByRole("button", { name: "Закрыть" }));
   expect(await screen.findByRole("heading", { name: "Бараны 1" })).toBeTruthy();
-  expect(sheepRows()).toEqual(["12БуянСамец—aibekАктивен"]);
+  // No birth date and no Flock.
+  expect(sheepRows()).toEqual(["12БуянСамец——aibekАктивен"]);
 });
 
 test("a Tag that another Sheep has shows its message under the field «Бирка»", async () => {

@@ -6,6 +6,7 @@ import { expect, test } from "vite-plus/test";
 import {
   addBreed,
   addFile,
+  addFlock,
   addMembers,
   addSheep,
   aFarm,
@@ -78,11 +79,19 @@ test("the card shows the parents, the Breed composition, the children, the Passp
       { breedId: edilbaev, share: 500_000 },
     ],
   });
-  const child = addSheep(farm, { tag: "3", name: "Буян", motherId: mother, fatherId: father });
+  const flockId = addFlock(farm, { name: "Верхнее" });
+  const child = addSheep(farm, {
+    tag: "3",
+    name: "Буян",
+    motherId: mother,
+    fatherId: father,
+    flockId,
+  });
   renderApp(`/farms/${farm.id}/sheep/${child}`);
 
   // The block «Дополнительно» opens by itself: the Sheep has parents.
   await screen.findByRole("heading", { name: "3 Буян" });
+  expect(within(cardField("Стадо")).getByRole("link", { name: "Верхнее" })).toBeTruthy();
   expect(within(cardField("Мать")).getByRole("link", { name: "1 Айгуль" })).toBeTruthy();
   expect(within(cardField("Отец")).getByRole("link", { name: "2" })).toBeTruthy();
   await within(cardField("Состав породы")).findByText(/Арашан/);
@@ -147,7 +156,8 @@ test("the tab «Родословная» shows the ancestors, and a parent that 
   expect(await screen.findByRole("heading", { name: "11 Алтын" })).toBeTruthy();
 });
 
-test("the card of an External Sheep has no Owner", async () => {
+test("the card of an External Sheep has no Owner, Status or Flock actions", async () => {
+  const user = userEvent.setup();
   const farm = memberOfFarm();
   const external = addSheep(farm, { tag: "E-7", name: "Чужак", origin: "external" });
   addSheep(farm, { tag: "8", fatherId: external });
@@ -158,7 +168,15 @@ test("the card of an External Sheep has no Owner", async () => {
   expect(screen.queryByText("Владелец", { selector: "dt" })).toBeNull();
   expect(screen.queryByRole("region", { name: "Владельцы" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Сменить владельца" })).toBeNull();
+  expect(screen.queryByText("Статус", { selector: "dt" })).toBeNull();
+  expect(screen.queryByText("Стадо", { selector: "dt" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Перевести в стадо" })).toBeNull();
   expect(within(cardField("Дети")).getByRole("link", { name: "8" })).toBeTruthy();
+  await user.click(screen.getByRole("tab", { name: "История" }));
+  expect(await screen.findByRole("heading", { name: "Изменения" })).toBeTruthy();
+  expect(screen.queryByRole("heading", { name: "Стада" })).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Кто отвечал за барана" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Отменить последний перевод" })).toBeNull();
 });
 
 test("a Sheep that is a parent cannot be deleted", async () => {

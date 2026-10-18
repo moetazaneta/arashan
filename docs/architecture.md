@@ -168,6 +168,18 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `breed.add`           | yes   | yes    |
 | `breed.update`        | yes   | yes    |
 | `breed.delete`        | yes   | yes    |
+| `sheep.move`           | yes   | yes    |
+| `flock.view`           | yes   | yes    |
+| `flock.create`         | yes   | yes    |
+| `flock.update`         | yes   | yes    |
+| `flock.archive`        | yes   | yes    |
+| `flock.assignShepherd` | yes   | yes    |
+| `location.create`      | yes   | yes    |
+| `location.update`      | yes   | yes    |
+| `location.archive`     | yes   | yes    |
+| `shepherd.create`      | yes   | yes    |
+| `shepherd.update`      | yes   | yes    |
+| `shepherd.archive`     | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -289,6 +301,48 @@ file storage (`ctx.storage`, the system table `_storage`).
 
 A file is never erased (ADR 0005): a new scan leaves the old file in the storage. The ids of the
 storage are not bound to a Farm, but they are random and only a Member of the Farm sees them.
+
+## Flocks, Locations and Shepherds
+
+The module `core/src/flocks/` keeps the Flocks of a Farm, their Locations and their Shepherds, and
+the moves of Sheep between Flocks: the page «Стада» (tabs «Стада», «Чабаны», «Места»), the card
+of a Flock, the column «Стадо» and the bulk action «Перевести в стадо» of the table «Бараны».
+
+- **A Flock** has a name, an optional Location and zero or more Shepherds. The names of Flocks and
+  of Locations are unique in the Farm (`nameKey`: the case, the spaces and «ё» do not count); the
+  Archived ones count too. Two Shepherds can have the same name. A Location has no history: a Flock
+  has only its Location of now.
+- **A Shepherd assignment** (`flockAssignments`) says that a Shepherd herds a Flock from a date to a
+  date, both days included. An open assignment (no `to`) goes on now. A Shepherd can herd more than
+  one Flock at one time, but two assignments of one Shepherd to one Flock do not overlap. An
+  assignment is part of the Flock and of the Shepherd: each of its commands appends an audit entry
+  for both.
+- **A move** (`sheepFlockMoves`) puts a Sheep into a Flock or out of all Flocks on a date. The moves
+  are the history of the Flock membership, and the Sheep keeps its Flock of now (`Sheep.flockId`),
+  as it keeps its Owner. Only an Active Sheep is in a Flock. `moveSheep` moves one Sheep or many in
+  one command, and appends one audit entry for each Sheep that moved; a Sheep that is in the Flock
+  already stays as it is. If one Sheep cannot move, no Sheep moves. A move made by mistake is undone
+  (`undoFlockMove`): it becomes Deleted, and the Sheep goes back.
+- **No date of a move or of an assignment is in the future.** Thus the state of now never depends on
+  the day, and a Convex query never gives a stale answer: the Flock of a Sheep is `flockId`, and the
+  Shepherds of a Flock are its open assignments. A move is not before the birth date and not before
+  the last move of the Sheep.
+- **Who was responsible for a Sheep on a date** (`getSheepResponsible`, `flocks.responsible`): the
+  Flocks that had the Sheep on that date, each with its Shepherds on that date. On the day of a move
+  the Sheep was in both Flocks (`flocksOn`): in the old one at the start of the day and in the new
+  one at the end, so a Sheep that leaves all Flocks on the day it dies was still in its Flock that
+  day. The Flock at the end of a day is `flockAt`, for example the Flock of a Mother on the date of a
+  Lambing. The card of a Sheep shows its stays in Flocks with their Shepherds (`SheepCard.flocks`),
+  and the answer for a date, in the tab «История».
+- **Archive.** An Archived Flock, Location or Shepherd stays in the history and in the lists, with
+  the flag `archived`, but a form does not offer it. A Flock with Sheep cannot become Archived
+  (`flock.notEmpty`), nor a Location where a Flock stays (`location.inUse`). When a Flock or a
+  Shepherd becomes Archived, its open assignments end on the date that the Member gives: the last
+  day of work. Out of the archive, the ended assignments stay ended.
+- **For a command of another slice,** `recordFlockMove(ctx, sheep, flockId, date)` checks the rules of
+  a move and writes it, without a permission check and without an audit entry: the command checks the
+  permission and appends its own entry. A Sheep that stops being Active leaves its Flock with it
+  first, and a Lamb goes into the Flock of its Mother.
 
 ## The audit log
 

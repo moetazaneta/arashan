@@ -107,6 +107,7 @@ export async function registerSheep(
     initialEntry: input.initialEntry,
     status: "active",
     ownerId: input.ownerId,
+    flockId: null,
     registeredAt: ctx.now(),
   });
   await recordSheepAudit(ctx, "sheep.register", sheepId);
@@ -147,6 +148,7 @@ export async function registerExternalSheep(
     // default; each list of the Farm skips it by its Origin.
     status: "active",
     ownerId: null,
+    flockId: null,
     registeredAt: ctx.now(),
   });
   await recordSheepAudit(ctx, "sheep.registerExternal", sheepId);
@@ -162,8 +164,9 @@ export interface SheepUpdate extends SheepDetails {
 /**
  * A Member changes the fields of a Sheep, also of an External Sheep. The same rules apply as for a
  * new Sheep, and the birth date is not after a change of the Owner
- * (`sheep.birthDateAfterOwnerChange`). A Sheep that is a parent keeps its sex, and stays born before
- * its children. A change of the Breed composition changes the composition of all descendants too,
+ * (`sheep.birthDateAfterOwnerChange`) or a Flock move (`sheep.birthDateAfterFlockMove`). A Sheep
+ * that is a parent keeps its sex, and stays born before its children. A change of the Breed
+ * composition changes the composition of all descendants too,
  * so it fails if a Sheep with a Passport among them would stop being 100 percent Arashan. The Owner
  * changes only with `changeSheepOwner`, which records the date. A change that changes nothing writes
  * nothing.
@@ -180,6 +183,10 @@ export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): 
     const changes = await ctx.repos.sheep.ownerChanges(sheep.id);
     if (changes.some((change) => change.date < birthDate)) {
       throw new DomainError("sheep.birthDateAfterOwnerChange");
+    }
+    const moves = await ctx.repos.sheep.flockMoves(sheep.id);
+    if (moves.some((move) => move.date < birthDate)) {
+      throw new DomainError("sheep.birthDateAfterFlockMove");
     }
   }
   if (origin !== "external") await requireFreeTag(ctx, details.tag, sheep.id);
@@ -549,7 +556,7 @@ function optionalText(text: string | null, maxLength: number, code: ErrorCode): 
 
 function sameFields(
   sheep: Sheep,
-  fields: Omit<SheepFields, "initialEntry" | "status" | "ownerId" | "registeredAt">,
+  fields: Omit<SheepFields, "initialEntry" | "status" | "ownerId" | "flockId" | "registeredAt">,
 ): boolean {
   return (
     sameParts(sheep.manualBreeds, fields.manualBreeds) &&

@@ -14,3 +14,8 @@ export type PasswordResetId = Id<"PasswordReset">;
 export type BreedId = Id<"Breed">;
 /** A file in the file storage of the app, such as the scan of a Passport. */
 export type FileId = Id<"File">;
+export type LocationId = Id<"Location">;
+export type ShepherdId = Id<"Shepherd">;
+export type FlockId = Id<"Flock">;
+export type ShepherdAssignmentId = Id<"ShepherdAssignment">;
+export type FlockMoveId = Id<"FlockMove">;
