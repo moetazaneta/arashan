@@ -4,22 +4,37 @@ import {
   type CommandName,
   type Farm,
   type FarmAuditReader,
+  type FarmFlockReader,
+  type FarmFlockRepository,
   type FarmId,
+  type FarmLocationReader,
+  type FarmLocationRepository,
   type FarmReader,
   type FarmReaders,
   type FarmRepositories,
   type FarmRepository,
   type FarmSheepReader,
   type FarmSheepRepository,
+  type FarmShepherdReader,
+  type FarmShepherdRepository,
+  type Flock,
+  type FlockFields,
+  type FlockId,
+  type FlockMove,
+  type FlockMoveId,
   type Invite,
   type InviteId,
   type InviteReader,
   type InviteRepository,
+  type Location,
+  type LocationFields,
+  type LocationId,
   type Membership,
   type MembershipId,
   type MembershipReader,
   type MembershipRepository,
   type MemberUserReader,
+  nameKey,
   type OwnerChange,
   type OwnerChangeId,
   type PasswordReset,
@@ -30,6 +45,11 @@ import {
   type Sheep,
   type SheepFields,
   type SheepId,
+  type Shepherd,
+  type ShepherdAssignment,
+  type ShepherdFields,
+  type ShepherdAssignmentId,
+  type ShepherdId,
   tagKey,
   type TargetKind,
   type User,
@@ -118,6 +138,7 @@ function toSheep(doc: Doc<"sheep">): Sheep {
       doc.weightKg === undefined || doc.weighedOn === undefined
         ? null
         : { kg: doc.weightKg, date: doc.weighedOn },
+    flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     registeredAt: doc.registeredAt,
   };
 }
@@ -143,7 +164,38 @@ function sheepColumns(
     notes: sheep.notes ?? undefined,
     weightKg: sheep.weight?.kg,
     weighedOn: sheep.weight?.date,
+    flockId: sheep.flockId === null ? undefined : idOf(sheep.flockId),
     registeredAt: sheep.registeredAt,
+  };
+}
+
+// The columns of a row for the fields of a record. A field that is null in the core is undefined
+// here: an insert leaves it out, and a patch removes it. The key of a name follows the name.
+
+function locationColumns(location: LocationFields) {
+  return {
+    name: location.name,
+    nameKey: nameKey(location.name),
+    notes: location.notes ?? undefined,
+    archivedAt: location.archivedAt ?? undefined,
+  };
+}
+
+function shepherdColumns(shepherd: ShepherdFields) {
+  return {
+    name: shepherd.name,
+    phone: shepherd.phone ?? undefined,
+    notes: shepherd.notes ?? undefined,
+    archivedAt: shepherd.archivedAt ?? undefined,
+  };
+}
+
+function flockColumns(flock: FlockFields) {
+  return {
+    name: flock.name,
+    nameKey: nameKey(flock.name),
+    locationId: flock.locationId === null ? undefined : idOf<"locations">(flock.locationId),
+    archivedAt: flock.archivedAt ?? undefined,
   };
 }
 
@@ -155,6 +207,57 @@ function toOwnerChange(doc: Doc<"sheepOwnerChanges">): OwnerChange {
     ownerId: doc.ownerId as string as MembershipId,
     date: doc.date,
     at: doc.at,
+  };
+}
+
+function toFlockMove(doc: Doc<"sheepFlockMoves">): FlockMove {
+  return {
+    id: doc._id as string as FlockMoveId,
+    sheepId: doc.sheepId as string as SheepId,
+    flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
+    date: doc.date,
+    at: doc.at,
+  };
+}
+
+function toLocation(doc: Doc<"locations">): Location {
+  return {
+    id: doc._id as string as LocationId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    notes: doc.notes ?? null,
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function toShepherd(doc: Doc<"shepherds">): Shepherd {
+  return {
+    id: doc._id as string as ShepherdId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    phone: doc.phone ?? null,
+    notes: doc.notes ?? null,
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function toFlock(doc: Doc<"flocks">): Flock {
+  return {
+    id: doc._id as string as FlockId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    locationId: doc.locationId === undefined ? null : (doc.locationId as string as LocationId),
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function toAssignment(doc: Doc<"flockAssignments">): ShepherdAssignment {
+  return {
+    id: doc._id as string as ShepherdAssignmentId,
+    flockId: doc.flockId as string as FlockId,
+    shepherdId: doc.shepherdId as string as ShepherdId,
+    from: doc.from,
+    to: doc.to ?? null,
   };
 }
 
@@ -457,6 +560,149 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .first();
       return doc !== null;
     },
+    async listInFlock(flockId) {
+      const flockDocId = db.normalizeId("flocks", flockId);
+      if (flockDocId === null) return [];
+      const docs = await db
+        .query("sheep")
+        .withIndex("by_farmId_deletedAt_flockId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("flockId", flockDocId),
+        )
+        .collect();
+      return docs.map(toSheep);
+    },
+    async flockMoves(sheepId) {
+      const sheepDocId = db.normalizeId("sheep", sheepId);
+      if (sheepDocId === null) return [];
+      // The order of creation, as in `ownerChanges`.
+      const docs = await db
+        .query("sheepFlockMoves")
+        .withIndex("by_farmId_deletedAt_sheepId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("sheepId", sheepDocId),
+        )
+        .collect();
+      return docs.map(toFlockMove);
+    },
+  };
+}
+
+/** The record of the Farm with the id in the table, or null. */
+async function ofFarm<Table extends "locations" | "shepherds" | "flocks" | "flockAssignments">(
+  db: DatabaseReader,
+  table: Table,
+  farmId: FarmId,
+  id: string,
+): Promise<Doc<Table> | null> {
+  const doc = await getActive(db, table, id);
+  return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
+}
+
+function farmLocationReader(db: DatabaseReader, farmId: FarmId): FarmLocationReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "locations", farmId, id);
+      return doc === null ? null : toLocation(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("locations")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toLocation);
+    },
+    async findByName(name) {
+      // Only the rows of this key, as in `findByTag`: two Locations with one name at one time
+      // conflict, and Convex runs the second again.
+      const docs = await db
+        .query("locations")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("nameKey", nameKey(name)),
+        )
+        .collect();
+      return docs.map(toLocation);
+    },
+  };
+}
+
+function farmShepherdReader(db: DatabaseReader, farmId: FarmId): FarmShepherdReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "shepherds", farmId, id);
+      return doc === null ? null : toShepherd(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("shepherds")
+        .withIndex("by_farmId_deletedAt", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toShepherd);
+    },
+  };
+}
+
+function farmFlockReader(db: DatabaseReader, farmId: FarmId): FarmFlockReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "flocks", farmId, id);
+      return doc === null ? null : toFlock(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("flocks")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toFlock);
+    },
+    async findByName(name) {
+      const docs = await db
+        .query("flocks")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("nameKey", nameKey(name)),
+        )
+        .collect();
+      return docs.map(toFlock);
+    },
+    async getAssignment(id) {
+      const doc = await ofFarm(db, "flockAssignments", farmId, id);
+      return doc === null ? null : toAssignment(doc);
+    },
+    async listAssignments() {
+      const docs = await db
+        .query("flockAssignments")
+        .withIndex("by_farmId_deletedAt_flockId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toAssignment);
+    },
+    async assignmentsOfFlock(flockId) {
+      const flockDocId = db.normalizeId("flocks", flockId);
+      if (flockDocId === null) return [];
+      const docs = await db
+        .query("flockAssignments")
+        .withIndex("by_farmId_deletedAt_flockId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("flockId", flockDocId),
+        )
+        .collect();
+      return docs.map(toAssignment);
+    },
+    async assignmentsOfShepherd(shepherdId) {
+      const shepherdDocId = db.normalizeId("shepherds", shepherdId);
+      if (shepherdDocId === null) return [];
+      const docs = await db
+        .query("flockAssignments")
+        .withIndex("by_farmId_deletedAt_shepherdId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("shepherdId", shepherdDocId),
+        )
+        .collect();
+      return docs.map(toAssignment);
+    },
   };
 }
 
@@ -498,6 +744,9 @@ export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
     },
     users: memberUserReader(db),
     sheep: farmSheepReader(db, farmId),
+    flocks: farmFlockReader(db, farmId),
+    locations: farmLocationReader(db, farmId),
+    shepherds: farmShepherdReader(db, farmId),
     history: farmAuditReader(db, farmId),
   };
 }
@@ -539,13 +788,95 @@ export function farmRepositories(
         at: change.at,
       })) as string as OwnerChangeId;
     },
+    async insertFlockMove(move) {
+      return (await db.insert("sheepFlockMoves", {
+        farmId: idOf(farmId),
+        sheepId: idOf(move.sheepId),
+        flockId: move.flockId === null ? undefined : idOf(move.flockId),
+        date: move.date,
+        at: move.at,
+      })) as string as FlockMoveId;
+    },
+    async markFlockMoveDeleted(id, deletedAt) {
+      const doc = await getActive(db, "sheepFlockMoves", id);
+      if (doc !== null && doc.farmId === idOf<"farms">(farmId)) {
+        await db.patch("sheepFlockMoves", doc._id, { deletedAt });
+      }
+    },
     async markDeleted(id, deletedAt) {
       const doc = await sheepOfFarm(db, farmId, id);
       if (doc !== null) await db.patch("sheep", doc._id, { deletedAt });
     },
   };
+  const locations: FarmLocationRepository = {
+    ...readers.locations,
+    async insert(fields) {
+      return (await db.insert("locations", {
+        farmId: idOf(farmId),
+        ...locationColumns(fields),
+      })) as string as LocationId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "locations", farmId, id);
+      if (doc === null) return;
+      await db.patch("locations", doc._id, locationColumns({ ...toLocation(doc), ...fields }));
+    },
+  };
+  const shepherds: FarmShepherdRepository = {
+    ...readers.shepherds,
+    async insert(fields) {
+      return (await db.insert("shepherds", {
+        farmId: idOf(farmId),
+        ...shepherdColumns(fields),
+      })) as string as ShepherdId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "shepherds", farmId, id);
+      if (doc === null) return;
+      await db.patch("shepherds", doc._id, shepherdColumns({ ...toShepherd(doc), ...fields }));
+    },
+  };
+  const flocks: FarmFlockRepository = {
+    ...readers.flocks,
+    async insert(fields) {
+      return (await db.insert("flocks", {
+        farmId: idOf(farmId),
+        ...flockColumns(fields),
+      })) as string as FlockId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "flocks", farmId, id);
+      if (doc === null) return;
+      await db.patch("flocks", doc._id, flockColumns({ ...toFlock(doc), ...fields }));
+    },
+    async insertAssignment(assignment) {
+      return (await db.insert("flockAssignments", {
+        farmId: idOf(farmId),
+        flockId: idOf(assignment.flockId),
+        shepherdId: idOf(assignment.shepherdId),
+        from: assignment.from,
+        to: assignment.to ?? undefined,
+      })) as string as ShepherdAssignmentId;
+    },
+    async updateAssignment(id, dates) {
+      const doc = await ofFarm(db, "flockAssignments", farmId, id);
+      if (doc !== null) {
+        await db.patch("flockAssignments", doc._id, {
+          from: dates.from,
+          to: dates.to ?? undefined,
+        });
+      }
+    },
+    async markAssignmentDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "flockAssignments", farmId, id);
+      if (doc !== null) await db.patch("flockAssignments", doc._id, { deletedAt });
+    },
+  };
   return {
     ...readers,
+    flocks,
+    locations,
+    shepherds,
     farm: {
       async updateSettings(settings) {
         await db.patch("farms", idOf<"farms">(farmId), settings);

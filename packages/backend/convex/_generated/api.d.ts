@@ -10,14 +10,17 @@
 
 import type * as app from "../app.js";
 import type * as farms from "../farms.js";
+import type * as flocks from "../flocks.js";
 import type * as invites from "../invites.js";
 import type * as lib_clerk from "../lib/clerk.js";
 import type * as lib_functions from "../lib/functions.js";
 import type * as lib_records from "../lib/records.js";
 import type * as lib_repositories from "../lib/repositories.js";
 import type * as lib_tokens from "../lib/tokens.js";
+import type * as locations from "../locations.js";
 import type * as members from "../members.js";
 import type * as sheep from "../sheep.js";
+import type * as shepherds from "../shepherds.js";
 import type * as users from "../users.js";
 
 import type {
@@ -29,14 +32,17 @@ import type {
 declare const fullApi: ApiFromModules<{
   app: typeof app;
   farms: typeof farms;
+  flocks: typeof flocks;
   invites: typeof invites;
   "lib/clerk": typeof lib_clerk;
   "lib/functions": typeof lib_functions;
   "lib/records": typeof lib_records;
   "lib/repositories": typeof lib_repositories;
   "lib/tokens": typeof lib_tokens;
+  locations: typeof locations;
   members: typeof members;
   sheep: typeof sheep;
+  shepherds: typeof shepherds;
   users: typeof users;
 }>;
 

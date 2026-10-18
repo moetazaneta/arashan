@@ -88,12 +88,77 @@ export default defineSchema({
     /** The last weighing: the weight in kilograms and the date "YYYY-MM-DD". Both or none. */
     weightKg: v.optional(v.number()),
     weighedOn: v.optional(v.string()),
+    /** The Flock that the Sheep is in now. Absent if it is in no Flock. */
+    flockId: v.optional(v.id("flocks")),
     registeredAt: v.number(),
     ...deletable,
   })
     .index("by_farmId_deletedAt_tagKey", ["farmId", "deletedAt", "tagKey"])
     // Also the index of the list of all Sheep of the Farm, with only `farmId` and `deletedAt`.
-    .index("by_farmId_deletedAt_status_ownerId", ["farmId", "deletedAt", "status", "ownerId"]),
+    .index("by_farmId_deletedAt_status_ownerId", ["farmId", "deletedAt", "status", "ownerId"])
+    .index("by_farmId_deletedAt_flockId", ["farmId", "deletedAt", "flockId"]),
+
+  // The moves of a Sheep into a Flock or out of all Flocks: the history of its Flock membership.
+  sheepFlockMoves: defineTable({
+    farmId: v.id("farms"),
+    sheepId: v.id("sheep"),
+    /** The Flock that the Sheep went into. Absent for a move out of all Flocks. */
+    flockId: v.optional(v.id("flocks")),
+    /** The date of the move, "YYYY-MM-DD". */
+    date: v.string(),
+    /** When a Member recorded the move. */
+    at: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_sheepId", ["farmId", "deletedAt", "sheepId"]),
+
+  locations: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    /** The key of the name (`nameKey` of the core), to find a name that is taken. */
+    nameKey: v.string(),
+    notes: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  })
+    // Also the index of the list of all Locations of the Farm.
+    .index("by_farmId_deletedAt_nameKey", ["farmId", "deletedAt", "nameKey"]),
+
+  shepherds: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    phone: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  }).index("by_farmId_deletedAt", ["farmId", "deletedAt"]),
+
+  flocks: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    /** The key of the name (`nameKey` of the core), to find a name that is taken. */
+    nameKey: v.string(),
+    /** Where the Flock stays now. Absent if it has no Location. */
+    locationId: v.optional(v.id("locations")),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  })
+    // Also the index of the list of all Flocks of the Farm.
+    .index("by_farmId_deletedAt_nameKey", ["farmId", "deletedAt", "nameKey"]),
+
+  // A Shepherd herds a Flock from a date to a date, both days included.
+  flockAssignments: defineTable({
+    farmId: v.id("farms"),
+    flockId: v.id("flocks"),
+    shepherdId: v.id("shepherds"),
+    /** The first day, "YYYY-MM-DD". */
+    from: v.string(),
+    /** The last day, "YYYY-MM-DD". Absent while the assignment goes on. */
+    to: v.optional(v.string()),
+    ...deletable,
+  })
+    // Also the index of the list of all assignments of the Farm.
+    .index("by_farmId_deletedAt_flockId", ["farmId", "deletedAt", "flockId"])
+    .index("by_farmId_deletedAt_shepherdId", ["farmId", "deletedAt", "shepherdId"]),
 
   // The changes of the Owner of a Sheep, for the history of the Owners on its card.
   sheepOwnerChanges: defineTable({

@@ -72,6 +72,7 @@ describe("listSheep", () => {
         initialEntry: true,
         status: "active",
         owner: { id: editorId, name: "editor" },
+        flock: null,
         weight: { kg: 20, date: "2026-10-01" },
         notes: "Шустрая",
         registeredAt: store.time,

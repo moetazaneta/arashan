@@ -1,11 +1,17 @@
 import type { FarmId, SheepId } from "@arashan/core";
 import { useFarm, useSheepList } from "@arashan/client";
-import { Trans } from "@lingui/react/macro";
+import { Plural, Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
+import { type MoveResult, MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { RegisterSheepSheet } from "@/components/sheep/sheep-form";
-import { ColumnSettings, SheepTable, useSheepColumns } from "@/components/sheep/sheep-table";
+import {
+  ColumnSettings,
+  noSelection,
+  SheepTable,
+  useSheepColumns,
+} from "@/components/sheep/sheep-table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -17,7 +23,10 @@ export const Route = createFileRoute("/farms/$farmId/sheep/")({
   component: SheepPage,
 });
 
-/** The table «Бараны»: all Sheep of the Farm, and the side panel that registers new ones. */
+/**
+ * The table «Бараны»: all Sheep of the Farm, and the side panel that registers new ones. With Sheep
+ * selected, the actions of the header give way to the bulk actions on them.
+ */
 function SheepPage() {
   const farmId = Route.useParams().farmId as FarmId;
   // The layout shows this page only after the Farm loaded.
@@ -27,7 +36,19 @@ function SheepPage() {
   const navigate = useNavigate();
   const [registering, setRegistering] = useState(false);
   const [columnVisibility, setColumnVisibility] = useSheepColumns();
+  const [selection, setSelection] = useState<ReadonlySet<SheepId>>(noSelection);
+  // The Sheep of the move dialog stay as they were when it opened, also while it closes.
+  const [moving, setMoving] = useState(false);
+  const [movingIds, setMovingIds] = useState<readonly SheepId[]>([]);
+  const [moveResult, setMoveResult] = useState<MoveResult | null>(null);
   useKeyShortcut("KeyN", () => setRegistering(true));
+  useKeyShortcut("Escape", () => setSelection(noSelection));
+
+  // A new selection starts a new bulk action: the result of the last one goes.
+  const changeSelection = useCallback((next: ReadonlySet<SheepId>) => {
+    setSelection(next);
+    if (next.size > 0) setMoveResult(null);
+  }, []);
 
   const openCard = useCallback(
     (sheepId: SheepId) =>
@@ -59,11 +80,40 @@ function SheepPage() {
             </span>
           )}
         </h1>
-        {hasSheep && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {moveResult !== null && <MoveResultText result={moveResult} />}
+        </p>
+        {selection.size > 0 ? (
           <div className="ml-auto flex items-center gap-2">
-            <ColumnSettings visibility={columnVisibility} onChange={setColumnVisibility} />
-            {addButton}
+            <span className="text-sm text-muted-foreground tabular-nums">
+              <SelectedCount count={selection.size} />
+            </span>
+            <Button
+              variant="ghost"
+              aria-keyshortcuts="Escape"
+              onClick={() => setSelection(noSelection)}
+            >
+              <Trans>Снять выбор</Trans>
+              <Kbd aria-hidden className="ml-1">
+                Esc
+              </Kbd>
+            </Button>
+            <Button
+              onClick={() => {
+                setMovingIds([...selection]);
+                setMoving(true);
+              }}
+            >
+              <Trans>Перевести в стадо</Trans>
+            </Button>
           </div>
+        ) : (
+          hasSheep && (
+            <div className="ml-auto flex items-center gap-2">
+              <ColumnSettings visibility={columnVisibility} onChange={setColumnVisibility} />
+              {addButton}
+            </div>
+          )
         )}
       </div>
       {error !== null ? (
@@ -80,9 +130,55 @@ function SheepPage() {
           <EmptyContent>{addButton}</EmptyContent>
         </Empty>
       ) : (
-        <SheepTable data={sheep.data} columnVisibility={columnVisibility} onOpen={openCard} />
+        <SheepTable
+          data={sheep.data}
+          columnVisibility={columnVisibility}
+          onOpen={openCard}
+          selection={selection}
+          onSelectionChange={changeSelection}
+        />
       )}
       <RegisterSheepSheet farm={farm} open={registering} onOpenChange={setRegistering} />
+      <MoveSheepDialog
+        farm={farm}
+        sheepIds={movingIds}
+        open={moving}
+        onOpenChange={setMoving}
+        onMoved={(result) => {
+          setSelection(noSelection);
+          setMoveResult(result);
+        }}
+      />
     </div>
+  );
+}
+
+/** «Выбрано: 5». */
+function SelectedCount({ count }: { count: number }) {
+  return <Trans>Выбрано: {count}</Trans>;
+}
+
+/** «Переведено баранов: 3 из 5. Остальные уже в этом стаде.» */
+function MoveResultText({ result }: { result: MoveResult }) {
+  const { moved, total } = result;
+  if (moved === total) return <Trans>Переведено баранов: {moved}</Trans>;
+  if (moved === 0) {
+    return result.out ? (
+      <Plural value={total} _1="Баран уже вне стада." other="Эти бараны уже вне стада." />
+    ) : (
+      <Plural value={total} _1="Баран уже в этом стаде." other="Эти бараны уже в этом стаде." />
+    );
+  }
+  if (result.out) {
+    return (
+      <Trans>
+        Переведено баранов: {moved} из {total}. Остальные уже вне стада.
+      </Trans>
+    );
+  }
+  return (
+    <Trans>
+      Переведено баранов: {moved} из {total}. Остальные уже в этом стаде.
+    </Trans>
   );
 }

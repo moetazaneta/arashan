@@ -1,15 +1,27 @@
 import type * as Client from "@arashan/client";
 import type {
+  AssignmentDates,
   AuditEntry,
   CalendarDate,
   Farm,
   FarmCommandContext,
+  FarmFlockRepository,
   FarmId,
+  FarmLocationRepository,
   FarmQueryContext,
   FarmRepositories,
   FarmSettings,
   FarmSheepRepository,
+  FarmShepherdRepository,
   FarmSummary,
+  Flock,
+  FlockId,
+  FlockInput,
+  FlockMove,
+  FlockMoveId,
+  Location,
+  LocationId,
+  LocationInput,
   Member,
   MemberSummary,
   Membership,
@@ -21,22 +33,50 @@ import type {
   SheepId,
   SheepRegistration,
   SheepUpdate,
+  Shepherd,
+  ShepherdAssignment,
+  ShepherdAssignmentId,
+  ShepherdId,
+  ShepherdInput,
   UserId,
   Viewer,
 } from "@arashan/core";
 import {
+  archiveFlock,
+  archiveLocation,
+  archiveShepherd,
+  assignShepherd,
   changeSheepOwner,
+  createFlock,
+  createLocation,
+  createShepherd,
   dateAt,
   deleteSheep,
   DomainError,
+  getFlock,
   getSheep,
   getSheepHistory,
+  getSheepResponsible,
   inviteLifetimeMs,
+  listFlocks,
+  listLocations,
   listSheep,
   listSheepOwners,
+  listShepherds,
+  moveSheep,
+  nameKey,
   registerSheep,
+  removeShepherdAssignment,
   tagKey,
+  unarchiveFlock,
+  unarchiveLocation,
+  unarchiveShepherd,
+  undoFlockMove,
+  updateFlock,
+  updateLocation,
   updateSheep,
+  updateShepherd,
+  updateShepherdAssignment,
   withLamb,
 } from "@arashan/core";
 import { createElement, useEffect, useState, useSyncExternalStore } from "react";
@@ -50,9 +90,13 @@ export {
   defaultLambAgeMonths,
   inviteLifetimeMs,
   maxLambAgeMonths,
+  maxNameLength,
+  maxNotesLength,
   maxPasswordLength,
+  maxPhoneLength,
   maxSheepNameLength,
   maxSheepNotesLength,
+  maxSheepPerMove,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
@@ -82,7 +126,24 @@ type CommandName =
   | "registerSheep"
   | "updateSheep"
   | "changeSheepOwner"
-  | "deleteSheep";
+  | "deleteSheep"
+  | "createFlock"
+  | "updateFlock"
+  | "archiveFlock"
+  | "unarchiveFlock"
+  | "assignShepherd"
+  | "updateShepherdAssignment"
+  | "removeShepherdAssignment"
+  | "moveSheep"
+  | "undoFlockMove"
+  | "createLocation"
+  | "updateLocation"
+  | "archiveLocation"
+  | "unarchiveLocation"
+  | "createShepherd"
+  | "updateShepherd"
+  | "archiveShepherd"
+  | "unarchiveShepherd";
 
 interface FakeBackend {
   session: Client.Session;
@@ -97,6 +158,13 @@ interface FakeBackend {
   sheep: Sheep[];
   deletedSheep: Set<SheepId>;
   ownerChanges: OwnerChange[];
+  /** The moves of Sheep between Flocks, also the undone ones. */
+  flockMoves: (FlockMove & { deleted?: boolean })[];
+  flocks: Flock[];
+  locations: Location[];
+  shepherds: Shepherd[];
+  /** The assignments of Shepherds to Flocks, also the removed ones. */
+  assignments: (ShepherdAssignment & { farmId: FarmId; deleted?: boolean })[];
   audit: AuditEntry[];
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
@@ -113,6 +181,11 @@ const emptyBackend = (): FakeBackend => ({
   sheep: [],
   deletedSheep: new Set(),
   ownerChanges: [],
+  flockMoves: [],
+  flocks: [],
+  locations: [],
+  shepherds: [],
+  assignments: [],
   audit: [],
   failures: {},
   tokens: 0,
@@ -497,6 +570,7 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       status: "active",
       notes: null,
       weight: null,
+      flockId: null,
       registeredAt: Date.now(),
       ...change,
       ownerId,
@@ -586,6 +660,11 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
+    listInFlock: async (flockId) => ofFarm().filter((s) => s.flockId === flockId),
+    flockMoves: async (sheepId) =>
+      backend.flockMoves
+        .filter((m) => m.sheepId === sheepId && m.deleted !== true)
+        .map(({ id, flockId, date, at }) => ({ id, sheepId, flockId, date, at })),
     insert: async (fields) => {
       const id = nextId(backend, "sheep") as SheepId;
       backend.sheep.push({ id, farmId, ...fields });
@@ -600,8 +679,105 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
       backend.ownerChanges.push({ id, ...change });
       return id;
     },
+    insertFlockMove: async (move) => {
+      const id = nextId(backend, "flock-move") as FlockMoveId;
+      backend.flockMoves.push({ id, ...move });
+      return id;
+    },
+    markFlockMoveDeleted: async (id) => {
+      const found = backend.flockMoves.find((m) => m.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
     markDeleted: async (id) => {
       backend.deletedSheep.add(id);
+    },
+  };
+}
+
+function locationRepository(backend: FakeBackend, farmId: FarmId): FarmLocationRepository {
+  const ofFarm = () => backend.locations.filter((l) => l.farmId === farmId);
+  return {
+    get: async (id) => ofFarm().find((l) => l.id === id) ?? null,
+    list: async () => ofFarm().map((l) => ({ ...l })),
+    findByName: async (name) => ofFarm().filter((l) => nameKey(l.name) === nameKey(name)),
+    insert: async (fields) => {
+      const id = nextId(backend, "location") as LocationId;
+      backend.locations.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((l) => l.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+  };
+}
+
+function shepherdRepository(backend: FakeBackend, farmId: FarmId): FarmShepherdRepository {
+  const ofFarm = () => backend.shepherds.filter((s) => s.farmId === farmId);
+  return {
+    get: async (id) => ofFarm().find((s) => s.id === id) ?? null,
+    list: async () => ofFarm().map((s) => ({ ...s })),
+    insert: async (fields) => {
+      const id = nextId(backend, "shepherd") as ShepherdId;
+      backend.shepherds.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((s) => s.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+  };
+}
+
+function flockRepository(backend: FakeBackend, farmId: FarmId): FarmFlockRepository {
+  const ofFarm = () => backend.flocks.filter((f) => f.farmId === farmId);
+  const assignments = () =>
+    backend.assignments.filter((a) => a.farmId === farmId && a.deleted !== true);
+  const assignment = ({ id, flockId, shepherdId, from, to }: ShepherdAssignment) => ({
+    id,
+    flockId,
+    shepherdId,
+    from,
+    to,
+  });
+  return {
+    get: async (id) => ofFarm().find((f) => f.id === id) ?? null,
+    list: async () => ofFarm().map((f) => ({ ...f })),
+    findByName: async (name) => ofFarm().filter((f) => nameKey(f.name) === nameKey(name)),
+    getAssignment: async (id) => {
+      const found = assignments().find((a) => a.id === id);
+      return found === undefined ? null : assignment(found);
+    },
+    listAssignments: async () => assignments().map(assignment),
+    assignmentsOfFlock: async (flockId) =>
+      assignments()
+        .filter((a) => a.flockId === flockId)
+        .map(assignment),
+    assignmentsOfShepherd: async (shepherdId) =>
+      assignments()
+        .filter((a) => a.shepherdId === shepherdId)
+        .map(assignment),
+    insert: async (fields) => {
+      const id = nextId(backend, "flock") as FlockId;
+      backend.flocks.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((f) => f.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    insertAssignment: async (fields) => {
+      const id = nextId(backend, "assignment") as ShepherdAssignmentId;
+      backend.assignments.push({ id, farmId, ...fields });
+      return id;
+    },
+    updateAssignment: async (id, dates) => {
+      const found = assignments().find((a) => a.id === id);
+      if (found !== undefined) Object.assign(found, dates);
+    },
+    markAssignmentDeleted: async (id) => {
+      const found = assignments().find((a) => a.id === id);
+      if (found !== undefined) found.deleted = true;
     },
   };
 }
@@ -622,6 +798,9 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
       countFarms: async () => 1,
     },
     sheep: sheepRepository(backend, farmId),
+    flocks: flockRepository(backend, farmId),
+    locations: locationRepository(backend, farmId),
+    shepherds: shepherdRepository(backend, farmId),
     history: {
       listForTarget: async (target) =>
         backend.audit.filter(
@@ -645,6 +824,9 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     invites: { insert: notInFake },
     passwordResets: { insert: notInFake },
     sheep: sheepRepository(backend, farmId),
+    flocks: flockRepository(backend, farmId),
+    locations: locationRepository(backend, farmId),
+    shepherds: shepherdRepository(backend, farmId),
     audit: {
       append: async (entry) => {
         backend.audit.push(entry);
@@ -704,4 +886,205 @@ export const useChangeSheepOwner = (farmId: FarmId) =>
 export const useDeleteSheep = (farmId: FarmId) =>
   useMutation("deleteSheep", (backend, sheepId: SheepId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
+  );
+
+// Flocks, Locations and Shepherds. The fake runs the commands and queries of the core, as for the
+// Sheep, so the rules of the core apply. A test puts records in with `addFlock` and the helpers
+// below; they write no audit entries.
+
+/** A Location of the Farm. */
+export function addLocation(farm: FakeFarm, change: Partial<Omit<Location, "id" | "farmId">> = {}) {
+  let id!: LocationId;
+  updateFake((backend) => {
+    id = nextId(backend, "location") as LocationId;
+    backend.locations.push({
+      id,
+      farmId: farm.id,
+      name: "Пастбище",
+      notes: null,
+      archivedAt: null,
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A Shepherd of the Farm. */
+export function addShepherd(farm: FakeFarm, change: Partial<Omit<Shepherd, "id" | "farmId">> = {}) {
+  let id!: ShepherdId;
+  updateFake((backend) => {
+    id = nextId(backend, "shepherd") as ShepherdId;
+    backend.shepherds.push({
+      id,
+      farmId: farm.id,
+      name: "Асан",
+      phone: null,
+      notes: null,
+      archivedAt: null,
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A Flock of the Farm, with no Location unless the test gives one. */
+export function addFlock(farm: FakeFarm, change: Partial<Omit<Flock, "id" | "farmId">> = {}) {
+  let id!: FlockId;
+  updateFake((backend) => {
+    id = nextId(backend, "flock") as FlockId;
+    backend.flocks.push({
+      id,
+      farmId: farm.id,
+      name: "Стадо",
+      locationId: null,
+      archivedAt: null,
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A Shepherd herds a Flock from a date, and to a date or to now. */
+export function addAssignment(
+  farm: FakeFarm,
+  assignment: {
+    flockId: FlockId;
+    shepherdId: ShepherdId;
+    from: CalendarDate;
+    to?: CalendarDate | null;
+  },
+) {
+  let id!: ShepherdAssignmentId;
+  updateFake((backend) => {
+    id = nextId(backend, "assignment") as ShepherdAssignmentId;
+    backend.assignments.push({ id, farmId: farm.id, to: null, ...assignment });
+  });
+  return id;
+}
+
+/** A Sheep went into a Flock (or out of all Flocks) on a date, and is there now. */
+export function addFlockMove(sheepId: SheepId, flockId: FlockId | null, date: CalendarDate) {
+  updateFake((backend) => {
+    const id = nextId(backend, "flock-move") as FlockMoveId;
+    backend.flockMoves.push({ id, sheepId, flockId, date, at: Date.now() });
+    const sheep = backend.sheep.find((s) => s.id === sheepId);
+    if (sheep !== undefined) sheep.flockId = flockId;
+  });
+}
+
+/** The audit entries of the fake backend, for a test that checks one. */
+export function auditEntries(): readonly AuditEntry[] {
+  return backend.audit;
+}
+
+export const useFlocks = (farmId: FarmId) =>
+  useCoreQuery(`flocks ${farmId}`, (backend) => listFlocks(queryContext(backend, farmId)));
+
+export const useFlock = (farmId: FarmId, flockId: FlockId) =>
+  useCoreQuery(`flock ${farmId} ${flockId}`, (backend) =>
+    getFlock(queryContext(backend, farmId), { flockId }),
+  );
+
+export const useLocations = (farmId: FarmId) =>
+  useCoreQuery(`locations ${farmId}`, (backend) => listLocations(queryContext(backend, farmId)));
+
+export const useShepherds = (farmId: FarmId) =>
+  useCoreQuery(`shepherds ${farmId}`, (backend) => listShepherds(queryContext(backend, farmId)));
+
+export const useSheepResponsible = (farmId: FarmId, sheepId: SheepId, date: CalendarDate) =>
+  useCoreQuery(`responsible ${farmId} ${sheepId} ${date}`, (backend) =>
+    getSheepResponsible(queryContext(backend, farmId), { sheepId, date }),
+  );
+
+export const useCreateFlock = (farmId: FarmId) =>
+  useMutation("createFlock", (backend, input: FlockInput) =>
+    createFlock(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateFlock = (farmId: FarmId) =>
+  useMutation("updateFlock", (backend, input: FlockInput & { flockId: FlockId }) =>
+    updateFlock(commandContext(backend, farmId), input),
+  );
+
+export const useArchiveFlock = (farmId: FarmId) =>
+  useMutation("archiveFlock", (backend, input: { flockId: FlockId; date: CalendarDate }) =>
+    archiveFlock(commandContext(backend, farmId), input),
+  );
+
+export const useUnarchiveFlock = (farmId: FarmId) =>
+  useMutation("unarchiveFlock", (backend, flockId: FlockId) =>
+    unarchiveFlock(commandContext(backend, farmId), { flockId }),
+  );
+
+export const useAssignShepherd = (farmId: FarmId) =>
+  useMutation(
+    "assignShepherd",
+    (backend, input: AssignmentDates & { flockId: FlockId; shepherdId: ShepherdId }) =>
+      assignShepherd(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateShepherdAssignment = (farmId: FarmId) =>
+  useMutation(
+    "updateShepherdAssignment",
+    (backend, input: AssignmentDates & { assignmentId: ShepherdAssignmentId }) =>
+      updateShepherdAssignment(commandContext(backend, farmId), input),
+  );
+
+export const useRemoveShepherdAssignment = (farmId: FarmId) =>
+  useMutation("removeShepherdAssignment", (backend, assignmentId: ShepherdAssignmentId) =>
+    removeShepherdAssignment(commandContext(backend, farmId), { assignmentId }),
+  );
+
+export const useMoveSheep = (farmId: FarmId) =>
+  useMutation(
+    "moveSheep",
+    (
+      backend,
+      input: { sheepIds: readonly SheepId[]; flockId: FlockId | null; date: CalendarDate },
+    ) => moveSheep(commandContext(backend, farmId), input),
+  );
+
+export const useUndoFlockMove = (farmId: FarmId) =>
+  useMutation("undoFlockMove", (backend, sheepId: SheepId) =>
+    undoFlockMove(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useCreateLocation = (farmId: FarmId) =>
+  useMutation("createLocation", (backend, input: LocationInput) =>
+    createLocation(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateLocation = (farmId: FarmId) =>
+  useMutation("updateLocation", (backend, input: LocationInput & { locationId: LocationId }) =>
+    updateLocation(commandContext(backend, farmId), input),
+  );
+
+export const useArchiveLocation = (farmId: FarmId) =>
+  useMutation("archiveLocation", (backend, locationId: LocationId) =>
+    archiveLocation(commandContext(backend, farmId), { locationId }),
+  );
+
+export const useUnarchiveLocation = (farmId: FarmId) =>
+  useMutation("unarchiveLocation", (backend, locationId: LocationId) =>
+    unarchiveLocation(commandContext(backend, farmId), { locationId }),
+  );
+
+export const useCreateShepherd = (farmId: FarmId) =>
+  useMutation("createShepherd", (backend, input: ShepherdInput) =>
+    createShepherd(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateShepherd = (farmId: FarmId) =>
+  useMutation("updateShepherd", (backend, input: ShepherdInput & { shepherdId: ShepherdId }) =>
+    updateShepherd(commandContext(backend, farmId), input),
+  );
+
+export const useArchiveShepherd = (farmId: FarmId) =>
+  useMutation("archiveShepherd", (backend, input: { shepherdId: ShepherdId; date: CalendarDate }) =>
+    archiveShepherd(commandContext(backend, farmId), input),
+  );
+
+export const useUnarchiveShepherd = (farmId: FarmId) =>
+  useMutation("unarchiveShepherd", (backend, shepherdId: ShepherdId) =>
+    unarchiveShepherd(commandContext(backend, farmId), { shepherdId }),
   );

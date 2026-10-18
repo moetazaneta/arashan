@@ -6,6 +6,7 @@ import { ChevronLeftIcon, SearchXIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Loading } from "@/components/loading";
+import { MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { ChangeOwnerDialog, DeleteSheepDialog } from "@/components/sheep/sheep-dialogs";
 import { SheepDetails } from "@/components/sheep/sheep-details";
 import { EditSheepSheet } from "@/components/sheep/sheep-form";
@@ -79,6 +80,7 @@ function Gone({ farmId }: { farmId: FarmId }) {
 function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   return (
     <>
@@ -88,6 +90,11 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <Button variant="outline" onClick={() => setEditing(true)}>
             <Trans>Изменить</Trans>
           </Button>
+          {sheep.status === "active" && (
+            <Button variant="outline" onClick={() => setMoving(true)}>
+              <Trans>Перевести в стадо</Trans>
+            </Button>
+          )}
           {sheep.status === "active" && <ChangeOwnerDialog farm={farm} sheep={sheep} />}
           <DeleteSheepDialog
             farm={farm}
@@ -111,10 +118,17 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           <SheepDetails farm={farm} sheep={sheep} />
         </TabsContent>
         <TabsContent value="history" className="pt-4">
-          <SheepHistory farm={farm} sheepId={sheep.id} />
+          <SheepHistory farm={farm} sheep={sheep} />
         </TabsContent>
       </Tabs>
       <EditSheepSheet farm={farm} sheep={sheep} open={editing} onOpenChange={setEditing} />
+      <MoveSheepDialog
+        farm={farm}
+        sheepIds={[sheep.id]}
+        currentFlockId={sheep.flock?.id ?? null}
+        open={moving}
+        onOpenChange={setMoving}
+      />
     </>
   );
 }
