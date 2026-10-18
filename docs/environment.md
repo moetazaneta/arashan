@@ -49,7 +49,8 @@ Values for each environment:
 - **Production** (Vercel production, from `main`): `VITE_CONVEX_URL` is the URL of the production
   Convex deployment.
 - **Preview** (Vercel preview, from each pull request): `VITE_CONVEX_URL` is the URL of the
-  development Convex deployment. Previews do not get their own Convex deployment.
+  development Convex deployment. Previews do not get their own Convex deployment, and CI pushes no
+  functions to it.
 - **Local**: `VITE_CLERK_PUBLISHABLE_KEY` is in `apps/web/.env.local`, because Vite reads the env
   files from the app's root. `VITE_CONVEX_URL` comes from the local Convex deployment.
 
@@ -90,6 +91,11 @@ of sensitive variables. The two secrets that a build can need, `CONVEX_DEPLOY_KE
 `CLERK_SECRET_KEY`, are GitHub secrets and not Vercel variables. The web app is a static SPA, so
 it never needs them at run time.
 
-When the backend deploys from CI, the Build step on `main` gets `CONVEX_DEPLOY_KEY` from the GitHub
-secret, and `vp build` in that step becomes
-`convex deploy --cmd 'vp build' --cmd-url-env-var-name VITE_CONVEX_URL`.
+### The Convex functions
+
+- **Production:** for each push to `main`, the Deploy workflow runs `convex deploy` in
+  `packages/backend` with `CONVEX_DEPLOY_KEY`, before it builds the web app. The key selects the
+  production deployment. If `convex deploy` fails, the workflow stops, and the web app is not
+  deployed. The web app gets the URL of the production deployment from the Vercel variables.
+- **Previews:** a pull request pushes no functions. A preview uses the development deployment, which
+  has the functions that a developer pushed with `convex dev` (`vp dev`) against it.
