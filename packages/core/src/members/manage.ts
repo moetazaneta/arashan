@@ -1,10 +1,11 @@
 import { authorize } from "../access/permissions";
-import { recordAudit, recordFarmAudit } from "../audit/audit";
+import { type CommandName, recordAudit, recordFarmAudit } from "../audit/audit";
 import type { FarmCommandContext, FarmQueryContext, SystemContext } from "../context";
 import { DomainError } from "../errors";
 import type { MembershipId, PasswordResetId, UserId } from "../ids";
 import { issueInvite, type NewInvite } from "./commands";
 import type { Membership, Role } from "./membership";
+import type { PasswordResetOutcome } from "./password-reset";
 
 // An Admin manages the Members of the Farm: invites Editors, changes Roles, removes Members, and sets
 // a new password for a Member who cannot log in. A Farm always keeps at least one Admin.
@@ -159,7 +160,7 @@ export async function requestMemberPassword(
  */
 export async function finishMemberPassword(
   ctx: SystemContext,
-  input: { passwordResetId: PasswordResetId; outcome: "done" | "failed" },
+  input: { passwordResetId: PasswordResetId; outcome: PasswordResetOutcome },
 ): Promise<void> {
   const reset = await ctx.repos.passwordResets.get(input.passwordResetId);
   if (reset === null || reset.status !== "pending") return;
@@ -167,10 +168,16 @@ export async function finishMemberPassword(
   await recordAudit(ctx, {
     actorId: reset.actorId,
     farmId: reset.farmId,
-    command: input.outcome === "done" ? "member.setPassword" : "member.setPasswordFailed",
+    command: outcomeCommands[input.outcome],
     target: { kind: "Membership", id: reset.membershipId },
   });
 }
+
+const outcomeCommands = {
+  done: "member.setPassword",
+  failed: "member.setPasswordFailed",
+  unknown: "member.setPasswordUnknown",
+} as const satisfies Record<PasswordResetOutcome, CommandName>;
 
 /** The Membership of the Farm with the id, if it is not Archived; else `member.notFound`. */
 async function activeMembership(

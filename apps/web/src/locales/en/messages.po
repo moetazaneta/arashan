@@ -29,8 +29,8 @@ msgid "Администратор управляет фермой и её уча
 msgstr "An Admin manages the farm and its members. A farm always has at least one Admin."
 
 #: src/errors.ts
-msgid "Администратор фермы сейчас меняет пароль этой учётной записи. Попробуйте ещё раз через минуту."
-msgstr "An Admin of a farm is changing the password of this account now. Try again in a minute."
+msgid "Администратор фермы меняет пароль этой учётной записи, и это ещё не закончилось. Попробуйте позже."
+msgstr "An Admin of a farm is changing the password of this account, and it has not finished yet. Try again later."
 
 #: src/routes/operator/farms.tsx
 msgid "Администратор фермы сможет потом изменить эти настройки."

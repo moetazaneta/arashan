@@ -13,28 +13,59 @@ const clerkApi = "https://api.clerk.com/v1";
 const clerkTimeoutMs = 20_000;
 
 /**
- * Sets a new password for the Clerk user, and ends all the user's sessions, so that the new password
- * is the only way in. Throws `member.passwordRejected` if Clerk refuses the password, for example
- * because it is in a known data breach.
+ * What Clerk did with a new password. `failed` and `unknown` carry the error for the client: a
+ * `member.passwordRejected` DomainError if Clerk refused the password itself.
  */
-export async function setClerkPassword(clerkUserId: string, password: string): Promise<void> {
+export type ClerkPasswordResult =
+  | { outcome: "done" }
+  | { outcome: "failed" | "unknown"; error: Error };
+
+/**
+ * Sets a new password for the Clerk user, and ends all the user's sessions, so that the new password
+ * is the only way in. The result is `done` for an answer 2xx, and `failed` for an answer 4xx: Clerk
+ * refused the request and changed nothing, for example for a password in a known data breach. With
+ * no answer (a timeout, a network error) or an answer 5xx, the result is `unknown`: Clerk can still
+ * set the password.
+ */
+export async function setClerkPassword(
+  clerkUserId: string,
+  password: string,
+): Promise<ClerkPasswordResult> {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (secretKey === undefined || secretKey === "") {
-    throw new Error("CLERK_SECRET_KEY is not set on this Convex deployment.");
+    return {
+      outcome: "failed",
+      error: new Error("CLERK_SECRET_KEY is not set on this Convex deployment."),
+    };
   }
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), clerkTimeoutMs);
-  const response = await fetch(`${clerkApi}/users/${encodeURIComponent(clerkUserId)}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ password, sign_out_of_other_sessions: true }),
-    signal: abort.signal,
-  }).finally(() => clearTimeout(timer));
-  if (response.ok) return;
-  if (passwordError(await response.json().catch(() => null))) {
-    throw new DomainError("member.passwordRejected");
+  let response: Awaited<ReturnType<typeof fetch>>;
+  try {
+    response = await fetch(`${clerkApi}/users/${encodeURIComponent(clerkUserId)}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ password, sign_out_of_other_sessions: true }),
+      signal: abort.signal,
+    });
+  } catch (error) {
+    return { outcome: "unknown", error: asError(error) };
+  } finally {
+    clearTimeout(timer);
   }
-  throw new Error(`The Clerk Backend API did not set the password: HTTP ${response.status}.`);
+  if (response.ok) return { outcome: "done" };
+  const httpError = new Error(
+    `The Clerk Backend API did not set the password: HTTP ${response.status}.`,
+  );
+  if (response.status >= 500) return { outcome: "unknown", error: httpError };
+  if (passwordError(await response.json().catch(() => null))) {
+    return { outcome: "failed", error: new DomainError("member.passwordRejected") };
+  }
+  return { outcome: "failed", error: httpError };
+}
+
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 /** True if Clerk refused the password itself: its error codes start with `form_password`. */

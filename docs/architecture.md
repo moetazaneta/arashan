@@ -183,13 +183,16 @@ stop the older ones, so that an Admin can invite many people at one time.
   1. The internal mutation `members.requestPassword` checks the rules, and writes a pending
      `passwordResets` row and the audit entry `member.requestPassword`, in one transaction.
   2. The action calls Clerk, and waits at most 20 seconds.
-  3. The internal mutation `members.finishPassword` writes the outcome (`done` or `failed`) and the
-     audit entry `member.setPassword` or `member.setPasswordFailed`. It checks no permission again:
-     the password is already set, and the history must show it.
+  3. The internal mutation `members.finishPassword` writes the outcome and its audit entry: `done`
+     (`member.setPassword`, Clerk answered 2xx), `failed` (`member.setPasswordFailed`, Clerk answered
+     4xx and changed nothing) or `unknown` (`member.setPasswordUnknown`: a timeout, a network error
+     or an answer 5xx, so Clerk can still set the password). It checks no permission again: the
+     history must show the outcome whatever happened in the meantime.
 
-  While a reset of a User is pending (at most `passwordResetLifetimeMs`, 2 minutes),
-  `invites.accept` and `users:setOperator` refuse that User with `user.passwordResetPending`. Thus
-  the rule above still holds when Clerk sets the password.
+  While a reset of a User is unfinished (`pending` or `unknown`, for at most
+  `passwordResetLifetimeMs`, 24 hours), `invites.accept` and `users:setOperator` refuse that User
+  with `user.passwordResetPending`. Thus the rule above still holds when Clerk sets the password. A
+  normal reset finishes in seconds.
 
 ## The audit log
 

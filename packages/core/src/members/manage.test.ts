@@ -552,6 +552,21 @@ describe("finishMemberPassword", () => {
     expect(store.audit.at(-1)).toMatchObject({ command: "member.setPasswordFailed" });
   });
 
+  test("an outcome that nobody knows: the reset is unknown, with its own audit entry", async () => {
+    const { store, farmId, membershipId, userId, passwordResetId } = await pendingReset();
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "unknown" });
+
+    expect(store.passwordResets[0]?.status).toBe("unknown");
+    expect(store.audit.at(-1)).toEqual({
+      at: store.time,
+      actorId: userId("admin"),
+      farmId,
+      command: "member.setPasswordUnknown",
+      target: { kind: "Membership", id: membershipId("editor") },
+    });
+  });
+
   test("a reset that is not pending, or unknown, stays as it is", async () => {
     const { store, passwordResetId } = await pendingReset();
     await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
@@ -607,6 +622,34 @@ describe("a pending password reset", () => {
     );
   });
 
+  test("a done reset also lets the User join another Farm", async () => {
+    const { store, operator, editor, passwordResetId } = await pendingReset();
+    const other = await createFarm(operator, { name: "Другая", ...settings });
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
+
+    await expect(acceptInvite(editor, other.invite)).resolves.toEqual({ farmId: other.farmId });
+  });
+
+  test("an unknown outcome keeps blocking the User for the whole lifetime of the reset", async () => {
+    const { store, operator, editor, passwordResetId } = await pendingReset();
+    const other = await createFarm(operator, { name: "Другая", ...settings });
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "unknown" });
+
+    store.time += passwordResetLifetimeMs - 1;
+    await expect(acceptInvite(editor, other.invite)).rejects.toMatchObject({
+      code: "user.passwordResetPending",
+    });
+    await expect(
+      setOperator(store.systemContext(), { providerUserId: "user_editor", isOperator: true }),
+    ).rejects.toMatchObject({ code: "user.passwordResetPending" });
+
+    store.time += 1;
+    await expect(acceptInvite(editor, other.invite)).resolves.toEqual({ farmId: other.farmId });
+    await setOperator(store.systemContext(), { providerUserId: "user_editor", isOperator: true });
+    expect(store.users.find((u) => u.username === "editor")?.isOperator).toBe(true);
+  });
+
   test("stops nothing after its lifetime, also if nobody finished it", async () => {
     const { store, operator, editor } = await pendingReset();
     const other = await createFarm(operator, { name: "Другая", ...settings });
@@ -615,7 +658,7 @@ describe("a pending password reset", () => {
     await expect(acceptInvite(editor, other.invite)).rejects.toMatchObject({
       code: "user.passwordResetPending",
     });
-    store.time += 2;
+    store.time += 1;
     await expect(acceptInvite(editor, other.invite)).resolves.toEqual({ farmId: other.farmId });
   });
 

@@ -140,13 +140,13 @@ export class InMemoryStore {
         const found = active(this.passwordResets).find((r) => r.id === id);
         return found === undefined ? null : withoutDeletedAt(found);
       },
-      hasPending: async (userId, since) =>
-        active(this.passwordResets).some(
-          (r) => r.userId === userId && r.status === "pending" && r.createdAt > since,
-        ),
-      finish: async (id, status) => {
+      listUnfinished: async (userId) =>
+        active(this.passwordResets)
+          .filter((r) => r.userId === userId && (r.status === "pending" || r.status === "unknown"))
+          .map(withoutDeletedAt),
+      finish: async (id, outcome) => {
         const found = this.passwordResets.find((r) => r.id === id);
-        if (found !== undefined) found.status = status;
+        if (found !== undefined) found.status = outcome;
       },
     };
 

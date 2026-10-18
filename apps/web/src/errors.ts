@@ -29,7 +29,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "invite.used": msg`Эту ссылку уже использовали. Попросите новую.`,
   "invite.expired": msg`Ссылка больше не работает. Попросите новую.`,
   "invite.alreadyMember": msg`Вы уже участник этой фермы.`,
-  "user.passwordResetPending": msg`Администратор фермы сейчас меняет пароль этой учётной записи. Попробуйте ещё раз через минуту.`,
+  "user.passwordResetPending": msg`Администратор фермы меняет пароль этой учётной записи, и это ещё не закончилось. Попробуйте позже.`,
   "member.notFound": msg`Такого участника в ферме нет. Возможно, его уже удалили.`,
   "member.lastAdmin": msg`В ферме должен остаться хотя бы один администратор. Сначала назначьте администратором другого участника.`,
   "member.passwordInvalid": msg`Пароль должен быть длиной от ${minPasswordLength} до ${maxPasswordLength} символов.`,

@@ -214,29 +214,16 @@ describe("members.setPassword", () => {
     ]);
   });
 
-  test("a password that Clerk refuses is a domain error, and the reset failed", async () => {
+  /**
+   * Sets the password of the Editor with the Clerk answer that `stub` gives, and gives the error of
+   * the action, the reset rows, the new audit commands, and the error of the Editor's accept of a
+   * link to another Farm after it (null if the Editor joined).
+   */
+  async function setPasswordWith(stub: () => void) {
     const t = setup();
-    const { admin, farmId, membershipId } = await farmWithEditor(t);
-    const editorId = await membershipId("editor");
-    clerkResponds(422, { errors: [{ code: "form_password_pwned" }] });
-    const before = (await auditLog(t)).length;
-
-    expect(
-      await errorCode(
-        admin.action(api.members.setPassword, { farmId, membershipId: editorId, password }),
-      ),
-    ).toBe("member.passwordRejected");
-    expect(await passwordResets(t)).toMatchObject([{ status: "failed" }]);
-    expect((await auditSince(t, before)).map((entry) => entry.command)).toEqual([
-      "member.requestPassword",
-      "member.setPasswordFailed",
-    ]);
-  });
-
-  test("another failure of Clerk is no domain error, and the reset failed", async () => {
-    const t = setup();
-    const { admin, farmId, membershipId } = await farmWithEditor(t);
-    clerkResponds(500, null);
+    const { admin, editor, farmId, membershipId } = await farmWithEditor(t);
+    const other = await makeFarm(t, "Другая");
+    stub();
     const before = (await auditLog(t)).length;
 
     const error = await errorCode(
@@ -246,13 +233,54 @@ describe("members.setPassword", () => {
         password,
       }),
     );
-    expect(error).toBeInstanceOf(Error);
-    expect(await passwordResets(t)).toMatchObject([{ status: "failed" }]);
-    expect((await auditSince(t, before)).map((entry) => entry.command)).toEqual([
-      "member.requestPassword",
-      "member.setPasswordFailed",
-    ]);
+
+    return {
+      error,
+      resets: await passwordResets(t),
+      commands: (await auditSince(t, before)).map((entry) => entry.command),
+      acceptAfter: await errorCode(editor.mutation(api.invites.accept, { token: other.token })),
+    };
+  }
+
+  test("a password that Clerk refuses is a domain error; the reset failed and blocks nothing", async () => {
+    const result = await setPasswordWith(() =>
+      clerkResponds(422, { errors: [{ code: "form_password_pwned" }] }),
+    );
+
+    expect(result.error).toBe("member.passwordRejected");
+    expect(result.resets).toMatchObject([{ status: "failed" }]);
+    expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordFailed"]);
+    expect(result.acceptAfter).toBeNull();
   });
+
+  test("another refusal of Clerk is no domain error; the reset failed and blocks nothing", async () => {
+    const result = await setPasswordWith(() =>
+      clerkResponds(404, { errors: [{ code: "not_found" }] }),
+    );
+
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.resets).toMatchObject([{ status: "failed" }]);
+    expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordFailed"]);
+    expect(result.acceptAfter).toBeNull();
+  });
+
+  const unknownAnswers: [string, () => void][] = [
+    ["an error of the Clerk server", () => clerkResponds(500, null)],
+    [
+      "no answer from Clerk",
+      () => fetchMock.mockRejectedValue(new Error("The operation was aborted.")),
+    ],
+  ];
+  for (const [answer, stub] of unknownAnswers) {
+    test(`after ${answer}, the reset is unknown and still blocks the Member`, async () => {
+      const result = await setPasswordWith(stub);
+
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.resets).toMatchObject([{ status: "unknown" }]);
+      expect(result.commands).toEqual(["member.requestPassword", "member.setPasswordUnknown"]);
+      expect(result.acceptAfter).toBe("user.passwordResetPending");
+    });
+  }
 
   test("while Clerk sets the password, the Member cannot join another Farm", async () => {
     const t = setup();

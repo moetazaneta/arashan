@@ -273,18 +273,22 @@ export function repositories(db: DatabaseWriter, auditDb: DatabaseWriter): Repos
       const doc = await getActive(db, "passwordResets", id);
       return doc === null ? null : toPasswordReset(doc);
     },
-    async hasPending(userId, since) {
-      const doc = await db
-        .query("passwordResets")
-        .withIndex("by_userId_deletedAt_status", (q) =>
-          q.eq("userId", idOf(userId)).eq("deletedAt", undefined).eq("status", "pending"),
-        )
-        .filter((q) => q.gt(q.field("createdAt"), since))
-        .first();
-      return doc !== null;
+    async listUnfinished(userId) {
+      const docs = [];
+      for (const status of ["pending", "unknown"] as const) {
+        docs.push(
+          ...(await db
+            .query("passwordResets")
+            .withIndex("by_userId_deletedAt_status", (q) =>
+              q.eq("userId", idOf(userId)).eq("deletedAt", undefined).eq("status", status),
+            )
+            .collect()),
+        );
+      }
+      return docs.map(toPasswordReset);
     },
-    async finish(id, status) {
-      await db.patch("passwordResets", idOf<"passwordResets">(id), { status });
+    async finish(id, outcome) {
+      await db.patch("passwordResets", idOf<"passwordResets">(id), { status: outcome });
     },
   };
   return { users, farms, memberships, invites, passwordResets, audit: auditLog(auditDb) };

@@ -11,7 +11,7 @@ import {
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { setClerkPassword } from "./lib/clerk";
+import { type ClerkPasswordResult, setClerkPassword } from "./lib/clerk";
 import {
   farmAction,
   farmCommand,
@@ -62,7 +62,10 @@ export const requestPassword = internalFarmCommand({
 
 /** The last step of `setPassword`: the outcome of the call to Clerk, with its audit entry. */
 export const finishPassword = systemCommand({
-  args: { passwordResetId: v.string(), outcome: v.union(v.literal("done"), v.literal("failed")) },
+  args: {
+    passwordResetId: v.string(),
+    outcome: v.union(v.literal("done"), v.literal("failed"), v.literal("unknown")),
+  },
   handler: (ctx, args) =>
     finishMemberPassword(ctx, {
       passwordResetId: args.passwordResetId as PasswordResetId,
@@ -74,7 +77,7 @@ export const finishPassword = systemCommand({
  * An Admin sets a new password for a Member, through the Clerk Backend API. Clerk ends the
  * Member's sessions. The pending reset is written before the call, in one transaction with the
  * rules, and blocks the account changes of the Member until the call ends (`requestMemberPassword`).
- * The outcome is written after the call, whatever it is.
+ * The outcome is written after the call, whatever it is: an unknown one keeps the block.
  */
 export const setPassword = farmAction({
   args: { membershipId: v.string(), password: v.string() },
@@ -84,12 +87,16 @@ export const setPassword = farmAction({
       internal.members.requestPassword,
       { farmId, membershipId, password },
     );
-    let outcome: "done" | "failed" = "failed";
-    try {
-      await setClerkPassword(providerUserId, password);
-      outcome = "done";
-    } finally {
-      await ctx.runMutation(internal.members.finishPassword, { passwordResetId, outcome });
-    }
+    const result = await setClerkPassword(providerUserId, password).catch(
+      (error: unknown): ClerkPasswordResult => ({
+        outcome: "unknown",
+        error: error instanceof Error ? error : new Error(String(error)),
+      }),
+    );
+    await ctx.runMutation(internal.members.finishPassword, {
+      passwordResetId,
+      outcome: result.outcome,
+    });
+    if (result.outcome !== "done") throw result.error;
   },
 });

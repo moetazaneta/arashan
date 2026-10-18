@@ -65,6 +65,7 @@ export {
   passwordResetLifetimeMs,
   type FarmPasswordResetRepository,
   type PasswordReset,
+  type PasswordResetOutcome,
   type PasswordResetRepository,
 } from "./members/password-reset";
 export {
