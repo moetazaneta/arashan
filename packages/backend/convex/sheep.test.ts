@@ -355,3 +355,206 @@ describe("sheep", () => {
     ]);
   });
 });
+
+describe("the Status of Sheep", () => {
+  async function statusChanges(t: Test) {
+    return t.run((ctx) => ctx.db.query("sheepStatusChanges").collect());
+  }
+
+  test("a bulk change makes the Sheep Dead, closes their Flock membership and writes a row each", async () => {
+    const t = setup();
+    const { admin, farmId, register } = await registry(t);
+    const flockId = await admin.mutation(api.flocks.create, {
+      farmId,
+      name: "Отара",
+      locationId: null,
+    });
+    const inFlock = [await register(), await register()];
+    const outside = await register();
+    await admin.mutation(api.flocks.moveSheep, {
+      farmId,
+      sheepIds: inFlock,
+      flockId,
+      date: "2026-06-01",
+    });
+    const before = (await sheepAudit(t)).length;
+
+    expect(
+      await admin.mutation(api.sheep.changeStatus, {
+        farmId,
+        sheepIds: [...inFlock, outside],
+        status: "dead",
+        date: "2026-07-01",
+        reason: " Болезнь ",
+      }),
+    ).toEqual({ changed: 3 });
+
+    for (const sheepId of [...inFlock, outside]) {
+      const row = await sheepRow(t, sheepId);
+      expect(row?.status).toBe("dead");
+      expect(row?.flockId).toBeUndefined();
+    }
+    const rows = await statusChanges(t);
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row).toMatchObject({
+        farmId,
+        from: "active",
+        to: "dead",
+        date: "2026-07-01",
+        reason: "Болезнь",
+      });
+    }
+    expect(rows.filter((row) => row.flockMoveId !== undefined)).toHaveLength(2);
+    const entries = (await sheepAudit(t)).slice(before);
+    expect(entries.map((entry) => entry.command)).toEqual([
+      "sheep.markDead",
+      "sheep.markDead",
+      "sheep.markDead",
+    ]);
+    expect(await admin.query(api.flocks.list, { farmId })).toMatchObject([{ sheepCount: 0 }]);
+    expect(await admin.query(api.sheep.get, { farmId, sheepId: inFlock[0]! })).toMatchObject({
+      status: "dead",
+      flock: null,
+      flocks: [{ from: "2026-06-01", to: "2026-07-01" }],
+      statusChanges: [{ from: "active", to: "dead", date: "2026-07-01", reason: "Болезнь" }],
+    });
+  });
+
+  test("a Lost Sheep is found, then both changes are undone, and their rows stay Deleted", async () => {
+    const t = setup();
+    const { admin, editor, farmId, register } = await registry(t);
+    const flockId = await admin.mutation(api.flocks.create, {
+      farmId,
+      name: "Отара",
+      locationId: null,
+    });
+    const sheepId = await register();
+    await admin.mutation(api.flocks.moveSheep, {
+      farmId,
+      sheepIds: [sheepId],
+      flockId,
+      date: "2026-06-01",
+    });
+    await editor.mutation(api.sheep.changeStatus, {
+      farmId,
+      sheepIds: [sheepId],
+      status: "lost",
+      date: "2026-07-01",
+      reason: null,
+    });
+
+    await editor.mutation(api.sheep.markFound, {
+      farmId,
+      sheepId,
+      date: "2026-07-05",
+      reason: null,
+    });
+    expect(await sheepRow(t, sheepId)).toMatchObject({ status: "active" });
+    expect((await statusChanges(t)).every((row) => row.reason === undefined)).toBe(true);
+
+    await editor.mutation(api.sheep.undoStatusChange, { farmId, sheepId });
+    expect(await sheepRow(t, sheepId)).toMatchObject({ status: "lost" });
+    await editor.mutation(api.sheep.undoStatusChange, { farmId, sheepId });
+    expect(await sheepRow(t, sheepId)).toMatchObject({ status: "active", flockId });
+
+    const rows = await statusChanges(t);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((row) => row.deletedAt !== undefined)).toBe(true);
+    expect(await admin.query(api.sheep.get, { farmId, sheepId })).toMatchObject({
+      statusChanges: [],
+      flocks: [{ from: "2026-06-01", to: null }],
+    });
+    expect(
+      (await admin.query(api.sheep.history, { farmId, sheepId })).map((e) => e.command),
+    ).toEqual([
+      "sheep.undoStatusChange",
+      "sheep.undoStatusChange",
+      "sheep.markFound",
+      "sheep.markLost",
+      "sheep.move",
+      "sheep.register",
+    ]);
+  });
+
+  test("a rule that fails sends its code, and the transaction writes nothing", async () => {
+    const t = setup();
+    const { admin, farmId, register } = await registry(t);
+    const active = await register();
+    const dead = await register();
+    await admin.mutation(api.sheep.changeStatus, {
+      farmId,
+      sheepIds: [dead],
+      status: "slaughtered",
+      date: "2026-07-01",
+      reason: null,
+    });
+    const change = (sheepIds: string[], date = "2026-07-02") =>
+      admin.mutation(api.sheep.changeStatus, {
+        farmId,
+        sheepIds,
+        status: "lost",
+        date,
+        reason: null,
+      });
+
+    expect(await errorCode(change([active, dead]))).toBe("sheep.notActive");
+    expect(await errorCode(change([active], "2025-01-01"))).toBe("sheep.statusDateInvalid");
+    expect(
+      await errorCode(
+        admin.mutation(api.sheep.markFound, {
+          farmId,
+          sheepId: active,
+          date: "2026-07-02",
+          reason: null,
+        }),
+      ),
+    ).toBe("sheep.notLost");
+    expect(
+      await errorCode(admin.mutation(api.sheep.undoStatusChange, { farmId, sheepId: active })),
+    ).toBe("sheep.noStatusChangeToUndo");
+    expect(await sheepRow(t, active)).toMatchObject({ status: "active" });
+    expect(await statusChanges(t)).toHaveLength(1);
+  });
+
+  test("a Sheep of another Farm, or a made-up id, is not found; a stranger changes nothing", async () => {
+    const t = setup();
+    const { admin, farmId } = await registry(t);
+    const other = await registry(t, "Другая");
+    const strangerSheep = await other.register();
+    const stranger = await logIn(t, "stranger");
+
+    for (const sheepId of [strangerSheep, "not-an-id"]) {
+      expect(
+        await errorCode(
+          admin.mutation(api.sheep.changeStatus, {
+            farmId,
+            sheepIds: [sheepId],
+            status: "dead",
+            date: "2026-07-01",
+            reason: null,
+          }),
+        ),
+      ).toBe("sheep.notFound");
+      expect(
+        await errorCode(
+          admin.mutation(api.sheep.markFound, {
+            farmId,
+            sheepId,
+            date: "2026-07-01",
+            reason: null,
+          }),
+        ),
+      ).toBe("sheep.notFound");
+      expect(await errorCode(admin.mutation(api.sheep.undoStatusChange, { farmId, sheepId }))).toBe(
+        "sheep.notFound",
+      );
+    }
+    expect(
+      await errorCode(
+        stranger.mutation(api.sheep.undoStatusChange, { farmId, sheepId: strangerSheep }),
+      ),
+    ).toBe("farm.notMember");
+    expect(await sheepRow(t, strangerSheep)).toMatchObject({ status: "active" });
+  });
+});

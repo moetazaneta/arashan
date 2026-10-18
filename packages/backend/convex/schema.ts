@@ -111,6 +111,22 @@ export default defineSchema({
     ...deletable,
   }).index("by_farmId_deletedAt_sheepId", ["farmId", "deletedAt", "sheepId"]),
 
+  // The changes of the Status of a Sheep: the history of its life on the Farm.
+  sheepStatusChanges: defineTable({
+    farmId: v.id("farms"),
+    sheepId: v.id("sheep"),
+    from: sheepStatus,
+    to: sheepStatus,
+    /** The date of the change, "YYYY-MM-DD". */
+    date: v.string(),
+    reason: v.optional(v.string()),
+    /** The move out of all Flocks that the change made. Absent if it made none. */
+    flockMoveId: v.optional(v.id("sheepFlockMoves")),
+    /** When a Member recorded the change. */
+    at: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_sheepId", ["farmId", "deletedAt", "sheepId"]),
+
   locations: defineTable({
     farmId: v.id("farms"),
     name: v.string(),

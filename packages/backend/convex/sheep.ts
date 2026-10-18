@@ -1,13 +1,16 @@
 import {
   changeSheepOwner,
+  changeSheepStatus,
   deleteSheep,
   getSheep,
   getSheepHistory,
   listSheep,
   listSheepOwners,
+  markSheepFound,
   type MembershipId,
   registerSheep,
   type SheepId,
+  undoSheepStatusChange,
   updateSheep,
 } from "@arashan/core";
 import { v } from "convex/values";
@@ -92,4 +95,30 @@ export const changeOwner = farmCommand({
 export const markDeleted = farmCommand({
   args: { sheepId: v.string() },
   handler: (ctx, args) => deleteSheep(ctx, { sheepId: args.sheepId as SheepId }),
+});
+
+/**
+ * A Member changes the Status of one Sheep or many Active Sheep to Slaughtered, Dead or Lost, on a
+ * date "YYYY-MM-DD", with an optional reason. The Sheep leave their Flocks on that date.
+ */
+export const changeStatus = farmCommand({
+  args: {
+    sheepIds: v.array(v.string()),
+    status: v.union(v.literal("slaughtered"), v.literal("dead"), v.literal("lost")),
+    date: v.string(),
+    reason: optionalText,
+  },
+  handler: (ctx, args) => changeSheepStatus(ctx, { ...args, sheepIds: args.sheepIds as SheepId[] }),
+});
+
+/** A Member records that a Lost Sheep came back on a date: it is Active again, in no Flock. */
+export const markFound = farmCommand({
+  args: { sheepId: v.string(), date: v.string(), reason: optionalText },
+  handler: (ctx, args) => markSheepFound(ctx, { ...args, sheepId: args.sheepId as SheepId }),
+});
+
+/** A Member undoes the last change of the Status of a Sheep, made by mistake. */
+export const undoStatusChange = farmCommand({
+  args: { sheepId: v.string() },
+  handler: (ctx, args) => undoSheepStatusChange(ctx, { sheepId: args.sheepId as SheepId }),
 });
