@@ -103,6 +103,26 @@ describe("compositionOf", () => {
   });
 });
 
+describe("the rounding of an average", () => {
+  test("never makes a child 100 percent Arashan when a parent is not", () => {
+    const almost = { breeds: [{ breedId: arashan, share: 999_999 }], unknown: 1 };
+    const almostWithEdilbay = {
+      breeds: [
+        { breedId: arashan, share: 999_999 },
+        { breedId: edilbay, share: 1 },
+      ],
+      unknown: 0,
+    };
+
+    expect(compositionOf(almost, pureArashan, [])).toEqual({
+      breeds: [{ breedId: arashan, share: 999_999 }],
+      unknown: 1,
+    });
+    expect(isPureArashan(compositionOf(almostWithEdilbay, pureArashan, []))).toBe(false);
+    expect(isPureArashan(compositionOf(almost, null, [part(arashan, 50)]))).toBe(false);
+  });
+});
+
 describe("isPureArashan", () => {
   test("only 100 percent Arashan and 0 percent Unknown", () => {
     expect(isPureArashan(pureArashan)).toBe(true);

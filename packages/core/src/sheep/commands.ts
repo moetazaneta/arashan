@@ -8,6 +8,7 @@ import {
   type BreedShare,
   compositionOf,
   isPureArashan,
+  sameComposition,
   validManualBreeds,
 } from "../pedigree/composition";
 import {
@@ -338,9 +339,10 @@ async function validPedigree(
 
 /**
  * Throws `passport.notArashan` if the Sheep has a Passport but is not 100 percent Arashan after the
- * change, and `passport.descendantNotArashan` if it stops being 100 percent Arashan and a descendant
- * has a Passport. A Sheep with a Passport is 100 percent Arashan, so all its ancestors are too: thus
- * a change can break the Passport of a descendant only if the Sheep stops being 100 percent Arashan.
+ * change, and `passport.descendantNotArashan` if its composition changes, it is not 100 percent
+ * Arashan, and a descendant has a Passport. A child is 100 percent Arashan only if both parents are
+ * (`compositionOf` never rounds a part to zero for it), so a descendant of a Sheep that is not 100
+ * percent Arashan is not one either, and cannot keep a Passport.
  */
 async function requirePassportsFit(
   ctx: FarmCommandContext,
@@ -361,7 +363,8 @@ async function requirePassportsFit(
   );
   if (isPureArashan(composition)) return;
   if (after.passport !== null) throw new DomainError("passport.notArashan");
-  if (before === null || !isPureArashan(await compositionOfSheep(before))) return;
+  // A composition that stays the same changes nothing for the descendants.
+  if (before === null || sameComposition(await compositionOfSheep(before), composition)) return;
   const seen = new Set<SheepId>([before.id]);
   const queue: SheepId[] = [before.id];
   while (queue.length > 0) {

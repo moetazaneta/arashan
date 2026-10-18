@@ -536,6 +536,19 @@ describe("the Passport", () => {
     expect(store.sheep.find((s) => s.id === pure)?.passport).toBeNull();
   });
 
+  test("a Sheep that is almost 100 percent Arashan does not give a pure child by rounding", async () => {
+    const { register, a } = await pedigree();
+    const ram = await register({
+      sex: "ram",
+      birthDate: "2015-01-01",
+      manualBreeds: [{ breedId: arashanBreedId, share: 999_999 }],
+    });
+
+    await expect(
+      register({ birthDate: "2020-01-01", motherId: a, fatherId: ram, passport: aPassport() }),
+    ).rejects.toMatchObject({ code: "passport.notArashan" });
+  });
+
   test("a change that keeps the ancestors 100 percent Arashan does not touch the Passports", async () => {
     const { register, update, ab, b } = await pedigree();
     await register({ birthDate: "2020-04-01", motherId: ab, fatherId: b, passport: aPassport() });

@@ -101,9 +101,10 @@ const unknownKey = "";
 
 /**
  * The average of two compositions. When the two parts of a Breed sum to an odd number, the half is
- * not an integer: the largest remainder method then gives the extra millionths to the largest
- * parts, so that the sum stays `wholeShare`. This starts only after about six generations, and the
- * difference is one millionth.
+ * not an integer: the largest remainder method then gives the extra millionths to the smallest parts
+ * first, so that the sum stays `wholeShare`. Thus no rounding makes a part vanish while a larger one
+ * grows, and no child is 100 percent Arashan unless both parents are: a Passport needs that.
+ * Rounding starts only after about six generations, and the difference is one millionth.
  */
 function average(a: BreedComposition, b: BreedComposition): BreedComposition {
   const sums = new Map<string, number>();
@@ -122,7 +123,7 @@ function average(a: BreedComposition, b: BreedComposition): BreedComposition {
   // The number of odd sums is even, because all sums together are 2 × wholeShare.
   odd.sort(
     ([keyA, sumA], [keyB, sumB]) =>
-      sumB - sumA || unknownLast(keyA, keyB) || keyA.localeCompare(keyB),
+      sumA - sumB || unknownFirst(keyA, keyB) || keyA.localeCompare(keyB),
   );
   for (const [key] of odd.slice(0, odd.length / 2)) halves.set(key, halves.get(key)! + 1);
   const unknown = halves.get(unknownKey) ?? 0;
@@ -133,8 +134,8 @@ function average(a: BreedComposition, b: BreedComposition): BreedComposition {
   );
 }
 
-function unknownLast(a: string, b: string): number {
-  return Number(a === unknownKey) - Number(b === unknownKey);
+function unknownFirst(a: string, b: string): number {
+  return Number(b === unknownKey) - Number(a === unknownKey);
 }
 
 /** The composition with the parts of zero left out, the largest first, then by the id of the Breed. */

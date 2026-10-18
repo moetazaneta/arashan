@@ -263,11 +263,12 @@ the block «Дополнительно», and the pedigree tree in the tab «Р�
   changes the composition of all its descendants at once, and no command writes the descendants.
 - **The parts are integers in millionths** (`wholeShare` is 100 percent), so the sum is exact and
   "100 percent Arashan" is an equality. When a half is not an integer (after about six generations),
-  the largest remainder method keeps the sum.
+  the largest remainder method keeps the sum. It gives the extra millionths to the smallest parts
+  first, so a child is 100 percent Arashan only if both parents are.
 - **The Passport** (number, issue date, scan) needs 100 percent Arashan (`passport.notArashan`). A
-  Sheep with a Passport is 100 percent Arashan, so all its ancestors are too. Thus a change can break
-  the Passport of a descendant only if the changed Sheep is no longer 100 percent Arashan. Then the
-  command looks for a descendant with a Passport, and fails if it finds one
+  Sheep with a Passport is 100 percent Arashan, so all its ancestors are too. Thus, when the
+  composition of a Sheep changes and it is not 100 percent Arashan, no descendant can keep a
+  Passport. The command then looks for a descendant with a Passport, and fails if it finds one
   (`passport.descendantNotArashan`).
 - **The Grade** is the last value only: the Grade and its date. The audit log keeps the changes.
 - **An External Sheep** (`registerExternalSheep`, the mode «Внешний» of the panel «Добавить барана»)
