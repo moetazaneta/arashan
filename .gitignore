@@ -22,3 +22,7 @@ dist
 # The platform binaries of the Impeccable skill. Its launcher, scripts/impeccable, downloads the
 # pinned version into ~/.impeccable on first use.
 **/skills/impeccable/scripts/bin/
+
+# The state of Impeccable live sessions. Only the config is committed.
+**/.impeccable/live/*
+!**/.impeccable/live/config.json
