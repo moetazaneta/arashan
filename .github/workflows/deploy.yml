@@ -65,6 +65,17 @@ jobs:
         if: steps.settings.outputs.ready
         run: vp dlx -s "$VERCEL_CLI" pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
 
+      # Production only: push the Convex functions and the schema to the production deployment, which
+      # the deploy key selects. It runs before the build, so that the new web app never runs against
+      # old functions; if it fails, the web app is not deployed. A pull request pushes no functions:
+      # previews use the development deployment (docs/environment.md).
+      - name: Deploy the Convex functions
+        if: steps.settings.outputs.ready && env.TARGET == 'production'
+        working-directory: packages/backend
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: vp exec convex deploy
+
       # `vercel build` refuses a package.json whose engines.node is not a Node.js that Vercel has,
       # so vp builds the app and this step writes the Build Output API layout itself: the static
       # files, and a fallback to index.html for the SPA's routes.
