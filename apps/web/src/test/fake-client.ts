@@ -1,5 +1,15 @@
 import type * as Client from "@arashan/client";
-import type { Farm, FarmId, FarmSettings, FarmSummary, Role, UserId, Viewer } from "@arashan/core";
+import type {
+  Farm,
+  FarmId,
+  FarmSettings,
+  FarmSummary,
+  MemberSummary,
+  MembershipId,
+  Role,
+  UserId,
+  Viewer,
+} from "@arashan/core";
 import { DomainError, inviteLifetimeMs } from "@arashan/core";
 import { createElement, useState, useSyncExternalStore } from "react";
 
@@ -11,7 +21,9 @@ export {
   defaultLambAgeMonths,
   inviteLifetimeMs,
   maxLambAgeMonths,
+  maxPasswordLength,
   minLambAgeMonths,
+  minPasswordLength,
 } from "@arashan/core";
 
 export const fakeAppVersion = "1.2.3";
@@ -24,13 +36,25 @@ type Preview = { farmName: string; role: Role; expiresAt: number };
 /** A Farm in the fake backend, and whether a Member joined it. */
 export type FakeFarm = Farm & { hasMembers: boolean };
 
-type CommandName = "createFarm" | "inviteFarmAdmin" | "updateFarmSettings" | "acceptInvite";
+type CommandName =
+  | "createFarm"
+  | "inviteFarmAdmin"
+  | "updateFarmSettings"
+  | "acceptInvite"
+  | "inviteMember"
+  | "changeMemberRole"
+  | "removeMember"
+  | "setMemberPassword";
 
 interface FakeBackend {
   session: Client.Session;
   farms: FakeFarm[];
   /** Each invite link: what it offers and to which Farm, or the error that it gives. */
   invites: Map<string, { farmId: FarmId; preview: Preview } | DomainError>;
+  /** The Members of each Farm, also the removed ones, as an Admin sees them. */
+  members: Map<FarmId, MemberSummary[]>;
+  /** The passwords that an Admin set, by Membership. */
+  passwords: Map<MembershipId, string>;
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
   tokens: number;
@@ -40,6 +64,8 @@ const emptyBackend = (): FakeBackend => ({
   session: { status: "signedOut" },
   farms: [],
   invites: new Map(),
+  members: new Map(),
+  passwords: new Map(),
   failures: {},
   tokens: 0,
 });
@@ -134,15 +160,46 @@ function farmOf(backend: FakeBackend, farmId: FarmId): FakeFarm {
   return farm;
 }
 
-function newInvite(backend: FakeBackend, farm: FakeFarm) {
+function newInvite(backend: FakeBackend, farm: FakeFarm, role: Role = "admin") {
   backend.tokens += 1;
   const token = `token-${backend.tokens}`;
   const expiresAt = Date.now() + inviteLifetimeMs;
   backend.invites.set(token, {
     farmId: farm.id,
-    preview: { farmName: farm.name, role: "admin", expiresAt },
+    preview: { farmName: farm.name, role, expiresAt },
   });
   return { token, expiresAt };
+}
+
+/** A Member of a Farm, for `addMembers`. The User of `signIn` with this username is the same User. */
+export function aMember(
+  username: string,
+  role: Role,
+  change: Partial<MemberSummary> = {},
+): MemberSummary {
+  return {
+    membershipId: `membership-${username}` as MembershipId,
+    userId: `user-${username}` as UserId,
+    username,
+    role,
+    archivedAt: null,
+    canSetPassword: true,
+    ...change,
+  };
+}
+
+/** Puts Members into the Farm. */
+export function addMembers(farm: FakeFarm, ...members: MemberSummary[]) {
+  updateFake((backend) => {
+    backend.members.set(farm.id, [...(backend.members.get(farm.id) ?? []), ...members]);
+  });
+}
+
+/** The Member of the Farm with the id, in the fake backend. */
+function memberOf(backend: FakeBackend, farmId: FarmId, membershipId: MembershipId) {
+  const member = backend.members.get(farmId)?.find((m) => m.membershipId === membershipId);
+  if (member === undefined) throw new DomainError("member.notFound");
+  return member;
 }
 
 // A query of the fake: the data, or the error, at once.
@@ -284,3 +341,47 @@ export const useAcceptInvite = () =>
     backend.invites.set(token, new DomainError("invite.used"));
     return { farmId: farm.id };
   });
+
+// The Members of a Farm. The fake does not check the rules of the core, such as the last Admin: a
+// test makes a command fail with `failures`.
+
+export const useMembers = (farmId: FarmId) => {
+  const backend = useBackend();
+  return query(() => {
+    const farm = viewerOf(backend)?.farms.find((farm) => farm.id === farmId);
+    if (farm === undefined) throw new DomainError("farm.notMember");
+    if (farm.role !== "admin") throw new DomainError("access.denied");
+    return backend.members.get(farmId) ?? [];
+  });
+};
+
+export const useInviteMember = (farmId: FarmId) =>
+  useMutation<void, { token: string; expiresAt: number }>("inviteMember", (backend) =>
+    newInvite(backend, farmOf(backend, farmId), "editor"),
+  );
+
+export const useChangeMemberRole = (farmId: FarmId) =>
+  useMutation("changeMemberRole", (backend, input: { membershipId: MembershipId; role: Role }) => {
+    memberOf(backend, farmId, input.membershipId).role = input.role;
+  });
+
+export const useRemoveMember = (farmId: FarmId) =>
+  useMutation("removeMember", (backend, membershipId: MembershipId) => {
+    const member = memberOf(backend, farmId, membershipId);
+    member.archivedAt = Date.now();
+    member.canSetPassword = false;
+  });
+
+export const useSetMemberPassword = (farmId: FarmId) =>
+  useMutation(
+    "setMemberPassword",
+    (backend, input: { membershipId: MembershipId; password: string }) => {
+      memberOf(backend, farmId, input.membershipId);
+      backend.passwords.set(input.membershipId, input.password);
+    },
+  );
+
+/** The password that an Admin set for the Member, or undefined. */
+export function passwordOf(membershipId: MembershipId): string | undefined {
+  return backend.passwords.get(membershipId);
+}

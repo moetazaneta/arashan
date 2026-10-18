@@ -25,6 +25,13 @@ export const errorCodes = [
   "invite.used",
   "invite.expired",
   "invite.alreadyMember",
+  // Members.
+  "member.notFound",
+  "member.lastAdmin",
+  "member.passwordInvalid",
+  "member.passwordNotAllowed",
+  "member.passwordRejected",
+  "user.passwordResetPending",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

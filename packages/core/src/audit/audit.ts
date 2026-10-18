@@ -12,7 +12,14 @@ export type CommandName =
   | "farm.create"
   | "farm.inviteAdmin"
   | "farm.updateSettings"
-  | "invite.accept";
+  | "invite.accept"
+  | "member.invite"
+  | "member.changeRole"
+  | "member.remove"
+  | "member.requestPassword"
+  | "member.setPassword"
+  | "member.setPasswordFailed"
+  | "member.setPasswordUnknown";
 
 /** The kind of record that a command changed. */
 export type TargetKind = "User" | "Farm" | "Membership" | "Invite";

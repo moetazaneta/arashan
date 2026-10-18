@@ -1,5 +1,11 @@
 import type { ErrorCode } from "@arashan/core";
-import { maxLambAgeMonths, minLambAgeMonths, toDomainError } from "@arashan/client";
+import {
+  maxLambAgeMonths,
+  maxPasswordLength,
+  minLambAgeMonths,
+  minPasswordLength,
+  toDomainError,
+} from "@arashan/client";
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
@@ -23,6 +29,12 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "invite.used": msg`Эту ссылку уже использовали. Попросите новую.`,
   "invite.expired": msg`Ссылка больше не работает. Попросите новую.`,
   "invite.alreadyMember": msg`Вы уже участник этой фермы.`,
+  "user.passwordResetPending": msg`Администратор фермы меняет пароль этой учётной записи, и это ещё не закончилось. Попробуйте позже.`,
+  "member.notFound": msg`Такого участника в ферме нет. Возможно, его уже удалили.`,
+  "member.lastAdmin": msg`В ферме должен остаться хотя бы один администратор. Сначала назначьте администратором другого участника.`,
+  "member.passwordInvalid": msg`Пароль должен быть длиной от ${minPasswordLength} до ${maxPasswordLength} символов.`,
+  "member.passwordNotAllowed": msg`Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы.`,
+  "member.passwordRejected": msg`Этот пароль слишком простой или есть в утёкших базах. Придумайте другой.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;

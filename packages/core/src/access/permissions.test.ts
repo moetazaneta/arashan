@@ -15,6 +15,11 @@ function member(role: Member["role"]): Member {
 const expected: Record<Action, Record<Member["role"], boolean>> = {
   "farm.view": { admin: true, editor: true },
   "farm.updateSettings": { admin: true, editor: false },
+  "member.list": { admin: true, editor: false },
+  "member.invite": { admin: true, editor: false },
+  "member.changeRole": { admin: true, editor: false },
+  "member.remove": { admin: true, editor: false },
+  "member.setPassword": { admin: true, editor: false },
 };
 
 describe("can", () => {

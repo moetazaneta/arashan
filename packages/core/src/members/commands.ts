@@ -2,8 +2,9 @@ import { requireUser } from "../access/session";
 import { recordAudit } from "../audit/audit";
 import type { CommandContext, QueryContext } from "../context";
 import { DomainError } from "../errors";
-import type { FarmId, UserId } from "../ids";
-import { type Invite, inviteLifetimeMs } from "./invite";
+import type { FarmId, InviteId, UserId } from "../ids";
+import { requireNoPendingPasswordReset } from "./password-reset";
+import { type Invite, type InviteDraft, inviteLifetimeMs, type Tokens } from "./invite";
 import type { Role } from "./membership";
 
 /** A new invite link: the token goes into the URL, and is shown only once. */
@@ -12,21 +13,24 @@ export interface NewInvite {
   expiresAt: number;
 }
 
-/** Makes a one-time invite link to the Farm. The caller writes the audit entry of its command. */
+/**
+ * Makes a one-time invite link: `insert` writes the Invite to its Farm. The caller writes the audit
+ * entry of its command, with the id of the Invite.
+ */
 export async function issueInvite(
-  ctx: CommandContext,
-  input: { farmId: FarmId; role: Role; createdBy: UserId },
-): Promise<NewInvite> {
+  ctx: { tokens: Tokens; now(): number },
+  insert: (invite: InviteDraft) => Promise<InviteId>,
+  input: { role: Role; createdBy: UserId },
+): Promise<NewInvite & { inviteId: InviteId }> {
   const token = ctx.tokens.newToken();
   const expiresAt = ctx.now() + inviteLifetimeMs;
-  await ctx.repos.invites.insert({
-    farmId: input.farmId,
+  const inviteId = await insert({
     role: input.role,
     tokenHash: await ctx.tokens.hash(token),
     expiresAt,
     createdBy: input.createdBy,
   });
-  return { token, expiresAt };
+  return { inviteId, token, expiresAt };
 }
 
 /**
@@ -44,10 +48,11 @@ async function usableInvite(ctx: QueryContext | CommandContext, token: string) {
   if (invite.revokedAt !== undefined || ctx.now() >= invite.expiresAt) {
     throw new DomainError("invite.expired");
   }
-  if ((await ctx.repos.memberships.find(user.id, invite.farmId)) !== null) {
+  const membership = await ctx.repos.memberships.find(user.id, invite.farmId);
+  if (membership !== null && membership.archivedAt === undefined) {
     throw new DomainError("invite.alreadyMember");
   }
-  return { user, invite, farm };
+  return { user, invite, farm, membership };
 }
 
 /** What an invite link offers: the Farm and the Role. The same errors as `acceptInvite`. */
@@ -61,19 +66,26 @@ export async function previewInvite(
 
 /**
  * The User who opened the invite link becomes a Member of its Farm, with the Role of the Invite.
- * The link works only once.
+ * The link works only once. A removed Member who joins again gets the old Membership back, so that
+ * a User has one Membership in a Farm and its history stays in one place.
  */
 export async function acceptInvite(
   ctx: CommandContext,
   input: { token: string },
 ): Promise<{ farmId: FarmId }> {
-  const { user, invite } = await usableInvite(ctx, input.token);
+  const { user, invite, membership } = await usableInvite(ctx, input.token);
+  await requireNoPendingPasswordReset(ctx, user.id);
   await ctx.repos.invites.markUsed(invite.id, { at: ctx.now(), by: user.id });
-  const membershipId = await ctx.repos.memberships.insert({
-    farmId: invite.farmId,
-    userId: user.id,
-    role: invite.role,
-  });
+  let membershipId = membership?.id;
+  if (membershipId === undefined) {
+    membershipId = await ctx.repos.memberships.insert({
+      farmId: invite.farmId,
+      userId: user.id,
+      role: invite.role,
+    });
+  } else {
+    await ctx.repos.memberships.restore(membershipId, invite.role);
+  }
   await recordAudit(ctx, {
     actorId: user.id,
     farmId: invite.farmId,

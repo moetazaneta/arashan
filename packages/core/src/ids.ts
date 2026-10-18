@@ -8,3 +8,4 @@ export type UserId = Id<"User">;
 export type FarmId = Id<"Farm">;
 export type MembershipId = Id<"Membership">;
 export type InviteId = Id<"Invite">;
+export type PasswordResetId = Id<"PasswordReset">;

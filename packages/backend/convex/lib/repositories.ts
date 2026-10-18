@@ -3,6 +3,7 @@ import type {
   Farm,
   FarmId,
   FarmReader,
+  FarmReaders,
   FarmRepositories,
   FarmRepository,
   Invite,
@@ -13,6 +14,10 @@ import type {
   MembershipId,
   MembershipReader,
   MembershipRepository,
+  MemberUserReader,
+  PasswordReset,
+  PasswordResetId,
+  PasswordResetRepository,
   Readers,
   Repositories,
   User,
@@ -64,6 +69,7 @@ function toMembership(doc: Doc<"memberships">): Membership {
     farmId: doc.farmId as string as FarmId,
     userId: doc.userId as string as UserId,
     role: doc.role,
+    ...(doc.archivedAt !== undefined ? { archivedAt: doc.archivedAt } : {}),
   };
 }
 
@@ -79,6 +85,18 @@ function toInvite(doc: Doc<"invites">): Invite {
       ? { used: { at: doc.usedAt, by: doc.usedBy as string as UserId } }
       : {}),
     ...(doc.revokedAt !== undefined ? { revokedAt: doc.revokedAt } : {}),
+  };
+}
+
+function toPasswordReset(doc: Doc<"passwordResets">): PasswordReset {
+  return {
+    id: doc._id as string as PasswordResetId,
+    farmId: doc.farmId as string as FarmId,
+    membershipId: doc.membershipId as string as MembershipId,
+    userId: doc.userId as string as UserId,
+    actorId: doc.actorId as string as UserId,
+    createdAt: doc.createdAt,
+    status: doc.status,
   };
 }
 
@@ -147,7 +165,7 @@ function membershipReader(db: DatabaseReader): MembershipReader {
           q.eq("userId", idOf(userId)).eq("deletedAt", undefined),
         )
         .collect();
-      return docs.map(toMembership);
+      return docs.filter((doc) => doc.archivedAt === undefined).map(toMembership);
     },
     async hasMembers(farmId) {
       const doc = await db
@@ -155,6 +173,7 @@ function membershipReader(db: DatabaseReader): MembershipReader {
         .withIndex("by_farmId_deletedAt", (q) =>
           q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
         )
+        .filter((q) => q.eq(q.field("archivedAt"), undefined))
         .first();
       return doc !== null;
     },
@@ -227,6 +246,9 @@ export function repositories(db: DatabaseWriter, auditDb: DatabaseWriter): Repos
         role: membership.role,
       })) as string as MembershipId;
     },
+    async restore(id, role) {
+      await db.patch("memberships", idOf<"memberships">(id), { role, archivedAt: undefined });
+    },
   };
   const invites: InviteRepository = {
     ...inviteReader(db),
@@ -246,22 +268,127 @@ export function repositories(db: DatabaseWriter, auditDb: DatabaseWriter): Repos
       await db.patch("invites", idOf<"invites">(id), { revokedAt });
     },
   };
-  return { users, farms, memberships, invites, audit: auditLog(auditDb) };
+  const passwordResets: PasswordResetRepository = {
+    async get(id) {
+      const doc = await getActive(db, "passwordResets", id);
+      return doc === null ? null : toPasswordReset(doc);
+    },
+    async listUnfinished(userId) {
+      const docs = [];
+      for (const status of ["pending", "unknown"] as const) {
+        docs.push(
+          ...(await db
+            .query("passwordResets")
+            .withIndex("by_userId_deletedAt_status", (q) =>
+              q.eq("userId", idOf(userId)).eq("deletedAt", undefined).eq("status", status),
+            )
+            .collect()),
+        );
+      }
+      return docs.map(toPasswordReset);
+    },
+    async finish(id, outcome) {
+      await db.patch("passwordResets", idOf<"passwordResets">(id), { status: outcome });
+    },
+  };
+  return { users, farms, memberships, invites, passwordResets, audit: auditLog(auditDb) };
+}
+
+/** The Membership of the Farm with the id, Archived or not, or null. */
+async function membershipOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
+  const doc = await getActive(db, "memberships", id);
+  return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
+}
+
+function memberUserReader(db: DatabaseReader): MemberUserReader {
+  const users = userReader(db);
+  return {
+    get: (id) => users.get(id),
+    async providerUserId(id) {
+      return (await getActive(db, "users", id))?.providerUserId ?? null;
+    },
+    async countFarms(id) {
+      const docs = await db
+        .query("memberships")
+        .withIndex("by_userId_deletedAt_farmId", (q) =>
+          q.eq("userId", idOf(id)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.length;
+    },
+  };
 }
 
 /**
- * The repositories of a command of one Farm, bound to the Farm after `enterFarm`. No method takes
- * the id of the Farm, so a command cannot reach a record of another Farm.
+ * The readers of a query of one Farm, bound to the Farm after `enterFarm`. No method takes the id
+ * of the Farm, so a query cannot reach a record of another Farm.
  */
+export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
+  return {
+    memberships: {
+      async list() {
+        const docs = await db
+          .query("memberships")
+          .withIndex("by_farmId_deletedAt", (q) =>
+            q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+          )
+          .collect();
+        return docs.map(toMembership);
+      },
+      async get(id) {
+        const doc = await membershipOfFarm(db, farmId, id);
+        return doc === null ? null : toMembership(doc);
+      },
+    },
+    users: memberUserReader(db),
+  };
+}
+
+/** The repositories of a command of one Farm, bound to the Farm as `farmReaders` are. */
 export function farmRepositories(
   db: DatabaseWriter,
   auditDb: DatabaseWriter,
   farmId: FarmId,
 ): FarmRepositories {
+  const readers = farmReaders(db, farmId);
+  // A write checks the Farm again, so that it never reaches a Membership of another Farm.
+  const patchMembership = async (id: string, fields: Partial<Doc<"memberships">>) => {
+    const doc = await membershipOfFarm(db, farmId, id);
+    if (doc !== null) await db.patch("memberships", doc._id, fields);
+  };
   return {
+    ...readers,
     farm: {
       async updateSettings(settings) {
         await db.patch("farms", idOf<"farms">(farmId), settings);
+      },
+    },
+    memberships: {
+      ...readers.memberships,
+      setRole: (id, role) => patchMembership(id, { role }),
+      archive: (id, archivedAt) => patchMembership(id, { archivedAt }),
+    },
+    invites: {
+      async insert(invite) {
+        return (await db.insert("invites", {
+          farmId: idOf(farmId),
+          role: invite.role,
+          tokenHash: invite.tokenHash,
+          expiresAt: invite.expiresAt,
+          createdBy: idOf(invite.createdBy),
+        })) as string as InviteId;
+      },
+    },
+    passwordResets: {
+      async insert(reset) {
+        return (await db.insert("passwordResets", {
+          farmId: idOf(farmId),
+          membershipId: idOf(reset.membershipId),
+          userId: idOf(reset.userId),
+          actorId: idOf(reset.actorId),
+          createdAt: reset.createdAt,
+          status: "pending",
+        })) as string as PasswordResetId;
       },
     },
     audit: auditLog(auditDb),

@@ -20,6 +20,16 @@ export const permissions = {
   "farm.view": ["admin", "editor"],
   /** Change the currency, the time zone and the lamb age of the Farm. */
   "farm.updateSettings": ["admin"],
+  /** See the Members of the Farm, also the removed ones. */
+  "member.list": ["admin"],
+  /** Make a one-time invite link for a new Editor. */
+  "member.invite": ["admin"],
+  /** Change the Role of a Member. */
+  "member.changeRole": ["admin"],
+  /** Remove a Member from the Farm: the Membership becomes Archived. */
+  "member.remove": ["admin"],
+  /** Set a new password for a Member (through the identity provider). */
+  "member.setPassword": ["admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

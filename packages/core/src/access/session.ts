@@ -27,8 +27,8 @@ export async function requireOperator(
 
 /**
  * The Member who makes a request to the Farm, and the Farm. Each request of a Farm comes through
- * here. Throws `farm.notMember` if the User is not a Member of the Farm, or if the Farm does not
- * exist: the error is the same, so a request tells nothing about the Farms of others. The Operator is
+ * here. Throws `farm.notMember` if the User is not a Member of the Farm, if an Admin removed the
+ * User from it, or if the Farm does not exist: the error is the same, so a request tells nothing about the Farms of others. The Operator is
  * no exception.
  */
 export async function enterFarm(
@@ -36,7 +36,9 @@ export async function enterFarm(
   farmId: FarmId,
 ): Promise<{ member: Member; farm: Farm }> {
   const user = await requireUser(ctx);
-  const membership = await ctx.repos.memberships.find(user.id, farmId);
+  const found = await ctx.repos.memberships.find(user.id, farmId);
+  // A removed Member has an Archived Membership, which gives no access.
+  const membership = found?.archivedAt === undefined ? found : null;
   const farm = membership === null ? null : await ctx.repos.farms.get(farmId);
   if (membership === null || farm === null) throw new DomainError("farm.notMember");
   return {
