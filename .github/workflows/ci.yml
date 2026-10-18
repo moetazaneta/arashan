@@ -1,6 +1,7 @@
 name: CI
 
-# Every pull request and every push to main: check, test and build.
+# Every pull request and every push to main: check, test and build, and push the backend to a local
+# Convex deployment. No job needs a secret.
 on:
   pull_request:
   push:
@@ -37,11 +38,55 @@ jobs:
       - name: Install locked dependencies
         run: vp install --frozen-lockfile
 
-      # `vp check`, each package's tests as its own task, and `vp build`: the `ready` task in
-      # vite.config.ts.
+      # `vp check`, each package's tests as its own task, the check of the message catalogs, and
+      # `vp build`: the `ready` task in vite.config.ts.
       - name: Check, test and build
         run: vp run ready
 
       - name: Name the step that failed
         if: failure()
         run: vp run --last-details
+
+  backend:
+    name: Push the backend to a local Convex deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version-file: .node-version
+          cache: true
+          run-install: false
+
+      - name: Install locked dependencies
+        run: vp install --frozen-lockfile
+
+      # With no account and no deployment, `convex dev --once` makes an anonymous local deployment.
+      # It downloads the Convex backend, type checks the functions, pushes them and the schema to it,
+      # and writes convex/_generated. The download of the backend sometimes fails, so the step tries
+      # three times.
+      - name: Push the functions
+        working-directory: packages/backend
+        env:
+          CONVEX_AGENT_MODE: anonymous
+        run: |
+          for attempt in 1 2 3; do
+            vp exec convex dev --once && exit 0
+            sleep 10
+          done
+          exit 1
+
+      - name: Check that convex/_generated is up to date
+        run: |
+          changes="$(git status --porcelain -- packages/backend/convex/_generated)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::convex/_generated is out of date. Run vp dev, and commit packages/backend/convex/_generated."
+            exit 1
+          fi

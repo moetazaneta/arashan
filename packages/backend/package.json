@@ -1,0 +1,23 @@
+{
+  "name": "@arashan/backend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Convex backend: thin functions, repository adapters and the database schema.",
+  "type": "module",
+  "exports": {
+    "./api": "./convex/_generated/api.js",
+    "./vite": "./vite-plugin.ts"
+  },
+  "dependencies": {
+    "@arashan/core": "workspace:*",
+    "convex": "catalog:"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "catalog:",
+    "@types/node": "catalog:",
+    "convex-test": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

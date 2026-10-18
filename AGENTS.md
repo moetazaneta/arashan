@@ -52,17 +52,37 @@ script, so a script named after a built-in (`dev`, `build`, `preview`, `check`, 
 `package.json` or `vite.config.ts` in the workspace defines one. Something that has to run before
 or after a built-in gets its own name, such as `dev:fresh`, and runs with `vp run <name>`.
 
-Before you push, `vp run ready` passes: `vp check`, each package's tests and `vp build`, as CI runs
-them. `vp check --fix` formats and applies lint fixes.
+Before you push, `vp run ready` passes: `vp check`, each package's tests, the check of the message
+catalogs and `vp build`, as CI runs them. `vp check --fix` formats and applies lint fixes.
+
+- **`vp dev` starts the web app and `convex dev`.** Without a configured deployment, `convex dev`
+  makes a local one that needs no account. It writes `packages/backend/.env.local` and updates
+  `packages/backend/convex/_generated`, which is committed: commit its changes.
+- **Translations:** the UI text is Russian in the code (ADR 0004). After you change it, run
+  `vp -C apps/web exec lingui extract --clean` and write the English text in
+  `apps/web/src/locales/en/messages.po`. CI fails if the catalogs are not extracted or if one message
+  has no English translation.
 
 # Workspace
 
-A Vite+ workspace on pnpm.
+A Vite+ workspace on pnpm, in four layers. [`docs/architecture.md`](./docs/architecture.md) shows
+how a query and a command go through them, and how to add a slice. Read it before you change a layer.
 
-| Package                     | What goes in it                                                            |
-| --------------------------- | -------------------------------------------------------------------------- |
-| `apps/web` (`@arashan/web`) | The web app: a React SPA with TanStack Router, Tailwind CSS and shadcn/ui. |
-| `packages/*`                | Code that is not part of one app, such as a core layer. None yet.          |
+| Package                                 | What goes in it                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
+| `apps/web` (`@arashan/web`)             | The views and all the UI text: React, TanStack Router, Tailwind, shadcn/ui, Lingui. |
+| `packages/client` (`@arashan/client`)   | The domain hooks for the views: TanStack Query, with the Convex transport inside.   |
+| `packages/backend` (`@arashan/backend`) | Convex: thin functions, the repository adapters and the database schema.            |
+| `packages/core` (`@arashan/core`)       | The business rules in pure TypeScript: no Convex, no React, no dependencies.        |
+
+- **The layer boundaries are lint rules.** A view in `apps/web/src` imports only `@arashan/client`
+  and the types of `@arashan/core`, never Convex or `@arashan/backend` (ADR 0006). The core imports
+  no framework and no other layer (ADR 0001). Rules go in the core, never in a Convex function or a
+  view.
+- **The core gives error codes, never text.** A new code goes in `packages/core/src/errors.ts`, and
+  its message in `apps/web/src/errors.ts`.
+- **No command erases a record** (ADR 0005). Each table spreads `deletable`, and each read of a
+  repository hides the Deleted records.
 
 - **An app holds only what is particular to it**, such as its screens. Code that is not part of
   one app goes in a package under `packages/`, named `@arashan/<name>`, even while only one app
@@ -102,7 +122,9 @@ A Vite+ workspace on pnpm.
 
 # Testing
 
-`vp test` runs each package's tests; the web app's run in jsdom with Testing Library.
+`vp test` runs each package's tests: the core's with repositories in memory, the backend's with
+`convex-test`, and the web app's in jsdom with Testing Library and fake hooks
+(`apps/web/src/test/fake-client.ts`).
 
 - **Test meaningful logic or observable behavior.**
 - **Don't test the implementation:** don't render components to static markup to assert props or

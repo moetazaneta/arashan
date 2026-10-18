@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  // The Convex runtime: no DOM and no Node.js. `convex dev` type checks with this file too.
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["."],
+  "exclude": ["_generated/*.js"]
+}
