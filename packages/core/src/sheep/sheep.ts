@@ -1,4 +1,4 @@
-import { addMonths, type CalendarDate, dateAt } from "../dates";
+import { addMonths, type CalendarDate } from "../dates";
 import type { FarmSettings } from "../farms/farm";
 import type { FlockMove } from "../flocks/flock";
 import type { FarmId, FlockId, FlockMoveId, MembershipId, OwnerChangeId, SheepId } from "../ids";
@@ -115,16 +115,16 @@ export function isLamb(
 }
 
 /**
- * The Sheep with the flag `lamb` for the time now, in the time zone of the Farm. A query of the
- * backend does not compute it, because the result of a query stays the same until its data changes,
- * and a Lamb grows up without a change of data. The client computes it when it shows the Sheep.
+ * The Sheep with the flag `lamb` on the date, which is today in the time zone of the Farm
+ * (`dateAt`). A query of the backend does not compute it, because the result of a query stays the
+ * same until its data changes, and a Lamb grows up without a change of data. The client computes it
+ * when it shows the Sheep, and again when the day changes.
  */
 export function withLamb<Item extends { birthDate: CalendarDate | null }>(
   items: readonly Item[],
-  farm: Pick<FarmSettings, "lambAgeMonths" | "timeZone">,
-  now: number,
+  farm: Pick<FarmSettings, "lambAgeMonths">,
+  today: CalendarDate,
 ): (Item & { lamb: boolean })[] {
-  const today = dateAt(now, farm.timeZone);
   return items.map((item) => ({
     ...item,
     lamb: isLamb(item.birthDate, farm.lambAgeMonths, today),

@@ -224,7 +224,8 @@ and its tab «История».
 - **A Lamb** is a Sheep younger than the lamb age of the Farm (`isLamb`). The answer changes with
   the day, but the result of a Convex query changes only with its data. So no query gives it: the
   client adds it with `withLamb` when it shows the Sheep, with today's date in the time zone of the
-  Farm. A report that counts the Lambs gets the date as an argument.
+  Farm, and again when the day changes on an open page. A report that counts the Lambs gets the date
+  as an argument.
 - **Dates without a time,** such as a birth date, are `CalendarDate` strings "YYYY-MM-DD"
   (`core/src/dates.ts`). Two of them compare as strings. Today is the date in the time zone of the
   Farm (`dateAt`).

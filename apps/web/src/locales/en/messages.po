@@ -273,6 +273,10 @@ msgstr "Birth date"
 msgid "Дата рождения не может быть в будущем."
 msgstr "The birth date cannot be in the future."
 
+#: src/errors.ts
+msgid "Дата рождения позже смены владельца. Проверьте дату рождения или историю владельцев."
+msgstr "The birth date is after a change of the Owner. Check the birth date or the history of the Owners."
+
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Действия"

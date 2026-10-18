@@ -399,6 +399,23 @@ describe("updateSheep", () => {
     ).rejects.toMatchObject({ code: "sheep.birthDateRequired" });
   });
 
+  test("the birth date is not after a change of the Owner", async () => {
+    const { store, editor, membershipId, as, register } = await setup();
+    const sheepId = await register({ birthDate: "2026-01-01" });
+    await changeSheepOwner(await as(editor), {
+      sheepId,
+      ownerId: membershipId("admin"),
+      date: "2026-02-01",
+    });
+    const update = { ...details(), sheepId };
+
+    await expect(
+      updateSheep(await as(editor), { ...update, birthDate: "2026-02-02" }),
+    ).rejects.toMatchObject({ code: "sheep.birthDateAfterOwnerChange" });
+    await updateSheep(await as(editor), { ...update, birthDate: "2026-02-01" });
+    expect(stored(store, sheepId)?.birthDate).toBe("2026-02-01");
+  });
+
   test("a Deleted Sheep or a Sheep of another Farm is not found", async () => {
     const { store, operator, editor, as, register } = await setup();
     const deleted = await register({ tag: "1" });

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
+import { dateAt } from "../dates";
 import { isLamb, tagKey, withLamb } from "./sheep";
 
 describe("tagKey", () => {
@@ -43,16 +44,16 @@ describe("isLamb", () => {
 });
 
 describe("withLamb", () => {
-  test("uses today in the time zone of the Farm", () => {
+  test("flags the Lambs on today's date in the time zone of the Farm", () => {
     // 20:00 UTC on October 17 is already October 18 in Bishkek.
     const now = Date.UTC(2026, 9, 17, 20);
     const sheep = [{ birthDate: "2026-06-18" }, { birthDate: null }];
 
-    expect(withLamb(sheep, { lambAgeMonths: 4, timeZone: "UTC" }, now)).toEqual([
+    expect(withLamb(sheep, { lambAgeMonths: 4 }, dateAt(now, "UTC"))).toEqual([
       { birthDate: "2026-06-18", lamb: true },
       { birthDate: null, lamb: false },
     ]);
-    expect(withLamb(sheep, { lambAgeMonths: 4, timeZone: "Asia/Bishkek" }, now)).toEqual([
+    expect(withLamb(sheep, { lambAgeMonths: 4 }, dateAt(now, "Asia/Bishkek"))).toEqual([
       { birthDate: "2026-06-18", lamb: false },
       { birthDate: null, lamb: false },
     ]);

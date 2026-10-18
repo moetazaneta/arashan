@@ -50,6 +50,7 @@ import {
   createFlock,
   createLocation,
   createShepherd,
+  dateAt,
   deleteSheep,
   DomainError,
   getFlock,
@@ -843,7 +844,7 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
 export const useSheepList = (farmId: FarmId) =>
   useCoreQuery(`list ${farmId}`, async (backend): Promise<Client.SheepListItem[]> => {
     const ctx = queryContext(backend, farmId);
-    return withLamb(await listSheep(ctx), ctx.farm, Date.now());
+    return withLamb(await listSheep(ctx), ctx.farm, dateAt(Date.now(), ctx.farm.timeZone));
   });
 
 export const useSheep = (farmId: FarmId, sheepId: SheepId) =>
@@ -852,7 +853,8 @@ export const useSheep = (farmId: FarmId, sheepId: SheepId) =>
     async (backend): Promise<Client.SheepCardData | null> => {
       const ctx = queryContext(backend, farmId);
       const card = await getSheep(ctx, { sheepId });
-      return card === null ? null : (withLamb([card], ctx.farm, Date.now())[0] ?? null);
+      const today = dateAt(Date.now(), ctx.farm.timeZone);
+      return card === null ? null : (withLamb([card], ctx.farm, today)[0] ?? null);
     },
   );
 
