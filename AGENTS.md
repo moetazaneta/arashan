@@ -141,12 +141,11 @@ Every commit message and every PR title is `<type>(<scope>): <summary>`, per
 [Conventional Commits](https://www.conventionalcommits.org). The scope is optional, and a `!` before
 the colon marks a breaking change.
 
-- **Squash merges:** the PR's title becomes the commit on `main`, so the title follows the format
-  too. The merge keeps GitHub's ` (#N)` suffix. Merge with the title as the subject, since for a
-  PR with a single commit GitHub uses that commit's message instead:
+- **Merges:** merge a PR with a merge commit. Thus `main` keeps each commit of the branch, and each
+  commit message follows the format, not only the PR title:
 
   ```sh
-  n=<PR>; gh pr merge $n --repo moetazaneta/arashan --squash --subject "$(gh pr view $n --repo moetazaneta/arashan --json title -q .title) (#$n)"
+  gh pr merge <PR> --repo moetazaneta/arashan --merge
   ```
 
 - **Types:** `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `revert`,
@@ -193,7 +192,7 @@ A thread is not done until it does all these steps:
    comments find.
 3. **For a large or hard task, get a review from `codex 6.1 sol`, effort `low`,** before the merge.
    Fix the problems that it finds.
-4. **When all checks are green and all problems are fixed, merge the PR,** with the squash command
+4. **When all checks are green and all problems are fixed, merge the PR,** with the merge command
    in [Commits](#commits).
 
 ## Orchestrator thread
