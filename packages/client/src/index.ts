@@ -1,5 +1,12 @@
 // The public API of the client: the only way for a view to get data (ADR 0006).
 export { useAppVersion } from "./app";
+export {
+  useAddBreed,
+  useBreeds,
+  useDeleteBreed,
+  useRenameBreed,
+  useSetBreedArchived,
+} from "./breeds";
 export { ClientProvider, createClient, type Client, type Locale } from "./client";
 export { toDomainError } from "./errors";
 export {
@@ -22,28 +29,45 @@ export type { Session } from "./session-state";
 export {
   useChangeSheepOwner,
   useDeleteSheep,
+  useParentOptions,
+  useRegisterExternalSheep,
   useRegisterSheep,
   useSheep,
   useSheepHistory,
   useSheepList,
   useSheepOwners,
+  useSheepPedigree,
   useUpdateSheep,
+  useUploadPassportScan,
   type SheepCardData,
   type SheepListItem,
 } from "./sheep";
 
 // The values of the core that the views need. A view imports only the types of the core.
 export {
+  arashanBreedId,
+  arashanShare,
+  compositionOf,
   dateAt,
   defaultLambAgeMonths,
+  grades,
   inviteLifetimeMs,
+  isPureArashan,
+  knownParents,
+  manualLimit,
+  maxBreedNameLength,
   maxLambAgeMonths,
+  maxPassportNumberLength,
   maxPasswordLength,
+  maxScanBytes,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  pedigreeDepth,
+  scanContentTypes,
   sexes,
+  wholeShare,
 } from "@arashan/core";

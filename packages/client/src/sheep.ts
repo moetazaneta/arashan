@@ -1,6 +1,8 @@
 import type {
   CalendarDate,
+  ExternalSheepRegistration,
   FarmId,
+  FileId,
   MembershipId,
   SheepCard,
   SheepId,
@@ -71,11 +73,35 @@ export function useSheepOwners(farmId: FarmId) {
   return useQuery(convexQuery(api.sheep.owners, { farmId }));
 }
 
+/**
+ * The Sheep that can be a parent in a form, by Tag: also the External ones and the ones that are not
+ * Active, each with its Breed composition. The form filters them by sex.
+ */
+export function useParentOptions(farmId: FarmId) {
+  return useQuery(convexQuery(api.sheep.parentOptions, { farmId }));
+}
+
+/**
+ * The pedigree tree of a Sheep, for `pedigreeDepth` generations, or null if the Farm has no such
+ * Sheep or it is Deleted.
+ */
+export function useSheepPedigree(farmId: FarmId, sheepId: SheepId) {
+  return useQuery(convexQuery(api.sheep.pedigree, { farmId, sheepId }));
+}
+
 /** A Member registers a Sheep, and gets its id. */
 export function useRegisterSheep(farmId: FarmId) {
   const register = useConvexMutation(api.sheep.register);
   return useMutation({
     mutationFn: (input: SheepRegistration) => callCommand(register, { farmId, ...input }),
+  });
+}
+
+/** A Member registers an External Sheep: a parent that was never on the Farm. It gets its id. */
+export function useRegisterExternalSheep(farmId: FarmId) {
+  const register = useConvexMutation(api.sheep.registerExternal);
+  return useMutation({
+    mutationFn: (input: ExternalSheepRegistration) => callCommand(register, { farmId, ...input }),
   });
 }
 
@@ -101,5 +127,27 @@ export function useDeleteSheep(farmId: FarmId) {
   const markDeleted = useConvexMutation(api.sheep.markDeleted);
   return useMutation({
     mutationFn: (sheepId: SheepId) => callCommand(markDeleted, { farmId, sheepId }),
+  });
+}
+
+/**
+ * A Member uploads the scan of a Passport, and gets the id of the file, which the form then sends
+ * with the Passport. The backend gives a URL for one upload; the file goes there straight from the
+ * browser. An upload that fails throws an Error, not a domain error.
+ */
+export function useUploadPassportScan(farmId: FarmId) {
+  const uploadUrl = useConvexMutation(api.sheep.passportUploadUrl);
+  return useMutation({
+    mutationFn: async (file: File): Promise<FileId> => {
+      const url = await callCommand(uploadUrl, { farmId });
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!response.ok) throw new Error(`The upload of the scan failed: ${response.status}`);
+      const { storageId } = (await response.json()) as { storageId: string };
+      return storageId as FileId;
+    },
   });
 }
