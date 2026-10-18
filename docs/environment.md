@@ -80,6 +80,8 @@ pnpm 12. Thus Vercel does not build the repository:
   `vercel build` refuses an `engines.node` that Vercel does not have. Then it runs
   `vercel deploy --prebuilt`. It deploys a preview for each pull request, and comments the URL on
   the pull request. It deploys production for each push to `main`.
+- Vercel Authentication protects the deployment URLs, so a preview opens only for a member of the
+  Vercel team. The production domain is public.
 - When the secrets are not available, the Deploy workflow deploys nothing and passes. This occurs
   for pull requests from forks and from Dependabot.
 

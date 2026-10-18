@@ -23,7 +23,6 @@ env:
   VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
   TARGET: ${{ github.event_name == 'push' && 'production' || 'preview' }}
-  PROD_FLAG: ${{ github.event_name == 'push' && '--prod' || '' }}
 
 jobs:
   deploy:
@@ -90,7 +89,7 @@ jobs:
         id: deploy
         if: steps.settings.outputs.ready
         run: |
-          url=$(vp dlx -s "$VERCEL_CLI" deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN")
+          url=$(vp dlx -s "$VERCEL_CLI" deploy --prebuilt --target="$TARGET" --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed to $url" >> "$GITHUB_STEP_SUMMARY"
 
