@@ -3,9 +3,10 @@ import {
   inviteMember,
   listMembers,
   type MembershipId,
-  prepareMemberPassword,
-  recordMemberPassword,
+  finishMemberPassword,
+  type PasswordResetId,
   removeMember,
+  requestMemberPassword,
 } from "@arashan/core";
 import { v } from "convex/values";
 
@@ -16,7 +17,7 @@ import {
   farmCommand,
   farmQuery,
   internalFarmCommand,
-  internalFarmQuery,
+  systemCommand,
 } from "./lib/functions";
 
 // An Admin manages the Members of the Farm. The ids of Memberships are strings, not
@@ -49,38 +50,46 @@ export const remove = farmCommand({
   handler: (ctx, args) => removeMember(ctx, { membershipId: args.membershipId as MembershipId }),
 });
 
-/** The rules of a new password, and the Clerk user id of the Member. Only `setPassword` calls it. */
-export const passwordTarget = internalFarmQuery({
+/** The first step of `setPassword`: the rules, and a pending reset with its audit entry. */
+export const requestPassword = internalFarmCommand({
   args: { membershipId: v.string(), password: v.string() },
   handler: (ctx, args) =>
-    prepareMemberPassword(ctx, {
+    requestMemberPassword(ctx, {
       membershipId: args.membershipId as MembershipId,
       password: args.password,
     }),
 });
 
-/** The audit entry of a new password. Only `setPassword` calls it, after Clerk set the password. */
-export const recordPassword = internalFarmCommand({
-  args: { membershipId: v.string() },
+/** The last step of `setPassword`: the outcome of the call to Clerk, with its audit entry. */
+export const finishPassword = systemCommand({
+  args: { passwordResetId: v.string(), outcome: v.union(v.literal("done"), v.literal("failed")) },
   handler: (ctx, args) =>
-    recordMemberPassword(ctx, { membershipId: args.membershipId as MembershipId }),
+    finishMemberPassword(ctx, {
+      passwordResetId: args.passwordResetId as PasswordResetId,
+      outcome: args.outcome,
+    }),
 });
 
 /**
  * An Admin sets a new password for a Member, through the Clerk Backend API. Clerk ends the
- * Member's sessions. The audit entry comes after Clerk set the password, so that the history never
- * shows a password that was not set.
+ * Member's sessions. The pending reset is written before the call, in one transaction with the
+ * rules, and blocks the account changes of the Member until the call ends (`requestMemberPassword`).
+ * The outcome is written after the call, whatever it is.
  */
 export const setPassword = farmAction({
   args: { membershipId: v.string(), password: v.string() },
   // The return type breaks the cycle of the inferred types of this module and `internal`.
   handler: async (ctx, { farmId, membershipId, password }): Promise<void> => {
-    const { providerUserId } = await ctx.runQuery(internal.members.passwordTarget, {
-      farmId,
-      membershipId,
-      password,
-    });
-    await setClerkPassword(providerUserId, password);
-    await ctx.runMutation(internal.members.recordPassword, { farmId, membershipId });
+    const { passwordResetId, providerUserId } = await ctx.runMutation(
+      internal.members.requestPassword,
+      { farmId, membershipId, password },
+    );
+    let outcome: "done" | "failed" = "failed";
+    try {
+      await setClerkPassword(providerUserId, password);
+      outcome = "done";
+    } finally {
+      await ctx.runMutation(internal.members.finishPassword, { passwordResetId, outcome });
+    }
   },
 });

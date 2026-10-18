@@ -9,9 +9,10 @@ import type {
   SystemContext,
 } from "../context";
 import type { Farm, FarmRepository } from "../farms/farm";
-import type { FarmId, InviteId, MembershipId, UserId } from "../ids";
+import type { FarmId, InviteId, MembershipId, PasswordResetId, UserId } from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type { Membership, MembershipRepository } from "../members/membership";
+import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
 import type { Identity, User, UserRepository } from "../users/user";
 
 // The repositories in memory, for the tests of the core. They hide Deleted records, as the real ones
@@ -24,6 +25,7 @@ export class InMemoryStore {
   readonly farms: Stored<Farm>[] = [];
   readonly memberships: Stored<Membership>[] = [];
   readonly invites: Stored<Invite>[] = [];
+  readonly passwordResets: Stored<PasswordReset>[] = [];
   readonly audit: AuditEntry[] = [];
   private nextId = 1;
 
@@ -133,11 +135,27 @@ export class InMemoryStore {
       },
     };
 
+    const passwordResets: PasswordResetRepository = {
+      get: async (id) => {
+        const found = active(this.passwordResets).find((r) => r.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      hasPending: async (userId, since) =>
+        active(this.passwordResets).some(
+          (r) => r.userId === userId && r.status === "pending" && r.createdAt > since,
+        ),
+      finish: async (id, status) => {
+        const found = this.passwordResets.find((r) => r.id === id);
+        if (found !== undefined) found.status = status;
+      },
+    };
+
     return {
       users,
       farms,
       memberships,
       invites,
+      passwordResets,
       audit: { append: async (entry) => void this.audit.push(entry) },
     };
   }
@@ -209,6 +227,13 @@ export class InMemoryStore {
         },
       },
       invites: { insert: (invite) => repos.invites.insert({ ...invite, farmId }) },
+      passwordResets: {
+        insert: async (reset) => {
+          const id = this.id("PasswordReset") as PasswordResetId;
+          this.passwordResets.push({ id, farmId, status: "pending", ...reset });
+          return id;
+        },
+      },
       audit: repos.audit,
     };
   }

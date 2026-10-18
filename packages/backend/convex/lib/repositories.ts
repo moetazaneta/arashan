@@ -15,6 +15,9 @@ import type {
   MembershipReader,
   MembershipRepository,
   MemberUserReader,
+  PasswordReset,
+  PasswordResetId,
+  PasswordResetRepository,
   Readers,
   Repositories,
   User,
@@ -82,6 +85,18 @@ function toInvite(doc: Doc<"invites">): Invite {
       ? { used: { at: doc.usedAt, by: doc.usedBy as string as UserId } }
       : {}),
     ...(doc.revokedAt !== undefined ? { revokedAt: doc.revokedAt } : {}),
+  };
+}
+
+function toPasswordReset(doc: Doc<"passwordResets">): PasswordReset {
+  return {
+    id: doc._id as string as PasswordResetId,
+    farmId: doc.farmId as string as FarmId,
+    membershipId: doc.membershipId as string as MembershipId,
+    userId: doc.userId as string as UserId,
+    actorId: doc.actorId as string as UserId,
+    createdAt: doc.createdAt,
+    status: doc.status,
   };
 }
 
@@ -253,7 +268,26 @@ export function repositories(db: DatabaseWriter, auditDb: DatabaseWriter): Repos
       await db.patch("invites", idOf<"invites">(id), { revokedAt });
     },
   };
-  return { users, farms, memberships, invites, audit: auditLog(auditDb) };
+  const passwordResets: PasswordResetRepository = {
+    async get(id) {
+      const doc = await getActive(db, "passwordResets", id);
+      return doc === null ? null : toPasswordReset(doc);
+    },
+    async hasPending(userId, since) {
+      const doc = await db
+        .query("passwordResets")
+        .withIndex("by_userId_deletedAt_status", (q) =>
+          q.eq("userId", idOf(userId)).eq("deletedAt", undefined).eq("status", "pending"),
+        )
+        .filter((q) => q.gt(q.field("createdAt"), since))
+        .first();
+      return doc !== null;
+    },
+    async finish(id, status) {
+      await db.patch("passwordResets", idOf<"passwordResets">(id), { status });
+    },
+  };
+  return { users, farms, memberships, invites, passwordResets, audit: auditLog(auditDb) };
 }
 
 /** The Membership of the Farm with the id, Archived or not, or null. */
@@ -339,6 +373,18 @@ export function farmRepositories(
           expiresAt: invite.expiresAt,
           createdBy: idOf(invite.createdBy),
         })) as string as InviteId;
+      },
+    },
+    passwordResets: {
+      async insert(reset) {
+        return (await db.insert("passwordResets", {
+          farmId: idOf(farmId),
+          membershipId: idOf(reset.membershipId),
+          userId: idOf(reset.userId),
+          actorId: idOf(reset.actorId),
+          createdAt: reset.createdAt,
+          status: "pending",
+        })) as string as PasswordResetId;
       },
     },
     audit: auditLog(auditDb),

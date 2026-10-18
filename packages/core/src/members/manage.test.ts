@@ -3,19 +3,20 @@ import { describe, expect, test } from "vite-plus/test";
 import { enterFarm } from "../access/session";
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
-import type { FarmId, MembershipId } from "../ids";
+import type { FarmId, MembershipId, PasswordResetId } from "../ids";
 import { InMemoryStore } from "../testing/in-memory";
-import { getViewer } from "../users/commands";
+import { getViewer, setOperator } from "../users/commands";
 import { acceptInvite } from "./commands";
 import { inviteLifetimeMs } from "./invite";
 import {
   changeMemberRole,
   inviteMember,
+  finishMemberPassword,
   listMembers,
-  prepareMemberPassword,
-  recordMemberPassword,
   removeMember,
+  requestMemberPassword,
 } from "./manage";
+import { passwordResetLifetimeMs } from "./password-reset";
 
 const settings = { currency: "KGS", timeZone: "Asia/Bishkek", lambAgeMonths: 4 };
 
@@ -387,40 +388,61 @@ describe("a removed Member who joins again", () => {
   });
 });
 
-describe("prepareMemberPassword", () => {
+describe("requestMemberPassword", () => {
   const password = "correct horse";
 
-  test("gives the id of the Member at the identity provider", async () => {
-    const { store, admin, farmId, membershipId, as } = await setup();
+  test("writes a pending reset and an audit entry, and gives the id at the identity provider", async () => {
+    const { store, admin, farmId, membershipId, userId, as } = await setup();
     store.addMember("editor", farmId, "editor");
 
-    expect(
-      await prepareMemberPassword(await as(admin), {
+    const result = await requestMemberPassword(await as(admin), {
+      membershipId: membershipId("editor"),
+      password,
+    });
+
+    expect(result).toEqual({ passwordResetId: expect.any(String), providerUserId: "user_editor" });
+    expect(store.passwordResets).toEqual([
+      {
+        id: result.passwordResetId,
+        farmId,
         membershipId: membershipId("editor"),
-        password,
-      }),
-    ).toEqual({ providerUserId: "user_editor" });
+        userId: userId("editor"),
+        actorId: userId("admin"),
+        createdAt: store.time,
+        status: "pending",
+      },
+    ]);
+    expect(store.audit.at(-1)).toEqual({
+      at: store.time,
+      actorId: userId("admin"),
+      farmId,
+      command: "member.requestPassword",
+      target: { kind: "Membership", id: membershipId("editor") },
+    });
   });
 
-  test("rejects a password that is too short, too long, or only spaces", async () => {
+  test("rejects a password that is too short, too long, or only spaces, and writes nothing", async () => {
     const { store, admin, farmId, membershipId, as } = await setup();
     store.addMember("editor", farmId, "editor");
+    const audit = store.audit.length;
 
     for (const bad of ["1234567", "x".repeat(73), " ".repeat(10)]) {
       await expect(
-        prepareMemberPassword(await as(admin), {
+        requestMemberPassword(await as(admin), {
           membershipId: membershipId("editor"),
           password: bad,
         }),
       ).rejects.toMatchObject({ code: "member.passwordInvalid" });
     }
+    expect(store.passwordResets).toEqual([]);
+    expect(store.audit).toHaveLength(audit);
     for (const good of ["12345678", "x".repeat(72)]) {
       await expect(
-        prepareMemberPassword(await as(admin), {
+        requestMemberPassword(await as(admin), {
           membershipId: membershipId("editor"),
           password: good,
         }),
-      ).resolves.toEqual({ providerUserId: "user_editor" });
+      ).resolves.toMatchObject({ providerUserId: "user_editor" });
     }
   });
 
@@ -443,9 +465,10 @@ describe("prepareMemberPassword", () => {
 
     for (const id of [membershipId("admin"), membershipId("operator"), membershipId("two-farms")]) {
       await expect(
-        prepareMemberPassword(await as(admin), { membershipId: id, password }),
+        requestMemberPassword(await as(admin), { membershipId: id, password }),
       ).rejects.toMatchObject({ code: "member.passwordNotAllowed" });
     }
+    expect(store.passwordResets).toEqual([]);
   });
 
   test("an Admin cannot set the password of a User whom another Farm removed", async () => {
@@ -461,7 +484,7 @@ describe("prepareMemberPassword", () => {
     });
 
     await expect(
-      prepareMemberPassword(await as(admin), { membershipId: membershipId("former"), password }),
+      requestMemberPassword(await as(admin), { membershipId: membershipId("former"), password }),
     ).rejects.toMatchObject({ code: "member.passwordNotAllowed" });
   });
 
@@ -471,7 +494,7 @@ describe("prepareMemberPassword", () => {
     await removeMember(await as(admin), { membershipId: membershipId("editor") });
 
     await expect(
-      prepareMemberPassword(await as(admin), { membershipId: membershipId("editor"), password }),
+      requestMemberPassword(await as(admin), { membershipId: membershipId("editor"), password }),
     ).rejects.toMatchObject({ code: "member.notFound" });
   });
 
@@ -482,22 +505,35 @@ describe("prepareMemberPassword", () => {
 
     for (const attempt of [password, "short"]) {
       await expect(
-        prepareMemberPassword(await store.farmContext(editor, farmId), {
+        requestMemberPassword(await store.farmContext(editor, farmId), {
           membershipId: membershipId("other"),
           password: attempt,
         }),
       ).rejects.toMatchObject({ code: "access.denied" });
     }
+    expect(store.passwordResets).toEqual([]);
   });
 });
 
-describe("recordMemberPassword", () => {
-  test("appends the audit entry of the new password", async () => {
-    const { store, admin, farmId, membershipId, userId, as } = await setup();
-    store.addMember("editor", farmId, "editor");
+/** A Farm with the Editor "editor", for whom the Admin asked for a new password. */
+async function pendingReset() {
+  const farm = await setup();
+  const editor = farm.store.addMember("editor", farm.farmId, "editor");
+  const { passwordResetId } = await requestMemberPassword(await farm.as(farm.admin), {
+    membershipId: farm.membershipId("editor"),
+    password: "correct horse",
+  });
+  return { ...farm, editor, passwordResetId };
+}
 
-    await recordMemberPassword(await as(admin), { membershipId: membershipId("editor") });
+describe("finishMemberPassword", () => {
+  test("a password that the identity provider set: the reset is done, with the Admin's audit entry", async () => {
+    const { store, farmId, membershipId, userId, passwordResetId } = await pendingReset();
+    store.time += 1000;
 
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
+
+    expect(store.passwordResets[0]?.status).toBe("done");
     expect(store.audit.at(-1)).toEqual({
       at: store.time,
       actorId: userId("admin"),
@@ -507,14 +543,112 @@ describe("recordMemberPassword", () => {
     });
   });
 
-  test("an Editor cannot record a password", async () => {
-    const { store, farmId, membershipId } = await setup();
-    const editor = store.addMember("editor", farmId, "editor");
+  test("a password that the identity provider did not set: the reset failed", async () => {
+    const { store, passwordResetId } = await pendingReset();
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "failed" });
+
+    expect(store.passwordResets[0]?.status).toBe("failed");
+    expect(store.audit.at(-1)).toMatchObject({ command: "member.setPasswordFailed" });
+  });
+
+  test("a reset that is not pending, or unknown, stays as it is", async () => {
+    const { store, passwordResetId } = await pendingReset();
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
+    const audit = store.audit.length;
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "failed" });
+    await finishMemberPassword(store.systemContext(), {
+      passwordResetId: "passwordreset-missing" as PasswordResetId,
+      outcome: "done",
+    });
+
+    expect(store.passwordResets[0]?.status).toBe("done");
+    expect(store.audit).toHaveLength(audit);
+  });
+
+  test("records the outcome also when the Admin was demoted and the Member removed in the meantime", async () => {
+    const { store, farmId, membershipId, userId, passwordResetId } = await pendingReset();
+    const boss = store.addMember("boss", farmId, "admin");
+    const asBoss = await store.farmContext(boss, farmId);
+    await changeMemberRole(asBoss, { membershipId: membershipId("admin"), role: "editor" });
+    await removeMember(asBoss, { membershipId: membershipId("editor") });
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
+
+    expect(store.passwordResets[0]?.status).toBe("done");
+    expect(store.audit.at(-1)).toMatchObject({
+      actorId: userId("admin"),
+      farmId,
+      command: "member.setPassword",
+      target: { kind: "Membership", id: membershipId("editor") },
+    });
+  });
+});
+
+describe("a pending password reset", () => {
+  test("stops the User from joining another Farm until the reset is finished", async () => {
+    const { store, operator, editor, farmId, passwordResetId } = await pendingReset();
+    const other = await createFarm(operator, { name: "Другая", ...settings });
+    const memberships = store.memberships.length;
+    const audit = store.audit.length;
+
+    await expect(acceptInvite(editor, other.invite)).rejects.toMatchObject({
+      code: "user.passwordResetPending",
+    });
+    expect(store.memberships).toHaveLength(memberships);
+    expect(store.invites.at(-1)?.used).toBeUndefined();
+    expect(store.audit).toHaveLength(audit);
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "failed" });
+    await expect(acceptInvite(editor, other.invite)).resolves.toEqual({ farmId: other.farmId });
+    expect((await getViewer(editor))?.farms.map((f) => f.id).sort()).toEqual(
+      [farmId, other.farmId].sort(),
+    );
+  });
+
+  test("stops nothing after its lifetime, also if nobody finished it", async () => {
+    const { store, operator, editor } = await pendingReset();
+    const other = await createFarm(operator, { name: "Другая", ...settings });
+
+    store.time += passwordResetLifetimeMs - 1;
+    await expect(acceptInvite(editor, other.invite)).rejects.toMatchObject({
+      code: "user.passwordResetPending",
+    });
+    store.time += 2;
+    await expect(acceptInvite(editor, other.invite)).resolves.toEqual({ farmId: other.farmId });
+  });
+
+  test("stops the User from becoming the Operator, until the reset is finished", async () => {
+    const { store, passwordResetId } = await pendingReset();
 
     await expect(
-      recordMemberPassword(await store.farmContext(editor, farmId), {
-        membershipId: membershipId("editor"),
-      }),
-    ).rejects.toMatchObject({ code: "access.denied" });
+      setOperator(store.systemContext(), { providerUserId: "user_editor", isOperator: true }),
+    ).rejects.toMatchObject({ code: "user.passwordResetPending" });
+    expect(store.users.find((u) => u.username === "editor")?.isOperator).toBe(false);
+
+    await finishMemberPassword(store.systemContext(), { passwordResetId, outcome: "done" });
+    await setOperator(store.systemContext(), { providerUserId: "user_editor", isOperator: true });
+    expect(store.users.find((u) => u.username === "editor")?.isOperator).toBe(true);
+  });
+
+  test("does not stop taking the Operator flag away", async () => {
+    const { store, farmId, membershipId, userId } = await pendingReset();
+    store.passwordResets.push({
+      id: "passwordreset-operator" as PasswordResetId,
+      farmId,
+      membershipId: membershipId("admin"),
+      userId: userId("operator"),
+      actorId: userId("admin"),
+      createdAt: store.time,
+      status: "pending",
+    });
+
+    await setOperator(store.systemContext(), {
+      providerUserId: "user_operator",
+      isOperator: false,
+    });
+
+    expect(store.users.find((u) => u.username === "operator")?.isOperator).toBe(false);
   });
 });

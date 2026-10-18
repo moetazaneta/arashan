@@ -16,7 +16,9 @@ export type CommandName =
   | "member.invite"
   | "member.changeRole"
   | "member.remove"
-  | "member.setPassword";
+  | "member.requestPassword"
+  | "member.setPassword"
+  | "member.setPasswordFailed";
 
 /** The kind of record that a command changed. */
 export type TargetKind = "User" | "Farm" | "Membership" | "Invite";

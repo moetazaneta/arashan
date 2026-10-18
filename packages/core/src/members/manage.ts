@@ -1,8 +1,8 @@
 import { authorize } from "../access/permissions";
-import { recordFarmAudit } from "../audit/audit";
-import type { FarmCommandContext, FarmQueryContext } from "../context";
+import { recordAudit, recordFarmAudit } from "../audit/audit";
+import type { FarmCommandContext, FarmQueryContext, SystemContext } from "../context";
 import { DomainError } from "../errors";
-import type { MembershipId, UserId } from "../ids";
+import type { MembershipId, PasswordResetId, UserId } from "../ids";
 import { issueInvite, type NewInvite } from "./commands";
 import type { Membership, Role } from "./membership";
 
@@ -17,7 +17,7 @@ export interface MemberSummary {
   role: Role;
   /** When an Admin removed the Member, or null for a Member now. */
   archivedAt: number | null;
-  /** True if an Admin can set a new password for the Member (see `prepareMemberPassword`). */
+  /** True if an Admin can set a new password for the Member (see `requestMemberPassword`). */
   canSetPassword: boolean;
 }
 
@@ -112,18 +112,21 @@ export async function removeMember(
 }
 
 /**
- * The first step of a new password for a Member: checks the rules, and gives the id of the Member at
- * the identity provider, which then sets the password. `recordMemberPassword` is the last step.
+ * The first step of a new password for a Member: checks the rules, and writes a pending
+ * `PasswordReset`. The backend then asks the identity provider to set the password, and
+ * `finishMemberPassword` writes the outcome.
  *
  * An Admin sets the password of another Member of the Farm (ADR 0003), for example of a Member who
  * has no email and forgot the password. The account of a User is the same in all Farms, so an Admin
- * of one Farm must not take the account of a Member of another Farm (now or before) or of the Operator: for them it
- * throws `member.passwordNotAllowed`, and also for the Admin's own account.
+ * of one Farm must not take the account of a Member of another Farm (now or before) or of the Operator:
+ * for them it throws `member.passwordNotAllowed`, and also for the Admin's own account. While the
+ * reset is pending, the User cannot join another Farm or become the Operator (see
+ * `requireNoPendingPasswordReset`), so the rule still holds when the provider sets the password.
  */
-export async function prepareMemberPassword(
-  ctx: FarmQueryContext,
+export async function requestMemberPassword(
+  ctx: FarmCommandContext,
   input: { membershipId: MembershipId; password: string },
-): Promise<{ providerUserId: string }> {
+): Promise<{ passwordResetId: PasswordResetId; providerUserId: string }> {
   authorize(ctx.member, "member.setPassword", { farmId: ctx.farm.id });
   const membership = await activeMembership(ctx, input.membershipId);
   if (!(await passwordAllowed(ctx, membership))) {
@@ -135,19 +138,37 @@ export async function prepareMemberPassword(
   }
   const providerUserId = await ctx.repos.users.providerUserId(membership.userId);
   if (providerUserId === null) throw new DomainError("member.notFound");
-  return { providerUserId };
+  const passwordResetId = await ctx.repos.passwordResets.insert({
+    membershipId: membership.id,
+    userId: membership.userId,
+    actorId: ctx.member.userId,
+    createdAt: ctx.now(),
+  });
+  await recordFarmAudit(ctx, {
+    command: "member.requestPassword",
+    target: { kind: "Membership", id: membership.id },
+  });
+  return { passwordResetId, providerUserId };
 }
 
-/** The last step of a new password: the audit entry, after the identity provider set it. */
-export async function recordMemberPassword(
-  ctx: FarmCommandContext,
-  input: { membershipId: MembershipId },
+/**
+ * The last step of a new password: the outcome of the call to the identity provider, with its audit
+ * entry. Only the backend calls it, after the call: it checks no permission again, because the
+ * password is already set (or not), and the history must show it whatever happened in the meantime.
+ * A reset that is not pending stays as it is.
+ */
+export async function finishMemberPassword(
+  ctx: SystemContext,
+  input: { passwordResetId: PasswordResetId; outcome: "done" | "failed" },
 ): Promise<void> {
-  authorize(ctx.member, "member.setPassword", { farmId: ctx.farm.id });
-  const membership = await activeMembership(ctx, input.membershipId);
-  await recordFarmAudit(ctx, {
-    command: "member.setPassword",
-    target: { kind: "Membership", id: membership.id },
+  const reset = await ctx.repos.passwordResets.get(input.passwordResetId);
+  if (reset === null || reset.status !== "pending") return;
+  await ctx.repos.passwordResets.finish(reset.id, input.outcome);
+  await recordAudit(ctx, {
+    actorId: reset.actorId,
+    farmId: reset.farmId,
+    command: input.outcome === "done" ? "member.setPassword" : "member.setPasswordFailed",
+    target: { kind: "Membership", id: reset.membershipId },
   });
 }
 

@@ -39,7 +39,7 @@ export {
   type FarmRepository,
   type FarmSettings,
 } from "./farms/farm";
-export type { FarmId, Id, InviteId, MembershipId, UserId } from "./ids";
+export type { FarmId, Id, InviteId, MembershipId, PasswordResetId, UserId } from "./ids";
 export { acceptInvite, previewInvite, type NewInvite } from "./members/commands";
 export {
   inviteLifetimeMs,
@@ -56,11 +56,17 @@ export {
   listMembers,
   maxPasswordLength,
   minPasswordLength,
-  prepareMemberPassword,
-  recordMemberPassword,
+  finishMemberPassword,
   removeMember,
+  requestMemberPassword,
   type MemberSummary,
 } from "./members/manage";
+export {
+  passwordResetLifetimeMs,
+  type FarmPasswordResetRepository,
+  type PasswordReset,
+  type PasswordResetRepository,
+} from "./members/password-reset";
 export {
   roles,
   type FarmMembershipReader,
