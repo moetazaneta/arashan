@@ -134,7 +134,10 @@ export interface FarmSheepReader {
   get(id: SheepId): Promise<Sheep | null>;
   /** All Sheep of the Farm, also the External ones and the ones that are not Active. */
   list(): Promise<Sheep[]>;
-  /** The Sheep whose Tag has the same key (`tagKey`) as this Tag, also the External ones. */
+  /**
+   * The Sheep whose Tag has the same key (`tagKey`) as this Tag. An External Sheep is not in the
+   * answer: its Tag never makes a Tag of the Farm taken.
+   */
   findByTag(tag: string): Promise<Sheep[]>;
   /** The changes of the Owner of the Sheep, the oldest first. */
   ownerChanges(sheepId: SheepId): Promise<OwnerChange[]>;
@@ -148,6 +151,7 @@ export type SheepFields = Omit<Sheep, "id" | "farmId">;
 /** Reads and writes the Sheep of one Farm. Nothing erases a Sheep. */
 export interface FarmSheepRepository extends FarmSheepReader {
   insert(sheep: SheepFields): Promise<SheepId>;
+  /** Changes the fields that `fields` has. A field that it does not have stays the same. */
   update(id: SheepId, fields: Partial<SheepFields>): Promise<void>;
   insertOwnerChange(change: Omit<OwnerChange, "id">): Promise<OwnerChangeId>;
   /** Makes the Sheep Deleted. A Member can restore it later. */

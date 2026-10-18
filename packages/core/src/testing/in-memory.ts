@@ -205,7 +205,7 @@ export class InMemoryStore {
       list: async () => ofFarm().map(withoutDeletedAt),
       findByTag: async (tag) =>
         ofFarm()
-          .filter((s) => s.tag !== null && tagKey(s.tag) === tagKey(tag))
+          .filter((s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag))
           .map(withoutDeletedAt),
       ownerChanges: async (sheepId) =>
         this.ownerChanges

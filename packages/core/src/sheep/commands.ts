@@ -174,7 +174,7 @@ async function requireFreeTag(
 ): Promise<void> {
   if (tag === null) return;
   const same = await ctx.repos.sheep.findByTag(tag);
-  if (same.some((other) => other.id !== self && other.origin !== "external")) {
+  if (same.some((other) => other.id !== self)) {
     throw new DomainError("sheep.tagTaken");
   }
 }

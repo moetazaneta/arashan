@@ -17,6 +17,7 @@ import type * as lib_records from "../lib/records.js";
 import type * as lib_repositories from "../lib/repositories.js";
 import type * as lib_tokens from "../lib/tokens.js";
 import type * as members from "../members.js";
+import type * as sheep from "../sheep.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   "lib/repositories": typeof lib_repositories;
   "lib/tokens": typeof lib_tokens;
   members: typeof members;
+  sheep: typeof sheep;
   users: typeof users;
 }>;
 

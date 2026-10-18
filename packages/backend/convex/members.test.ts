@@ -1,21 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 
 import { api } from "./_generated/api";
-import { errorCode, logIn, makeFarm, setup, type Test } from "./test.setup";
-
-/** A Farm with the Admin "admin" and the Editor "editor", who joined through the Admin's link. */
-async function farmWithEditor(t: Test, name?: string) {
-  const { operator, farmId, token } = await makeFarm(t, name);
-  const admin = await logIn(t, `admin${name ?? ""}`);
-  await admin.mutation(api.invites.accept, { token });
-  const invite = await admin.mutation(api.members.invite, { farmId });
-  const editor = await logIn(t, `editor${name ?? ""}`);
-  await editor.mutation(api.invites.accept, { token: invite.token });
-  const membershipId = async (username: string) =>
-    (await admin.query(api.members.list, { farmId })).find((m) => m.username === username)!
-      .membershipId;
-  return { operator, admin, editor, farmId, membershipId };
-}
+import { errorCode, farmWithEditor, logIn, setup, type Test } from "./test.setup";
 
 async function auditLog(t: Test) {
   return t.run((ctx) => ctx.db.query("auditLog").collect());
