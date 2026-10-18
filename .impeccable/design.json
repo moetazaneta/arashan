@@ -1,0 +1,595 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T17:24:02+00:00",
+  "title": "Design System: Arashan",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "oklch(0.975 0.003 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Canvas (dark)",
+        "canonical": "oklch(0.155 0.004 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Surface (dark)",
+        "canonical": "oklch(0.185 0.004 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "raised-dark": {
+        "role": "neutral",
+        "displayName": "Raised (dark)",
+        "canonical": "oklch(0.225 0.005 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.003 150)",
+          "oklch(0.25 0.003 150)",
+          "oklch(0.35 0.003 150)",
+          "oklch(0.45 0.003 150)",
+          "oklch(0.55 0.003 150)",
+          "oklch(0.7 0.003 150)",
+          "oklch(0.85 0.003 150)",
+          "oklch(0.95 0.003 150)"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover",
+        "canonical": "oklch(0.955 0.004 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 150)",
+          "oklch(0.25 0.004 150)",
+          "oklch(0.35 0.004 150)",
+          "oklch(0.45 0.004 150)",
+          "oklch(0.55 0.004 150)",
+          "oklch(0.7 0.004 150)",
+          "oklch(0.85 0.004 150)",
+          "oklch(0.95 0.004 150)"
+        ]
+      },
+      "hover-dark": {
+        "role": "neutral",
+        "displayName": "Hover (dark)",
+        "canonical": "oklch(0.24 0.005 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 150)",
+          "oklch(0.25 0.004 150)",
+          "oklch(0.35 0.004 150)",
+          "oklch(0.45 0.004 150)",
+          "oklch(0.55 0.004 150)",
+          "oklch(0.7 0.004 150)",
+          "oklch(0.85 0.004 150)",
+          "oklch(0.95 0.004 150)"
+        ]
+      },
+      "selection": {
+        "role": "primary",
+        "displayName": "Selection",
+        "canonical": "oklch(0.95 0.03 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 150)",
+          "oklch(0.25 0.03 150)",
+          "oklch(0.35 0.03 150)",
+          "oklch(0.45 0.03 150)",
+          "oklch(0.55 0.03 150)",
+          "oklch(0.7 0.03 150)",
+          "oklch(0.85 0.03 150)",
+          "oklch(0.95 0.03 150)"
+        ]
+      },
+      "selection-dark": {
+        "role": "primary",
+        "displayName": "Selection (dark)",
+        "canonical": "oklch(0.27 0.04 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 150)",
+          "oklch(0.25 0.03 150)",
+          "oklch(0.35 0.03 150)",
+          "oklch(0.45 0.03 150)",
+          "oklch(0.55 0.03 150)",
+          "oklch(0.7 0.03 150)",
+          "oklch(0.85 0.03 150)",
+          "oklch(0.95 0.03 150)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "oklch(0.91 0.004 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 150)",
+          "oklch(0.25 0.004 150)",
+          "oklch(0.35 0.004 150)",
+          "oklch(0.45 0.004 150)",
+          "oklch(0.55 0.004 150)",
+          "oklch(0.7 0.004 150)",
+          "oklch(0.85 0.004 150)",
+          "oklch(0.95 0.004 150)"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Line (dark)",
+        "canonical": "oklch(0.28 0.005 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 150)",
+          "oklch(0.25 0.004 150)",
+          "oklch(0.35 0.004 150)",
+          "oklch(0.45 0.004 150)",
+          "oklch(0.55 0.004 150)",
+          "oklch(0.7 0.004 150)",
+          "oklch(0.85 0.004 150)",
+          "oklch(0.95 0.004 150)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Line Strong",
+        "canonical": "oklch(0.86 0.005 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.005 150)",
+          "oklch(0.25 0.005 150)",
+          "oklch(0.35 0.005 150)",
+          "oklch(0.45 0.005 150)",
+          "oklch(0.55 0.005 150)",
+          "oklch(0.7 0.005 150)",
+          "oklch(0.85 0.005 150)",
+          "oklch(0.95 0.005 150)"
+        ]
+      },
+      "line-strong-dark": {
+        "role": "neutral",
+        "displayName": "Line Strong (dark)",
+        "canonical": "oklch(0.34 0.006 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.005 150)",
+          "oklch(0.25 0.005 150)",
+          "oklch(0.35 0.005 150)",
+          "oklch(0.45 0.005 150)",
+          "oklch(0.55 0.005 150)",
+          "oklch(0.7 0.005 150)",
+          "oklch(0.85 0.005 150)",
+          "oklch(0.95 0.005 150)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.21 0.008 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 150)",
+          "oklch(0.25 0.008 150)",
+          "oklch(0.35 0.008 150)",
+          "oklch(0.45 0.008 150)",
+          "oklch(0.55 0.008 150)",
+          "oklch(0.7 0.008 150)",
+          "oklch(0.85 0.008 150)",
+          "oklch(0.95 0.008 150)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "oklch(0.95 0.003 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 150)",
+          "oklch(0.25 0.008 150)",
+          "oklch(0.35 0.008 150)",
+          "oklch(0.45 0.008 150)",
+          "oklch(0.55 0.008 150)",
+          "oklch(0.7 0.008 150)",
+          "oklch(0.85 0.008 150)",
+          "oklch(0.95 0.008 150)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(0.5 0.01 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 150)",
+          "oklch(0.25 0.01 150)",
+          "oklch(0.35 0.01 150)",
+          "oklch(0.45 0.01 150)",
+          "oklch(0.55 0.01 150)",
+          "oklch(0.7 0.01 150)",
+          "oklch(0.85 0.01 150)",
+          "oklch(0.95 0.01 150)"
+        ]
+      },
+      "ink-muted-dark": {
+        "role": "neutral",
+        "displayName": "Ink Muted (dark)",
+        "canonical": "oklch(0.68 0.008 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.01 150)",
+          "oklch(0.25 0.01 150)",
+          "oklch(0.35 0.01 150)",
+          "oklch(0.45 0.01 150)",
+          "oklch(0.55 0.01 150)",
+          "oklch(0.7 0.01 150)",
+          "oklch(0.85 0.01 150)",
+          "oklch(0.95 0.01 150)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Pasture Green",
+        "canonical": "oklch(0.52 0.13 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.13 150)",
+          "oklch(0.25 0.13 150)",
+          "oklch(0.35 0.13 150)",
+          "oklch(0.45 0.13 150)",
+          "oklch(0.55 0.13 150)",
+          "oklch(0.7 0.13 150)",
+          "oklch(0.85 0.13 150)",
+          "oklch(0.95 0.13 150)"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Pasture Green Deep",
+        "canonical": "oklch(0.47 0.12 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.12 150)",
+          "oklch(0.25 0.12 150)",
+          "oklch(0.35 0.12 150)",
+          "oklch(0.45 0.12 150)",
+          "oklch(0.55 0.12 150)",
+          "oklch(0.7 0.12 150)",
+          "oklch(0.85 0.12 150)",
+          "oklch(0.95 0.12 150)"
+        ]
+      },
+      "primary-ink": {
+        "role": "primary",
+        "displayName": "Pasture Ink",
+        "canonical": "oklch(0.48 0.12 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.12 150)",
+          "oklch(0.25 0.12 150)",
+          "oklch(0.35 0.12 150)",
+          "oklch(0.45 0.12 150)",
+          "oklch(0.55 0.12 150)",
+          "oklch(0.7 0.12 150)",
+          "oklch(0.85 0.12 150)",
+          "oklch(0.95 0.12 150)"
+        ]
+      },
+      "primary-ink-dark": {
+        "role": "primary",
+        "displayName": "Pasture Ink (dark)",
+        "canonical": "oklch(0.76 0.13 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.12 150)",
+          "oklch(0.25 0.12 150)",
+          "oklch(0.35 0.12 150)",
+          "oklch(0.45 0.12 150)",
+          "oklch(0.55 0.12 150)",
+          "oklch(0.7 0.12 150)",
+          "oklch(0.85 0.12 150)",
+          "oklch(0.95 0.12 150)"
+        ]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "On Primary",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 150)",
+          "oklch(0.25 0 150)",
+          "oklch(0.35 0 150)",
+          "oklch(0.45 0 150)",
+          "oklch(0.55 0 150)",
+          "oklch(0.7 0 150)",
+          "oklch(0.85 0 150)",
+          "oklch(0.95 0 150)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Green",
+        "canonical": "oklch(0.62 0.13 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.13 150)",
+          "oklch(0.25 0.13 150)",
+          "oklch(0.35 0.13 150)",
+          "oklch(0.45 0.13 150)",
+          "oklch(0.55 0.13 150)",
+          "oklch(0.7 0.13 150)",
+          "oklch(0.85 0.13 150)",
+          "oklch(0.95 0.13 150)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Danger",
+        "canonical": "oklch(0.55 0.2 27)",
+        "tonalRamp": [
+          "oklch(0.15 0.2 27)",
+          "oklch(0.25 0.2 27)",
+          "oklch(0.35 0.2 27)",
+          "oklch(0.45 0.2 27)",
+          "oklch(0.55 0.2 27)",
+          "oklch(0.7 0.2 27)",
+          "oklch(0.85 0.2 27)",
+          "oklch(0.95 0.2 27)"
+        ]
+      },
+      "danger-dark": {
+        "role": "semantic",
+        "displayName": "Danger (dark)",
+        "canonical": "oklch(0.7 0.17 25)",
+        "tonalRamp": [
+          "oklch(0.15 0.2 27)",
+          "oklch(0.25 0.2 27)",
+          "oklch(0.35 0.2 27)",
+          "oklch(0.45 0.2 27)",
+          "oklch(0.55 0.2 27)",
+          "oklch(0.7 0.2 27)",
+          "oklch(0.85 0.2 27)",
+          "oklch(0.95 0.2 27)"
+        ]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Warning",
+        "canonical": "oklch(0.55 0.13 70)",
+        "tonalRamp": [
+          "oklch(0.15 0.13 70)",
+          "oklch(0.25 0.13 70)",
+          "oklch(0.35 0.13 70)",
+          "oklch(0.45 0.13 70)",
+          "oklch(0.55 0.13 70)",
+          "oklch(0.7 0.13 70)",
+          "oklch(0.85 0.13 70)",
+          "oklch(0.95 0.13 70)"
+        ]
+      },
+      "warning-dark": {
+        "role": "semantic",
+        "displayName": "Warning (dark)",
+        "canonical": "oklch(0.8 0.13 75)",
+        "tonalRamp": [
+          "oklch(0.15 0.13 70)",
+          "oklch(0.25 0.13 70)",
+          "oklch(0.35 0.13 70)",
+          "oklch(0.45 0.13 70)",
+          "oklch(0.55 0.13 70)",
+          "oklch(0.7 0.13 70)",
+          "oklch(0.85 0.13 70)",
+          "oklch(0.95 0.13 70)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The title of a page, one per screen."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sections, dialogs, side panels."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Text, fields, buttons, menus."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Table cells, Tags, dates, amounts. Tabular figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, column headers, badges."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 4px 16px -4px oklch(0.21 0.008 150 / 12%), 0 1px 3px oklch(0.21 0.008 150 / 8%)",
+        "purpose": "Popovers, menus, the date picker, toasts."
+      },
+      {
+        "name": "modal",
+        "value": "0 16px 48px -12px oklch(0.21 0.008 150 / 24%)",
+        "purpose": "Dialogs and the command palette, over a 40% Canvas-dark backdrop."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "duration-state",
+        "value": "150ms",
+        "purpose": "Hover, focus, open and close. Instant with prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "min",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action a screen is for.",
+      "html": "<button class=\"ds-btn-primary\">Записать окот</button>",
+      "css": ".ds-btn-primary{font-family:'Geist Variable',system-ui,sans-serif;height:32px;padding:0 10px;border:1px solid transparent;border-radius:6px;background:oklch(0.52 0.13 150);color:#fff;font-size:14px;font-weight:500;cursor:pointer;transition:background 150ms cubic-bezier(0.25,1,0.5,1)}.ds-btn-primary:hover{background:oklch(0.47 0.12 150)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid oklch(0.62 0.13 150);outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Other actions next to the primary one.",
+      "html": "<button class=\"ds-btn-secondary\">Отмена</button>",
+      "css": ".ds-btn-secondary{font-family:'Geist Variable',system-ui,sans-serif;height:32px;padding:0 10px;border:1px solid oklch(0.86 0.005 150);border-radius:6px;background:#fff;color:oklch(0.21 0.008 150);font-size:14px;font-weight:500;cursor:pointer;transition:background 150ms cubic-bezier(0.25,1,0.5,1)}.ds-btn-secondary:hover{background:oklch(0.955 0.004 150)}.ds-btn-secondary:focus-visible{outline:2px solid oklch(0.62 0.13 150);outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Row actions and toolbars.",
+      "html": "<button class=\"ds-btn-ghost\">Изменить</button>",
+      "css": ".ds-btn-ghost{font-family:'Geist Variable',system-ui,sans-serif;height:32px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:oklch(0.5 0.01 150);font-size:14px;font-weight:500;cursor:pointer;transition:background 150ms cubic-bezier(0.25,1,0.5,1),color 150ms}.ds-btn-ghost:hover{background:oklch(0.955 0.004 150);color:oklch(0.21 0.008 150)}.ds-btn-ghost:focus-visible{outline:2px solid oklch(0.62 0.13 150);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labeled field of an event form.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Бирка</span><input class=\"ds-input\" placeholder=\"Например, 1042\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;width:240px;font-family:'Geist Variable',system-ui,sans-serif;}.ds-field-label{font-size:12px;font-weight:500;color:oklch(0.21 0.008 150)}.ds-input{font-family:'Geist Variable',system-ui,sans-serif;height:32px;padding:0 10px;border:1px solid oklch(0.86 0.005 150);border-radius:6px;background:#fff;color:oklch(0.21 0.008 150);font-size:14px;outline:none;transition:border-color 150ms}.ds-input::placeholder{color:oklch(0.5 0.01 150)}.ds-input:focus-visible{border-color:oklch(0.62 0.13 150);box-shadow:0 0 0 2px #fff,0 0 0 4px oklch(0.62 0.13 150)}"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "An item of the sidebar.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\">Овцы</a><a class=\"ds-nav-item\" href=\"#\">Стада</a><a class=\"ds-nav-item\" href=\"#\">Корма</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:2px;width:220px;padding:8px;background:oklch(0.975 0.003 150);font-family:'Geist Variable',system-ui,sans-serif;}.ds-nav-item{display:flex;align-items:center;height:28px;padding:0 8px;border-radius:6px;color:oklch(0.5 0.01 150);font-size:14px;text-decoration:none;transition:background 150ms}.ds-nav-item:hover{background:oklch(0.955 0.004 150);color:oklch(0.21 0.008 150)}.ds-nav-item-active{background:oklch(0.955 0.004 150);color:oklch(0.21 0.008 150);font-weight:500}.ds-nav-item:focus-visible{outline:2px solid oklch(0.62 0.13 150);outline-offset:2px}"
+    },
+    {
+      "name": "Table Rows",
+      "kind": "custom",
+      "refersTo": "table-row",
+      "description": "The main surface: dense rows with tabular figures.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Бирка</th><th>Стадо</th><th class=\"ds-num\">Вес, кг</th><th>Статус</th></tr></thead><tbody><tr><td>1042</td><td>Северное</td><td class=\"ds-num\">68,5</td><td></td></tr><tr class=\"ds-selected\"><td>1043</td><td>Северное</td><td class=\"ds-num\">71,0</td><td><span class=\"ds-badge\">Продан</span></td></tr></tbody></table>",
+      "css": ".ds-table{font-family:'Geist Variable',system-ui,sans-serif;border-collapse:collapse;width:420px;font-size:13px;font-variant-numeric:tabular-nums;color:oklch(0.21 0.008 150);background:#fff}.ds-table th{height:32px;padding:0 12px;text-align:left;font-size:12px;font-weight:500;color:oklch(0.5 0.01 150);border-bottom:1px solid oklch(0.91 0.004 150)}.ds-table td{height:36px;padding:0 12px;border-bottom:1px solid oklch(0.91 0.004 150)}.ds-table .ds-num{text-align:right}.ds-table tbody tr:hover{background:oklch(0.955 0.004 150)}.ds-table tr.ds-selected{background:oklch(0.95 0.03 150)}.ds-badge{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:4px;background:oklch(0.955 0.004 150);color:oklch(0.5 0.01 150);font-size:12px;font-weight:500}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shepherd's Ledger",
+    "overview": "Arashan is a ledger, not a dashboard. A Member opens it in the evening, after the work with the flocks, and records the events of the day: a Lambing, a Sale, a Restock of feed. The interface must take those minutes and give nothing back but the record. It follows the feel of Linear: calm neutral surfaces, exact alignment, small type, fast responses. PRODUCT.md says it plainly: \"The data is the main thing on each screen. The interface does not call attention to itself.\"\n\nThe system is dense but not cramped. Base text is 14px, data is 13px, controls are 32px high and table rows are 36px. The app shell is a quiet canvas with a sidebar on it, and the content sits on one inset surface with a hairline border. Depth comes from tone and lines, not shadows. One green, taken from the highland pastures where the Arashan breed grazes, marks the primary action, the current selection and the focus. Everything else is neutral.\n\nThe system rejects what PRODUCT.md rejects: rustic farm decoration (wood textures, sheep illustrations, hand-drawn fonts), SaaS dashboards with big metric cards and gradients, loud colors and many colored badges, and heavy enterprise ERP forms with dense grids of small fields and many tabs.\n\nThere are two themes, light and dark, and both are first class. The app follows the system setting and lets the Member change it. Motion is restrained: 150 ms state changes with an ease-out curve (`cubic-bezier(0.25, 1, 0.5, 1)`), no entrances, no choreography. With `prefers-reduced-motion`, all transitions are instant. In v1 the layout is for a large screen only (from 1024px wide): a sidebar of 240px and a content area that fills the rest.",
+    "keyCharacteristics": [
+      "Neutral surfaces with a faint green tint (chroma 0.003 to 0.005), one green accent.",
+      "One type family, Geist, in three weights. Tabular figures in all data.",
+      "Flat at rest. Hairline borders and tone separate the layers.",
+      "Dense controls (32px) and rows (36px), with generous space between groups.",
+      "Keyboard first: each frequent action has a shortcut, and focus is always visible."
+    ],
+    "rules": [
+      {
+        "name": "The One Green Rule",
+        "body": "Pasture Green appears on 10 percent of a screen at most: the primary action, the selection, the focus. A screen with two green buttons has one too many.",
+        "section": "colors"
+      },
+      {
+        "name": "The State Is Not Color Rule",
+        "body": "A color never carries a state alone. A Sold Sheep has the word «Продан» next to it; an error has its message under the field.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Pure Gray Rule",
+        "body": "Each neutral has chroma 0.003 to 0.01 at hue 150. A pure gray (`oklch(L 0 0)`) is forbidden, except for pure white.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Each number that can sit above another number (a Tag, an amount, a count, a date) uses tabular figures. Columns of numbers that do not line up are a defect.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Caps Rule",
+        "body": "No uppercase text with wide tracking, also not in column headers or above sections. Hierarchy comes from weight and color.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat At Rest Rule",
+        "body": "A card, a table or a panel on the page has no shadow. If a static surface needs a shadow to stand out, the tones are wrong: fix the tones.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do put the most frequent action of a screen in one Pasture Green primary button, with a shortcut.",
+      "Do use tabular figures and right alignment for every number in a column.",
+      "Do separate layers with tone and 1px lines: Canvas, then Surface, then Raised.",
+      "Do keep every text at 4.5:1 or more in both themes, placeholders included (Ink Muted, 6.0:1 and 6.5:1).",
+      "Do keep state transitions at 150 ms with `cubic-bezier(0.25, 1, 0.5, 1)`, and make them instant with `prefers-reduced-motion`.",
+      "Do check each new screen in the light theme and the dark theme before the merge.",
+      "Do show a skeleton while a table loads and a one-line empty state with the action to fill it."
+    ],
+    "donts": [
+      "Don't use rustic farm decoration: wood textures, sheep illustrations, hand-drawn fonts.",
+      "Don't build SaaS dashboards with big metric cards, gradients and charts on each screen. A report is a table first.",
+      "Don't use loud colors and many colored badges. Color shows state or danger only.",
+      "Don't build heavy enterprise ERP forms with dense grids of small fields and many tabs. One column, few fields, good defaults.",
+      "Don't put a card inside the content panel, or a card inside a card.",
+      "Don't use a `border-left` or `border-right` over 1px as a colored stripe on a nav item, a row or an alert.",
+      "Don't put a shadow on a surface at rest.",
+      "Don't use uppercase labels with wide tracking.",
+      "Don't open a modal for an event form. Use the side panel.",
+      "Don't use pure gray neutrals, or a second green for success."
+    ]
+  }
+}
