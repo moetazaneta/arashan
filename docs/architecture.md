@@ -163,6 +163,7 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `sheep.changeOwner`    | yes   | yes    |
 | `sheep.delete`         | yes   | yes    |
 | `sheep.move`           | yes   | yes    |
+| `sheep.changeStatus`   | yes   | yes    |
 | `flock.view`           | yes   | yes    |
 | `flock.create`         | yes   | yes    |
 | `flock.update`         | yes   | yes    |
@@ -283,6 +284,39 @@ of a Flock, the column «Стадо» and the bulk action «Перевести �
   a move and writes it, without a permission check and without an audit entry: the command checks the
   permission and appends its own entry. A Sheep that stops being Active leaves its Flock with it
   first, and a Lamb goes into the Flock of its Mother.
+
+## The Status of a Sheep
+
+The module `core/src/sheep/lifecycle.ts` keeps the life of a Sheep on the Farm: it stops being Active
+when it is Slaughtered, Dead or Lost, and a Lost Sheep can come back. Sold comes with the Sale.
+
+- **A change of the Status is an event with a date** (`StatusChange`, in the table
+  `sheepStatusChanges`), with an optional reason. The card shows the changes, the newest first, in
+  the block «Смены статуса».
+- **`changeSheepStatus`** gives one Sheep or many Active Sheep the Status Slaughtered, Dead or Lost
+  on a date: the bulk action «Сменить статус» of the table «Бараны», or the card. It is one
+  command: if one Sheep cannot change, no Sheep changes, and each Sheep gets one audit entry
+  (`sheep.markSlaughtered`, `sheep.markDead`, `sheep.markLost`).
+- **The Flock membership closes on that date.** A Sheep in a Flock leaves it with a move out of all
+  Flocks (`recordFlockMove`), and the change keeps the id of that move (`flockMoveId`). On that day
+  the Sheep was still in its Flock (`flocksOn`).
+- **The date** is a real date, not in the future, and not before the birth date, the last move, the
+  last change of the Owner or the last change of the Status (`sheep.statusDateInvalid`). Thus the
+  history of a Sheep stays in the order of the dates. A later birth date is not after a change of
+  the Status either (`sheep.birthDateAfterStatusChange`).
+- **Slaughtered and Dead are final** (`sheep.notActive`). A Lost Sheep comes back with
+  `markSheepFound` (`sheep.markFound`): it is Active again from a date that is not before the loss,
+  in no Flock. Its Owner must be a Member now (`requireOwner`).
+- **A wrong change is undone** with `undoSheepStatusChange` (`sheep.undoStatusChange`): the last
+  change becomes Deleted (ADR 0005), and the Sheep gets its Status from before. A Sheep that is
+  Active again goes back to the Flock that it left, if that Flock is not Archived now; else it stays
+  in no Flock. A found Sheep that is in a Flock again must leave it before the undo makes it Lost
+  (`sheep.inFlock`). The undo takes only the changes of this module: a Sale has its own cancel.
+- **The table «Бараны» filters by Status**, with the number of Sheep of each. The default is Active;
+  the URL keeps another choice (`?status=dead`, `?status=all`).
+- **For a command of another slice,** `recordStatusChange(ctx, sheep, { status, date, reason })`
+  checks the rules and writes the change and the move out of the Flock, without a permission check
+  and without an audit entry, as `recordFlockMove` does. A Sale uses it to make its Sheep Sold.
 
 ## The audit log
 
