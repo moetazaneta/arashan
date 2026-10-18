@@ -5,7 +5,7 @@ import type { CalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import type { FileId, MembershipId, SheepId, UserId } from "../ids";
 import type { BreedComposition, BreedShare } from "../pedigree/composition";
-import { compositions, type SheepLookup } from "../pedigree/pedigree";
+import { cachedLookup, compositions, type SheepLookup } from "../pedigree/pedigree";
 import type { Grading, Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
 
 // The queries of the Sheep registry: the table, the card, the pedigree, the history, and the Owners
@@ -155,7 +155,7 @@ export async function getSheepPedigree(
   input: { sheepId: SheepId },
 ): Promise<PedigreeNode | null> {
   authorize(ctx.member, "sheep.view", { farmId: ctx.farm.id });
-  const lookup = cachedLookup(ctx);
+  const lookup = cachedLookup((id) => ctx.repos.sheep.get(id));
   const sheep = await lookup(input.sheepId);
   if (sheep === null) return null;
   const compositionOf = compositions(lookup);
@@ -186,7 +186,7 @@ export async function getSheep(
   input: { sheepId: SheepId },
 ): Promise<SheepCard | null> {
   authorize(ctx.member, "sheep.view", { farmId: ctx.farm.id });
-  const lookup = cachedLookup(ctx);
+  const lookup = cachedLookup((id) => ctx.repos.sheep.get(id));
   const sheep = await lookup(input.sheepId);
   if (sheep === null) return null;
   const owners = await ownerNames(ctx);
@@ -270,19 +270,6 @@ async function requireSheep(ctx: FarmQueryContext, id: SheepId): Promise<Sheep> 
 function lookupIn(all: readonly Sheep[]): SheepLookup {
   const byId = new Map(all.map((sheep) => [sheep.id, sheep]));
   return async (id) => byId.get(id) ?? null;
-}
-
-/** The reader of the Sheep, which reads each Sheep one time. */
-function cachedLookup(ctx: FarmQueryContext): (id: SheepId) => Promise<Sheep | null> {
-  const cache = new Map<SheepId, Promise<Sheep | null>>();
-  return (id) => {
-    let found = cache.get(id);
-    if (found === undefined) {
-      found = ctx.repos.sheep.get(id);
-      cache.set(id, found);
-    }
-    return found;
-  };
 }
 
 async function passportView(
