@@ -1,0 +1,47 @@
+name: CI
+
+# Every pull request and every push to main: check, test and build.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the run it supersedes. Runs on main are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    name: Check, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Installs vp, Node.js from .node-version and pnpm from package.json's devEngines, and caches
+      # the pnpm store by the lockfile.
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version-file: .node-version
+          cache: true
+          run-install: false
+
+      - name: Install locked dependencies
+        run: vp install --frozen-lockfile
+
+      # `vp check`, each package's tests as its own task, and `vp build`: the `ready` task in
+      # vite.config.ts.
+      - name: Check, test and build
+        run: vp run ready
+
+      - name: Name the step that failed
+        if: failure()
+        run: vp run --last-details
