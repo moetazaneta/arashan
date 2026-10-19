@@ -70,6 +70,7 @@ import {
   type PasswordResetRepository,
   type Readers,
   type Repositories,
+  noNorms,
   type Resource,
   type ResourceEvent,
   type ResourceEventId,
@@ -289,6 +290,7 @@ function resourceColumns(resource: ResourceFields) {
     nameKey: nameKey(resource.name),
     unit: resource.unit,
     stock: resource.stock,
+    norms: resource.norms,
     archivedAt: resource.archivedAt ?? undefined,
   };
 }
@@ -300,6 +302,7 @@ function toResource(doc: Doc<"resources">): Resource {
     name: doc.name,
     unit: doc.unit,
     stock: doc.stock,
+    norms: doc.norms ?? { ...noNorms },
     archivedAt: doc.archivedAt ?? null,
   };
 }

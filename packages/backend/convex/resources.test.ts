@@ -59,7 +59,14 @@ describe("resources", () => {
     });
 
     expect(await editor.query(api.resources.list, { farmId })).toEqual([
-      { id: resourceId, name: "Сено", unit: "кг", stock: 790_000, archived: false },
+      {
+        id: resourceId,
+        name: "Сено",
+        unit: "кг",
+        stock: 790_000,
+        norms: { ram: 0, ewe: 0, lamb: 0 },
+        archived: false,
+      },
     ]);
     const card = await editor.query(api.resources.get, { farmId, resourceId });
     expect(card!.stock).toBe(790_000);
@@ -177,5 +184,120 @@ describe("resources", () => {
       await other.editor.query(api.resources.get, { farmId: other.farmId, resourceId }),
     ).toBeNull();
     expect(await other.editor.query(api.resources.list, { farmId: other.farmId })).toEqual([]);
+  });
+});
+
+describe("Norms and the forecast", () => {
+  test("an Editor sets Norms without changing Stock and gets an audit entry", async () => {
+    const t = setup();
+    const { editor, farmId, resourceId } = await feedFarm(t);
+    const norms = { ram: 3000, ewe: 2000, lamb: 500 };
+    await editor.mutation(api.resources.setNorms, { farmId, resourceId, norms });
+    expect(await editor.query(api.resources.get, { farmId, resourceId })).toMatchObject({
+      norms,
+      stock: 0,
+    });
+    expect(await rowOf(t, "resources", resourceId)).toMatchObject({ norms, stock: 0 });
+    expect(await auditOf(t, "resource.setNorms")).toEqual(["Resource"]);
+    await editor.mutation(api.resources.setNorms, { farmId, resourceId, norms });
+    expect(await auditOf(t, "resource.setNorms")).toEqual(["Resource"]);
+  });
+
+  test("suggests a Usage and forecasts Stock from the Sheep of the Flock", async () => {
+    const t = setup();
+    const { editor, farmId, resourceId, flockId, membershipId } = await feedFarm(t);
+    const ownerId = await membershipId("editor");
+    const sheepId = await editor.mutation(api.sheep.register, {
+      farmId,
+      ownerId,
+      sex: "ram",
+      tag: null,
+      name: null,
+      birthDate: null,
+      origin: "born",
+      initialEntry: true,
+      notes: null,
+      weight: null,
+    });
+    await editor.mutation(api.flocks.moveSheep, {
+      farmId,
+      sheepIds: [sheepId],
+      flockId,
+      date: "2026-01-01",
+    });
+    await editor.mutation(api.resources.setNorms, {
+      farmId,
+      resourceId,
+      norms: { ram: 3000, ewe: 2000, lamb: 500 },
+    });
+    await editor.mutation(api.resources.restock, {
+      farmId,
+      resourceId,
+      date: "2026-01-01",
+      quantity: 26000,
+      price: null,
+    });
+    await editor.mutation(api.resources.use, {
+      farmId,
+      resourceId,
+      flockId,
+      date: "2026-01-02",
+      quantity: 1000,
+    });
+    expect(
+      await editor.query(api.resources.suggestUsage, {
+        farmId,
+        resourceId,
+        flockId,
+        date: "2026-01-05",
+      }),
+    ).toMatchObject({
+      counts: { ram: 1, ewe: 0, lamb: 0 },
+      perDay: 3000,
+      days: 3,
+      quantity: 9000,
+      lastUsage: "2026-01-02",
+    });
+    expect(
+      await editor.query(api.resources.forecast, { farmId, date: "2026-01-05" }),
+    ).toMatchObject([
+      {
+        resourceId,
+        stock: 25000,
+        dailyNeed: 3000,
+        days: 8,
+        flocks: [{ flock: { id: flockId }, dailyNeed: 3000, days: 8 }],
+      },
+    ]);
+  });
+
+  test("an invalid Norm writes nothing and old Resources read zero Norms", async () => {
+    const t = setup();
+    const { editor, farmId, resourceId } = await feedFarm(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch("resources", ctx.db.normalizeId("resources", resourceId)!, {
+        norms: undefined,
+      });
+    });
+    expect(await editor.query(api.resources.get, { farmId, resourceId })).toMatchObject({
+      norms: { ram: 0, ewe: 0, lamb: 0 },
+    });
+    expect(
+      await errorCode(
+        editor.mutation(api.resources.setNorms, {
+          farmId,
+          resourceId,
+          norms: { ram: -1, ewe: 0, lamb: 0 },
+        }),
+      ),
+    ).toBe("resource.normInvalid");
+    expect((await rowOf(t, "resources", resourceId))?.norms).toBeUndefined();
+    expect(await auditOf(t, "resource.setNorms")).toEqual([]);
+    await editor.mutation(api.resources.setNorms, {
+      farmId,
+      resourceId,
+      norms: { ram: 1, ewe: 0, lamb: 0 },
+    });
+    expect((await rowOf(t, "resources", resourceId))?.norms).toEqual({ ram: 1, ewe: 0, lamb: 0 });
   });
 });

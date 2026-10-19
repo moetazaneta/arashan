@@ -83,6 +83,9 @@ export {
   useUnarchiveResource,
   useUpdateResource,
   useRecordUsage,
+  useUsageSuggestion,
+  useStockForecast,
+  useSetResourceNorms,
 } from "./resources";
 export {
   useChangeSheepOwner,
@@ -116,6 +119,7 @@ export {
   grades,
   inviteLifetimeMs,
   isPureArashan,
+  isCalendarDate,
   knownParents,
   manualLimit,
   maxBreedNameLength,
@@ -145,6 +149,8 @@ export {
   minPasswordLength,
   quantityScale,
   nameKey,
+  noNorms,
+  normGroups,
   pedigreeDepth,
   scanContentTypes,
   sexes,

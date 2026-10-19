@@ -1,5 +1,7 @@
 import {
-  dateAt,
+  isCalendarDate,
+  useToday,
+  useUsageSuggestion,
   useFlocks,
   useRecordAdjustment,
   useRecordRestock,
@@ -38,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useCodeError, useError } from "@/errors";
-import { currencySymbol, parseAmount, parseQuantity } from "@/format";
+import { currencySymbol, formatQuantity, parseAmount, parseQuantity, quantityText } from "@/format";
 
 import { Stock } from "./stock";
 
@@ -123,14 +125,24 @@ function EventForm({
   const usage = useRecordUsage(farm.id);
   const adjustment = useRecordAdjustment(farm.id);
   const save = kind === "restock" ? restock : kind === "usage" ? usage : adjustment;
-  const today = dateAt(Date.now(), farm.timeZone);
+  const today = useToday(farm.timeZone)!;
   const [date, setDate] = useState(today);
-  const [quantity, setQuantity] = useState("");
+  const [typedQuantity, setTypedQuantity] = useState<string | null>(null);
   const [price, setPrice] = useState("");
   const [flockId, setFlockId] = useState<FlockId | null>(null);
   const [reason, setReason] = useState("");
   // The rules that the form checks before it sends the event: they show after a try to save.
   const [checked, setChecked] = useState(false);
+  const suggestion = useUsageSuggestion(
+    farm.id,
+    kind === "usage" && flockId !== null && isCalendarDate(date)
+      ? { resourceId: resource.id, flockId, date }
+      : null,
+  );
+  const suggested = suggestion.data;
+  const quantity =
+    typedQuantity ??
+    (suggested && suggested.quantity > 0 ? quantityText(suggested.quantity, i18n.locale) : "");
   const quantityValue = parseQuantity(quantity, i18n.locale);
   const priceValue = price.trim() === "" ? null : parseAmount(price);
   const priceInvalid = price.trim() !== "" && priceValue === null;
@@ -143,6 +155,7 @@ function EventForm({
           ? "money.amountInvalid"
           : null,
   );
+  const suggestionError = useError(suggestion.error);
   const saveError = useError(save.error);
   const error = localError ?? saveError;
   const flockMissing = checked && kind === "usage" && flockId === null;
@@ -174,6 +187,8 @@ function EventForm({
       );
     } else if (kind === "usage") {
       if (quantityValue === 0 || flockId === null) return;
+      // The saved Usage changes the suggestion before the dialog closes: the field keeps its value.
+      setTypedQuantity(quantity);
       usage.mutate({ ...base, quantity: quantityValue, flockId }, { onSuccess: onDone });
     } else {
       adjustment.mutate({ ...base, counted: quantityValue, reason }, { onSuccess: onDone });
@@ -219,7 +234,7 @@ function EventForm({
               value={quantity}
               aria-invalid={quantityError !== null}
               onChange={(event) => {
-                setQuantity(event.target.value);
+                setTypedQuantity(event.target.value);
                 changed();
               }}
             />
@@ -233,6 +248,44 @@ function EventForm({
                 Сколько ресурса на самом деле было в этот день. Разницу запишет приложение.
               </Trans>
             </FieldDescription>
+          )}
+          {kind === "usage" && suggested && !usage.isPending && !usage.isSuccess && (
+            <FieldDescription>
+              {suggested.quantity > 0 ? (
+                <>
+                  <Trans>
+                    Предложено: {formatQuantity(suggested.quantity, i18n.locale)} {resource.unit}. В
+                    день: {formatQuantity(suggested.perDay, i18n.locale)} {resource.unit}, дней:{" "}
+                    {suggested.days}.
+                  </Trans>
+                  {typedQuantity !== null &&
+                    typedQuantity !== quantityText(suggested.quantity, i18n.locale) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTypedQuantity(quantityText(suggested.quantity, i18n.locale));
+                          changed();
+                        }}
+                      >
+                        <Trans>Подставить</Trans>
+                      </Button>
+                    )}
+                </>
+              ) : suggested.days === 0 ? (
+                <Trans>В этот день стаду уже выдавали ресурс.</Trans>
+              ) : suggested.norms.ram === 0 &&
+                suggested.norms.ewe === 0 &&
+                suggested.norms.lamb === 0 ? (
+                <Trans>Задайте нормы, чтобы рассчитать выдачу.</Trans>
+              ) : (
+                <Trans>Для этого стада нет расхода по нормам.</Trans>
+              )}
+            </FieldDescription>
+          )}
+          {kind === "usage" && suggestion.error !== null && (
+            <FormAlert error={suggestionError} fieldCodes={[]} />
           )}
           <FieldError>{quantityError}</FieldError>
         </Field>

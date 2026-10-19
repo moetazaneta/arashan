@@ -50,3 +50,8 @@ function daysInMonth(year: number, month: number): number {
 function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
+
+/** Whole days between two calendar dates, without a time zone or a daylight saving change. */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  return (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+}

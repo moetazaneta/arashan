@@ -156,6 +156,7 @@ export const errorCodes = [
   "resource.dateInvalid",
   "resource.dateInFuture",
   "resource.quantityInvalid",
+  "resource.normInvalid",
   "resource.reasonRequired",
   "resource.reasonTooLong",
   "resource.adjustmentNoChange",

@@ -554,6 +554,25 @@ of a Resource shows its Stock and its events, the newest first, each with the St
   Resource and, for a Usage, one for its Flock. A Restock with a price also appends the entry of its
   Expense.
 
+### Norms and the forecast
+
+Each Resource has a Norm for a Ram, an Ewe and a Lamb, in thousandths of its unit per Sheep per day.
+A Norm of 0 means no Norm. Changing Norms does not change the Stock.
+
+The Usage form suggests the sum of each Norm times the number of Sheep of its group in the Flock
+now, times the days since its last Usage of this Resource. A first Usage gets one day; a Usage on
+the same date gets zero days. Later Usages do not count. The Member can change the quantity before
+saving it.
+
+The forecast divides the Stock by the daily need and rounds down to whole days. The Farm's daily
+need is the sum of the needs of its Flocks that are not Archived. Each Flock also shows how long the
+whole Stock would last for it alone. Only Sheep on the Farm now count. A Sheep with no birth date
+is an adult; the others use the Farm's lamb age on the requested date. With no daily need there is
+no forecast. A Stock of 0 or less lasts zero days when there is a daily need.
+
+Both queries take a calendar date from the client, so their results do not depend on the clock.
+The client uses today in the Farm's time zone and refreshes it when the day changes.
+
 ## The audit log
 
 Each command that writes a record appends at least one audit entry: the actor (the User, or null

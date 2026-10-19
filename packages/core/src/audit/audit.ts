@@ -68,6 +68,7 @@ export type CommandName =
   | "purchase.cancel"
   | "resource.create"
   | "resource.update"
+  | "resource.setNorms"
   | "resource.archive"
   | "resource.unarchive"
   | "resource.restock"

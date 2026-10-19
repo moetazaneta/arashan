@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { addMonths, dateAt, isCalendarDate } from "./dates";
+import { addMonths, dateAt, daysBetween, isCalendarDate } from "./dates";
 
 describe("isCalendarDate", () => {
   test.each(["2026-10-18", "2024-02-29", "1900-01-01"])("%s is a date", (text) => {
@@ -39,5 +39,18 @@ describe("addMonths", () => {
     ["2026-08-31", 12, "2027-08-31"],
   ])("%s + %i months is %s", (date, months, expected) => {
     expect(addMonths(date, months)).toBe(expected);
+  });
+});
+
+describe("daysBetween", () => {
+  test.each([
+    ["2026-10-15", "2026-10-18", 3],
+    ["2026-10-18", "2026-10-18", 0],
+    ["2026-10-18", "2026-10-15", -3],
+    ["2024-02-28", "2024-03-01", 2],
+    ["2026-03-28", "2026-03-30", 2],
+    ["2025-12-31", "2026-01-01", 1],
+  ])("%s to %s is %i days", (from, to, days) => {
+    expect(daysBetween(from, to)).toBe(days);
   });
 });
