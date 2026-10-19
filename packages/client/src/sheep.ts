@@ -1,5 +1,6 @@
 import type {
   CalendarDate,
+  ExitInput,
   ExternalSheepRegistration,
   FarmId,
   FileId,
@@ -156,6 +157,35 @@ export function useDeleteSheep(farmId: FarmId) {
   const markDeleted = useConvexMutation(api.sheep.markDeleted);
   return useMutation({
     mutationFn: (sheepId: SheepId) => callCommand(markDeleted, { farmId, sheepId }),
+  });
+}
+
+/**
+ * A Member changes the Status of one Sheep or many Active Sheep to Slaughtered, Dead or Lost, and
+ * gets the number of Sheep. The Sheep leave their Flocks on the date.
+ */
+export function useChangeSheepStatus(farmId: FarmId) {
+  const changeStatus = useConvexMutation(api.sheep.changeStatus);
+  return useMutation({
+    mutationFn: (input: ExitInput & { sheepIds: readonly SheepId[] }) =>
+      callCommand(changeStatus, { farmId, ...input, sheepIds: [...input.sheepIds] }),
+  });
+}
+
+/** A Member records that a Lost Sheep came back on a date. */
+export function useMarkSheepFound(farmId: FarmId) {
+  const markFound = useConvexMutation(api.sheep.markFound);
+  return useMutation({
+    mutationFn: (input: { sheepId: SheepId; date: CalendarDate; reason: string | null }) =>
+      callCommand(markFound, { farmId, ...input }),
+  });
+}
+
+/** A Member undoes the last change of the Status of a Sheep, made by mistake. */
+export function useUndoSheepStatusChange(farmId: FarmId) {
+  const undo = useConvexMutation(api.sheep.undoStatusChange);
+  return useMutation({
+    mutationFn: (sheepId: SheepId) => callCommand(undo, { farmId, sheepId }),
   });
 }
 

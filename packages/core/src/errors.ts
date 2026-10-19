@@ -33,6 +33,7 @@ export const errorCodes = [
   "member.passwordRejected",
   "user.passwordResetPending",
   "member.ownsActiveSheep",
+  "member.ownsLostSheep",
   // Sheep.
   "sheep.notFound",
   "sheep.tagTaken",
@@ -44,6 +45,7 @@ export const errorCodes = [
   "sheep.birthDateInFuture",
   "sheep.birthDateAfterOwnerChange",
   "sheep.birthDateAfterFlockMove",
+  "sheep.birthDateAfterStatusChange",
   "sheep.purchaseRequired",
   "sheep.originLocked",
   "sheep.ownerNotMember",
@@ -81,6 +83,12 @@ export const errorCodes = [
   "sheep.moveDateInvalid",
   "sheep.tooManyToMove",
   "sheep.noMoveToUndo",
+  "sheep.notLost",
+  "sheep.statusDateInvalid",
+  "sheep.reasonTooLong",
+  "sheep.tooManyToChangeStatus",
+  "sheep.noStatusChangeToUndo",
+  "sheep.movedAfterFound",
   // Locations.
   "location.notFound",
   "location.nameRequired",

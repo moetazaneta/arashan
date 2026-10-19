@@ -12,6 +12,7 @@ import { ChangeOwnerDialog, DeleteSheepDialog } from "@/components/sheep/sheep-d
 import { SheepDetails } from "@/components/sheep/sheep-details";
 import { EditSheepSheet } from "@/components/sheep/sheep-form";
 import { SheepHistory } from "@/components/sheep/sheep-history";
+import { ChangeStatusDialog, FoundDialog } from "@/components/sheep/status-dialogs";
 import { StatusCell } from "@/components/sheep/sheep-table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,7 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   return (
     <>
@@ -100,9 +102,14 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
               <Trans>Перевести в стадо</Trans>
             </Button>
           )}
+          {(sheep.status === "active" || sheep.status === "lost") &&
+            sheep.origin !== "external" && <ChangeOwnerDialog farm={farm} sheep={sheep} />}
           {sheep.status === "active" && sheep.origin !== "external" && (
-            <ChangeOwnerDialog farm={farm} sheep={sheep} />
+            <Button variant="outline" onClick={() => setChangingStatus(true)}>
+              <Trans>Сменить статус</Trans>
+            </Button>
           )}
+          {sheep.status === "lost" && <FoundDialog farm={farm} sheep={sheep} />}
           <DeleteSheepDialog
             farm={farm}
             sheep={sheep}
@@ -136,13 +143,21 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
       </Tabs>
       <EditSheepSheet farm={farm} sheep={sheep} open={editing} onOpenChange={setEditing} />
       {sheep.origin !== "external" && (
-        <MoveSheepDialog
-          farm={farm}
-          sheepIds={[sheep.id]}
-          currentFlockId={sheep.flock?.id ?? null}
-          open={moving}
-          onOpenChange={setMoving}
-        />
+        <>
+          <MoveSheepDialog
+            farm={farm}
+            sheepIds={[sheep.id]}
+            currentFlockId={sheep.flock?.id ?? null}
+            open={moving}
+            onOpenChange={setMoving}
+          />
+          <ChangeStatusDialog
+            farm={farm}
+            sheepIds={[sheep.id]}
+            open={changingStatus}
+            onOpenChange={setChangingStatus}
+          />
+        </>
       )}
     </>
   );

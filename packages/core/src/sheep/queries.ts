@@ -11,7 +11,7 @@ import {
   type SheepFlockStay,
   sheepFlockStays,
 } from "../flocks/queries";
-import type { FileId, FlockId, MembershipId, SheepId, UserId } from "../ids";
+import type { FileId, FlockId, MembershipId, SheepId, StatusChangeId, UserId } from "../ids";
 import type { BreedComposition, BreedShare } from "../pedigree/composition";
 import { cachedLookup, compositions, type SheepLookup } from "../pedigree/pedigree";
 import type { Grading, Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
@@ -86,9 +86,19 @@ export interface OwnerPeriod {
   since: CalendarDate | null;
 }
 
+/** One change of the Status of a Sheep, as its card shows it. */
+export interface StatusChangeRow {
+  id: StatusChangeId;
+  from: SheepStatus;
+  to: SheepStatus;
+  date: CalendarDate;
+  reason: string | null;
+}
+
 /**
  * A Sheep as its card shows it: the fields, the Owners (the newest first), the parents and the
- * Flock stays (the newest first), children, the parts of the Breed composition by hand, and the Passport.
+ * Flock stays (the newest first), children, the parts of the Breed composition by hand, the
+ * Passport, and the changes of the Status (the newest first).
  */
 export interface SheepCard extends SheepRow {
   owners: OwnerPeriod[];
@@ -99,6 +109,7 @@ export interface SheepCard extends SheepRow {
   manualBreeds: BreedShare[];
   passport: PassportView | null;
   flocks: SheepFlockStay[];
+  statusChanges: StatusChangeRow[];
 }
 
 /** A Sheep in the pedigree tree, with its parents up to the depth of the tree. */
@@ -217,6 +228,9 @@ export async function getSheep(
   for (const change of changes) {
     periods.push({ owner: ownerOf(owners, change.ownerId), since: change.date });
   }
+  const statusChanges = (await ctx.repos.sheep.statusChanges(sheep.id))
+    .map(({ id, from, to, date, reason }) => ({ id, from, to, date, reason }))
+    .reverse();
   return {
     ...row,
     owners: periods.reverse(),
@@ -226,6 +240,7 @@ export async function getSheep(
     children: children.map(toRef),
     manualBreeds: sheep.manualBreeds,
     passport: sheep.passport === null ? null : await passportView(ctx, sheep.passport),
+    statusChanges,
   };
 }
 

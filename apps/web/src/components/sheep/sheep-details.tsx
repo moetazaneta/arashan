@@ -14,6 +14,7 @@ import { CompositionText } from "./composition";
 import { gradeLabels, originLabels, sexLabels } from "./labels";
 import { SheepLink } from "./sheep-ref";
 import { NoValue, StatusCell } from "./sheep-table";
+import { StatusChanges } from "./status-dialogs";
 
 /**
  * The tab «Карточка»: the main fields of a Sheep, the history of its Owners, and the block
@@ -36,6 +37,12 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
     sheep.weight !== null ||
     sheep.notes !== null;
   const ownersId = useId();
+  // The date of the last change, for a Sheep that is not Active: «Пал с 10.10.2026».
+  const lastChange = sheep.statusChanges[0];
+  const statusSince =
+    sheep.status === "active" || lastChange === undefined
+      ? null
+      : formatCalendarDate(lastChange.date, i18n.locale);
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,6 +77,12 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
             <FieldRow label={<Trans>Владелец</Trans>}>{sheep.owner?.name ?? <NoValue />}</FieldRow>
             <FieldRow label={<Trans>Статус</Trans>}>
               <StatusCell status={sheep.status} />
+              {statusSince !== null && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  <Trans>с {statusSince}</Trans>
+                </span>
+              )}
             </FieldRow>
           </>
         )}
@@ -93,6 +106,8 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
           </ol>
         </section>
       )}
+
+      <StatusChanges farm={farm} sheep={sheep} />
 
       <Separator />
 
