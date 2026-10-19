@@ -62,6 +62,7 @@ export type CommandName =
   | "moneyCategory.delete"
   | "resource.create"
   | "resource.update"
+  | "resource.setNorms"
   | "resource.archive"
   | "resource.unarchive"
   | "resource.restock"

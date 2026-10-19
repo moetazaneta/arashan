@@ -1,5 +1,6 @@
 import type { CalendarDate } from "../dates";
 import type { FarmId, FlockId, ResourceEventId, ResourceId } from "../ids";
+import type { Norms } from "./norms";
 
 // The feed of a Farm: the Resources (hay, grain…), their Stock, and the events that change it. A
 // Restock adds a quantity, a Usage gives a quantity to a Flock, and an Adjustment corrects the Stock
@@ -35,6 +36,7 @@ export interface Resource {
    * no events.
    */
   stock: number;
+  norms: Norms;
   /** When a Member archived the Resource, in milliseconds since the Unix epoch, or null. */
   archivedAt: number | null;
 }
