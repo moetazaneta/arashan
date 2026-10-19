@@ -54,7 +54,8 @@ export async function createResource(
 
 /**
  * A Member changes the name or the unit of a Resource. The unit changes only while the Resource has
- * no events (`resource.unitLocked`): the quantities of its events are in the unit.
+ * no events (`resource.unitLocked`): the quantities of its events are in the unit. A cancelled event
+ * counts too, because a Member can restore it from the Trash.
  */
 export async function updateResource(
   ctx: FarmCommandContext,
@@ -65,7 +66,10 @@ export async function updateResource(
   const fields = validResource(input);
   await requireFreeName(ctx, fields.name, resource.id);
   if (resource.name === fields.name && resource.unit === fields.unit) return;
-  if (resource.unit !== fields.unit && (await ctx.repos.resources.events(resource.id)).length > 0) {
+  if (
+    resource.unit !== fields.unit &&
+    (await ctx.repos.resources.hasEventsWithDeleted(resource.id))
+  ) {
     throw new DomainError("resource.unitLocked");
   }
   await ctx.repos.resources.update(resource.id, fields);

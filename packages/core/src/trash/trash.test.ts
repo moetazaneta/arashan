@@ -28,6 +28,7 @@ import {
   createResource,
   recordRestock,
   recordUsage,
+  updateResource,
 } from "../resources/commands";
 import { deleteSheep, registerSheep, type SheepRegistration, updateSheep } from "../sheep/commands";
 import { changeSheepStatus } from "../sheep/lifecycle";
@@ -701,6 +702,28 @@ describe("restoreFromTrash", () => {
         "resource.restoreEvent ResourceEvent",
         "resource.restoreEvent Resource",
       ]);
+    });
+
+    test("keeps the unit of its Resource: a cancelled event locks it too", async () => {
+      const { ctx, restore } = await setup();
+      const resourceId = await createResource(ctx, { name: "Сено", unit: "тюк" });
+      const restockId = await recordRestock(ctx, {
+        resourceId,
+        date: "2026-10-10",
+        quantity: 10_000,
+        price: null,
+      });
+      await cancelResourceEvent(ctx, { eventId: restockId });
+
+      // Else the 10 «тюк» of the Restock would come back as 10 «кг».
+      await expect(updateResource(ctx, { resourceId, name: "Сено", unit: "кг" })).rejects.toThrow(
+        "resource.unitLocked",
+      );
+      await restore("resourceEvent", restockId);
+      expect((await ctx.repos.resources.get(resourceId))!).toMatchObject({
+        unit: "тюк",
+        stock: 10_000,
+      });
     });
 
     test("fails if its Resource is Archived", async () => {

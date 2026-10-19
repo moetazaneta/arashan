@@ -2000,6 +2000,8 @@ function resourceRepository(backend: FakeBackend, farmId: FarmId): FarmResourceR
       events()
         .filter((e) => e.resourceId === resourceId)
         .map(eventOf),
+    hasEventsWithDeleted: async (resourceId) =>
+      allEvents().some((e) => e.resourceId === resourceId),
     insert: async (fields) => {
       const id = nextId(backend, "resource") as ResourceId;
       backend.resources.push({ id, farmId, ...fields });

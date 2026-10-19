@@ -765,6 +765,8 @@ export class InMemoryStore {
             const { farmId: _, ...event } = withoutDeletedAt(e);
             return event;
           }),
+      hasEventsWithDeleted: async (resourceId) =>
+        this.resourceEvents.some((e) => e.farmId === farmId && e.resourceId === resourceId),
       insert: async (fields) => {
         const id = this.id("Resource") as ResourceId;
         this.resources.push({ id, farmId, ...fields });

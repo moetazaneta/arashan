@@ -29,30 +29,32 @@ export const dealTrash: TrashType<"deal", TrashDeal> = {
     for (const record of records.sort((a, b) => a.deletedAt - b.deletedAt)) {
       if (record.source !== null) prices.set(sourceKey(record.source), record.amount);
     }
-    const sheep = new Map<SheepId, Sheep>();
-    for (const one of [
-      ...(await ctx.repos.sheep.list()),
-      ...(await ctx.repos.sheep.listDeleted()),
-    ]) {
-      sheep.set(one.id, one);
-    }
-    return deals.map((deal) => ({
-      kind: "deal",
-      id: deal.id,
-      deletedAt: deal.deletedAt,
-      record: {
-        kind: deal.kind,
-        date: deal.date,
-        price: prices.get(sourceKey(dealSource(deal))) ?? null,
-        sheepCount: deal.sheepIds.length,
-        sheep: deal.sheepIds.slice(0, dealSheepPreview).flatMap((id) => {
-          const one = sheep.get(id);
-          return one === undefined
-            ? []
-            : [{ id: one.id, tag: one.tag, name: one.name, sex: one.sex, origin: one.origin }];
-        }),
-      },
-    }));
+    // The Sheep of a cancelled Purchase are Deleted; the Sheep of a cancelled Sale are not. Only the
+    // first Sheep of each deal are read, not all Sheep of the Farm.
+    const deleted = new Map<SheepId, Sheep>();
+    for (const one of await ctx.repos.sheep.listDeleted()) deleted.set(one.id, one);
+    const sheepOf = async (id: SheepId) => deleted.get(id) ?? (await ctx.repos.sheep.get(id));
+    return Promise.all(
+      deals.map(async (deal) => {
+        const shown = await Promise.all(deal.sheepIds.slice(0, dealSheepPreview).map(sheepOf));
+        return {
+          kind: "deal" as const,
+          id: deal.id,
+          deletedAt: deal.deletedAt,
+          record: {
+            kind: deal.kind,
+            date: deal.date,
+            price: prices.get(sourceKey(dealSource(deal))) ?? null,
+            sheepCount: deal.sheepIds.length,
+            sheep: shown.flatMap((one) =>
+              one === null || one === undefined
+                ? []
+                : [{ id: one.id, tag: one.tag, name: one.name, sex: one.sex, origin: one.origin }],
+            ),
+          },
+        };
+      }),
+    );
   },
   restore: (ctx, id) => restoreDeal(ctx, id as DealId),
 };

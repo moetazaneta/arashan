@@ -1,6 +1,7 @@
 import { useRestoreFromTrash } from "@arashan/client";
 import type { Farm, TrashItem } from "@arashan/core";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
+import { useId } from "react";
 
 import { DataCell, HeadCell, SkeletonRows, tableClass } from "@/components/flocks/shared";
 import { categoryName } from "@/components/money/category-names";
@@ -61,12 +62,14 @@ function TrashRow({ farm, item }: { farm: Farm; item: TrashItem }) {
   const error = useErrorMessage(restore.error);
   // After a success the button stays disabled until the list drops the row.
   const busy = restore.isPending || restore.isSuccess;
+  // The buttons of all rows have one name, so each one names its record as its description.
+  const recordId = useId();
 
   return (
     <TableRow className="h-9">
       <DataCell>{i18n._(trashKindLabel(item))}</DataCell>
       <DataCell>
-        <span className="block max-w-xl truncate">
+        <span id={recordId} className="block max-w-xl truncate">
           <TrashRecord farm={farm} item={item} />
         </span>
         {error !== null && (
@@ -81,6 +84,7 @@ function TrashRow({ farm, item }: { farm: Farm; item: TrashItem }) {
           variant="outline"
           size="sm"
           disabled={busy}
+          aria-describedby={recordId}
           onClick={() => restore.mutate({ kind: item.kind, id: item.id })}
         >
           {restore.isPending && <Spinner data-icon="inline-start" aria-hidden />}

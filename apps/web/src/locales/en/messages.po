@@ -230,8 +230,8 @@ msgid "Баран уже у этого владельца. Выберите др
 msgstr "The sheep already belongs to this owner. Choose another one."
 
 #: src/errors.ts
-msgid "Баран этой записи удалён. Сначала восстановите его из корзины."
-msgstr "The Sheep of this record is deleted. Restore it from the Trash first."
+msgid "Баран этой записи удалён. Сначала восстановите из корзины его или покупку, в которой его купили."
+msgstr "The Sheep of this record is deleted. First restore it, or the Purchase that brought it, from the Trash."
 
 #: src/components/money/records-tab.tsx
 msgid "Баран…"
@@ -1558,8 +1558,8 @@ msgid "Мать должна быть самкой."
 msgstr "The mother must be an ewe."
 
 #: src/errors.ts
-msgid "Мать или отец этого барана удалены. Сначала восстановите их из корзины."
-msgstr "The Mother or the Father of this Sheep is deleted. Restore them from the Trash first."
+msgid "Мать или отец этого барана удалены. Сначала восстановите их из корзины или покупку, в которой их купили."
+msgstr "The Mother or the Father of this Sheep is deleted. First restore them, or the Purchase that brought them, from the Trash."
 
 #: src/components/sheep/lambing-form.tsx
 msgid "Мертворождённых"

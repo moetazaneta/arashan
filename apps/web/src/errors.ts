@@ -189,8 +189,8 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   // The client gives today's date, so a Member sees this only after a bug.
   "report.dateInvalid": msg`Не удалось построить отчёт на эту дату. Обновите страницу.`,
   "trash.notFound": msg`Этой записи уже нет в корзине: возможно, её уже восстановили.`,
-  "trash.parentDeleted": msg`Мать или отец этого барана удалены. Сначала восстановите их из корзины.`,
-  "trash.sheepDeleted": msg`Баран этой записи удалён. Сначала восстановите его из корзины.`,
+  "trash.parentDeleted": msg`Мать или отец этого барана удалены. Сначала восстановите их из корзины или покупку, в которой их купили.`,
+  "trash.sheepDeleted": msg`Баран этой записи удалён. Сначала восстановите из корзины его или покупку, в которой его купили.`,
   "trash.breedDeleted": msg`Порода этого барана удалена. Сначала восстановите её из корзины.`,
 };
 

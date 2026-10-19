@@ -578,7 +578,8 @@ of a Resource shows its Stock and its events, the newest first, each with the St
   it in the language of the UI: 1,5 in Russian, 1500 in English.
 - **A Resource** has a name (unique in the Farm, also among the Archived ones, by `nameKey`) and one
   unit of measure, a text that the Member writes, such as «кг», «тюк» or «мешок». The unit changes
-  only while the Resource has no events (`resource.unitLocked`). An Archived Resource stays in the
+  only while the Resource has no events, also no cancelled ones, which can come back from the Trash
+  (`resource.unitLocked`, `hasEventsWithDeleted`). An Archived Resource stays in the
   list and keeps its card, but it gets no new events (`resource.archived`).
 - **The events** (`resourceEvents`) are a Restock, a Usage and an Adjustment. Each one has a date
   (not in the future) and a quantity. A Usage has a Flock that is not Archived; an Adjustment has a
@@ -657,7 +658,8 @@ mistake, and it comes back as it was.
   Sheep, each by the rules of a restored Sheep (`requireRestorableSheep`). Both bring back their
   Automatic record (`restoreAutomaticRecord`, with `findDeletedBySource`), so the price is the same.
 - **A cancelled Resource event** changes the Stock again, as when it was new, and a Restock brings
-  back its Automatic Expense. An Archived Resource gets no events (`resource.archived`).
+  back its Automatic Expense. An Archived Resource gets no events (`resource.archived`). The unit of
+  the Resource stays the same while it has a cancelled event, so the quantity keeps its unit.
 - **Not in the Trash:** an undone Flock move and an undone change of the Status. They are steps of
   the history of a Sheep that a Member undoes with «Отменить» and records again with the same form.
   A Lambing has no cancel yet, so it is not in the Trash either.

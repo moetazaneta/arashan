@@ -261,6 +261,12 @@ describe("trash", () => {
     });
     await editor.mutation(api.resources.cancelEvent, { farmId, eventId });
     expect((await editor.query(api.resources.get, { farmId, resourceId }))!.stock).toBe(0);
+    // The cancelled event keeps the unit: else its 500 «кг» would come back in another unit.
+    expect(
+      await errorCode(
+        editor.mutation(api.resources.update, { farmId, resourceId, name: "Сено", unit: "тюк" }),
+      ),
+    ).toBe("resource.unitLocked");
     const before = (await auditLog(t)).length;
 
     await farm.restore("resourceEvent", eventId);

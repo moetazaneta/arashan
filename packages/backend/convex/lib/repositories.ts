@@ -1283,6 +1283,26 @@ function farmResourceReader(db: DatabaseReader, farmId: FarmId): FarmResourceRea
         .collect();
       return docs.map(toResourceEvent);
     },
+    async hasEventsWithDeleted(resourceId) {
+      const resourceDocId = db.normalizeId("resources", resourceId);
+      if (resourceDocId === null) return false;
+      const live = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("resourceId", resourceDocId),
+        )
+        .first();
+      if (live !== null) return true;
+      // The index has the Resource after `deletedAt`, so the range of the Deleted events filters it.
+      const cancelled = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .filter((q) => q.eq(q.field("resourceId"), resourceDocId))
+        .first();
+      return cancelled !== null;
+    },
     async listDeletedEvents() {
       const docs = await db
         .query("resourceEvents")

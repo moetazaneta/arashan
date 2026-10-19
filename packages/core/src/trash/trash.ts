@@ -3,7 +3,7 @@ import type { FarmCommandContext, FarmQueryContext } from "../context";
 // The Trash («Корзина») lists the Deleted records of a Farm, and a Member restores them (ADR 0005).
 // Each module with records that a Member can delete gives one `TrashType` in its file `trash.ts`:
 // what the list shows of a record, and its restore with the rules of the module. `trashTypes` in
-// `trash/commands.ts` lists them, so a new kind of record plugs in with one line there.
+// `trash/registry.ts` lists them, so a new kind of record plugs in with one line there.
 
 /** A record with the time when it became Deleted, as a method of a repository for the Trash gives it. */
 export type Deleted<T> = T & { deletedAt: number };

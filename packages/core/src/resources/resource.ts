@@ -147,6 +147,11 @@ export interface FarmResourceReader {
   events(resourceId: ResourceId): Promise<ResourceEvent[]>;
   /** The cancelled events of all Resources of the Farm, for the Trash, in no order. */
   listDeletedEvents(): Promise<Deleted<ResourceEvent>[]>;
+  /**
+   * True if the Resource has an event, also a cancelled one. A cancelled event can come back from
+   * the Trash, so its quantity must stay in the unit of the Resource.
+   */
+  hasEventsWithDeleted(resourceId: ResourceId): Promise<boolean>;
 }
 
 export type ResourceFields = Omit<Resource, "id" | "farmId">;
