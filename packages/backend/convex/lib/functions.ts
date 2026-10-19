@@ -175,7 +175,7 @@ export function farmQuery<Args extends PropertyValidators, Result>(definition: {
         const { farmId, args } = splitFarmId<Args>(allArgs);
         const { member, farm } = await enterFarm(await queryContext(ctx), farmId);
         return definition.handler(
-          { member, farm, repos: farmReaders(ctx.db, farm.id), now: () => Date.now() },
+          { member, farm, repos: farmReaders(ctx.db, ctx.storage, farm.id), now: () => Date.now() },
           args,
         );
       }),
@@ -203,7 +203,7 @@ function defineFarmCommand<Args extends PropertyValidators, Result>(
               {
                 member,
                 farm,
-                repos: farmRepositories(records, audit, farm.id),
+                repos: farmRepositories(records, audit, ctx.storage, farm.id),
                 now: () => Date.now(),
                 tokens,
               },

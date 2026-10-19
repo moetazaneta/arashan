@@ -2,18 +2,27 @@ import type * as Client from "@arashan/client";
 import type {
   AssignmentDates,
   AuditEntry,
+  Breed,
+  BreedId,
   CalendarDate,
+  ExitInput,
+  ExternalSheepRegistration,
   Farm,
   FarmCommandContext,
   FarmFlockRepository,
   FarmId,
   FarmLocationRepository,
+  FarmMoneyCategoryRepository,
+  FarmMoneyRecordRepository,
   FarmQueryContext,
   FarmRepositories,
   FarmSettings,
+  FarmBreedRepository,
   FarmSheepRepository,
   FarmShepherdRepository,
   FarmSummary,
+  FileId,
+  FileStorage,
   Flock,
   FlockId,
   FlockInput,
@@ -26,6 +35,13 @@ import type {
   MemberSummary,
   Membership,
   MembershipId,
+  MoneyCategory,
+  MoneyCategoryId,
+  MoneyKind,
+  MoneyRecord,
+  MoneyRecordFilter,
+  MoneyRecordId,
+  MoneyRecordInput,
   OwnerChange,
   OwnerChangeId,
   Role,
@@ -33,47 +49,75 @@ import type {
   SheepId,
   SheepRegistration,
   SheepUpdate,
+  StoredFile,
   Shepherd,
   ShepherdAssignment,
   ShepherdAssignmentId,
   ShepherdId,
   ShepherdInput,
+  StatusChange,
+  StatusChangeId,
   UserId,
   Viewer,
 } from "@arashan/core";
 import {
+  addBreed as addCoreBreed,
+  breedNameKey,
   archiveFlock,
   archiveLocation,
+  archiveMoneyCategory,
   archiveShepherd,
   assignShepherd,
   changeSheepOwner,
+  changeSheepStatus,
   createFlock,
   createLocation,
+  createMoneyCategory,
+  createMoneyRecord,
   createShepherd,
   dateAt,
+  defaultCategoryKeys,
+  deleteMoneyCategory,
+  deleteMoneyRecord,
+  deleteBreed,
   deleteSheep,
   DomainError,
+  ensureFarmMoneyCategories,
   getFlock,
   getSheep,
   getSheepHistory,
+  getSheepPedigree,
   getSheepResponsible,
   inviteLifetimeMs,
+  listBreeds,
+  listParentOptions,
   listFlocks,
   listLocations,
+  listMoneyCategories,
+  listMoneyRecords,
   listSheep,
   listSheepOwners,
+  registerExternalSheep,
   listShepherds,
+  markSheepFound,
+  moneyKinds,
   moveSheep,
   nameKey,
   registerSheep,
+  renameBreed,
+  setBreedArchived,
   removeShepherdAssignment,
+  renameMoneyCategory,
   tagKey,
   unarchiveFlock,
   unarchiveLocation,
+  unarchiveMoneyCategory,
   unarchiveShepherd,
   undoFlockMove,
+  undoSheepStatusChange,
   updateFlock,
   updateLocation,
+  updateMoneyRecord,
   updateSheep,
   updateShepherd,
   updateShepherdAssignment,
@@ -86,22 +130,40 @@ import { createElement, useEffect, useState, useSyncExternalStore } from "react"
 // it after each test.
 
 export {
+  arashanBreedId,
+  arashanShare,
+  compositionOf,
   dateAt,
   defaultLambAgeMonths,
+  exitStatuses,
+  grades,
   inviteLifetimeMs,
+  isPureArashan,
+  knownParents,
+  manualLimit,
+  maxBreedNameLength,
+  maxCategoryNameLength,
   maxLambAgeMonths,
+  maxMoneyNotesLength,
+  maxPassportNumberLength,
   maxNameLength,
   maxNotesLength,
   maxPasswordLength,
+  maxScanBytes,
   maxPhoneLength,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxSheepPerStatusChange,
+  maxStatusReasonLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  pedigreeDepth,
+  scanContentTypes,
   sexes,
+  wholeShare,
 } from "@arashan/core";
 
 export const fakeAppVersion = "1.2.3";
@@ -127,6 +189,15 @@ type CommandName =
   | "updateSheep"
   | "changeSheepOwner"
   | "deleteSheep"
+  | "changeSheepStatus"
+  | "markSheepFound"
+  | "undoSheepStatusChange"
+  | "registerExternalSheep"
+  | "uploadPassportScan"
+  | "addBreed"
+  | "renameBreed"
+  | "setBreedArchived"
+  | "deleteBreed"
   | "createFlock"
   | "updateFlock"
   | "archiveFlock"
@@ -143,7 +214,16 @@ type CommandName =
   | "createShepherd"
   | "updateShepherd"
   | "archiveShepherd"
-  | "unarchiveShepherd";
+  | "unarchiveShepherd"
+  | "ensureMoneyCategories"
+  | "createMoneyRecord"
+  | "updateMoneyRecord"
+  | "deleteMoneyRecord"
+  | "createMoneyCategory"
+  | "renameMoneyCategory"
+  | "archiveMoneyCategory"
+  | "unarchiveMoneyCategory"
+  | "deleteMoneyCategory";
 
 interface FakeBackend {
   session: Client.Session;
@@ -158,13 +238,24 @@ interface FakeBackend {
   sheep: Sheep[];
   deletedSheep: Set<SheepId>;
   ownerChanges: OwnerChange[];
+  /** The Breeds of all Farms that the Members added, also the Deleted ones. */
+  breeds: Breed[];
+  deletedBreeds: Set<BreedId>;
+  /** The uploaded files, such as the scans of Passports. */
+  files: Map<FileId, StoredFile>;
   /** The moves of Sheep between Flocks, also the undone ones. */
   flockMoves: (FlockMove & { deleted?: boolean })[];
+  /** The changes of the Status of Sheep, also the undone ones. */
+  statusChanges: (StatusChange & { deleted?: boolean })[];
   flocks: Flock[];
   locations: Location[];
   shepherds: Shepherd[];
   /** The assignments of Shepherds to Flocks, also the removed ones. */
   assignments: (ShepherdAssignment & { farmId: FarmId; deleted?: boolean })[];
+  /** The categories of Expenses and Incomes, also the Deleted ones. */
+  moneyCategories: (MoneyCategory & { deleted?: boolean })[];
+  /** The Expenses and the Incomes, also the Deleted ones. */
+  moneyRecords: (MoneyRecord & { deleted?: boolean })[];
   audit: AuditEntry[];
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
@@ -181,11 +272,17 @@ const emptyBackend = (): FakeBackend => ({
   sheep: [],
   deletedSheep: new Set(),
   ownerChanges: [],
+  breeds: [],
+  deletedBreeds: new Set(),
+  files: new Map(),
   flockMoves: [],
+  statusChanges: [],
   flocks: [],
   locations: [],
   shepherds: [],
   assignments: [],
+  moneyCategories: [],
+  moneyRecords: [],
   audit: [],
   failures: {},
   tokens: 0,
@@ -205,6 +302,7 @@ export function updateFake(change: (backend: FakeBackend) => void) {
 
 export function resetFake() {
   backend = emptyBackend();
+  uploadGate = null;
   version += 1;
 }
 
@@ -548,14 +646,21 @@ export function passwordOf(membershipId: MembershipId): string | undefined {
 // rules of the core apply, such as a Tag that another Sheep has. The Members of a Farm come from
 // `addMembers`; the User of `signIn` is always a Member of the User's Farms.
 
-/** A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram. */
+/**
+ * A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram with no
+ * parents. An External Sheep (`origin: "external"`) has no Owner. The fake does not check the rules
+ * of the core here, such as the sex of a parent.
+ */
 export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "farmId">> = {}) {
   let id!: SheepId;
   updateFake((backend) => {
     const viewer = viewerOf(backend);
+    const external = change.origin === "external";
     const ownerId =
       change.ownerId === undefined
-        ? (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
+        ? external
+          ? null
+          : (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
         : change.ownerId;
     id = nextId(backend, "sheep") as SheepId;
     backend.sheep.push({
@@ -566,10 +671,15 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       sex: "ram",
       birthDate: null,
       origin: "born",
-      initialEntry: true,
+      initialEntry: !external,
       status: "active",
       notes: null,
       weight: null,
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
       flockId: null,
       registeredAt: Date.now(),
       ...change,
@@ -579,11 +689,47 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       at: Date.now(),
       actorId: viewer?.user.id ?? null,
       farmId: farm.id,
-      command: "sheep.register",
+      command: external ? "sheep.registerExternal" : "sheep.register",
       target: { kind: "Sheep", id },
     });
   });
   return id;
+}
+
+/** A Breed that a Member added to the list of the Farm. */
+export function addBreed(
+  farm: FakeFarm,
+  name: string,
+  change: Partial<Pick<Breed, "archivedAt">> = {},
+) {
+  let id!: BreedId;
+  updateFake((backend) => {
+    id = nextId(backend, "breed") as BreedId;
+    backend.breeds.push({
+      id,
+      farmId: farm.id,
+      name,
+      archivedAt: null,
+      createdAt: Date.now(),
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A file in the fake storage, such as the scan of a Passport, and its id. */
+export function addFile(file: StoredFile = { size: 1024, contentType: "application/pdf" }) {
+  let id!: FileId;
+  updateFake((backend) => {
+    id = nextId(backend, "file") as FileId;
+    backend.files.set(id, file);
+  });
+  return id;
+}
+
+/** The Sheep in the fake backend, also a Deleted one, for a test that checks what a command wrote. */
+export function sheepOf(id: SheepId): Sheep | undefined {
+  return backend.sheep.find((sheep) => sheep.id === id);
 }
 
 function nextId(backend: FakeBackend, kind: string): string {
@@ -656,8 +802,16 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     },
     list: async () => ofFarm().map((s) => ({ ...s })),
     findByTag: async (tag) =>
-      ofFarm().filter((s) => s.tag !== null && tagKey(s.tag) === tagKey(tag)),
+      ofFarm().filter(
+        (s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag),
+      ),
+    children: async (parentId) =>
+      ofFarm()
+        .filter((s) => s.motherId === parentId || s.fatherId === parentId)
+        .map((s) => ({ ...s })),
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
+    ownsLostSheep: async (ownerId) =>
+      ofFarm().some((s) => s.ownerId === ownerId && s.status === "lost"),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
     listInFlock: async (flockId) => ofFarm().filter((s) => s.flockId === flockId),
@@ -688,9 +842,66 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
       const found = backend.flockMoves.find((m) => m.id === id);
       if (found !== undefined) found.deleted = true;
     },
+    statusChanges: async (sheepId) =>
+      backend.statusChanges
+        .filter((c) => c.sheepId === sheepId && c.deleted !== true)
+        .map(({ id, from, to, date, reason, flockMoveId, at }) => ({
+          id,
+          sheepId,
+          from,
+          to,
+          date,
+          reason,
+          flockMoveId,
+          at,
+        })),
+    insertStatusChange: async (change) => {
+      const id = nextId(backend, "status-change") as StatusChangeId;
+      backend.statusChanges.push({ id, ...change });
+      return id;
+    },
+    markStatusChangeDeleted: async (id) => {
+      const found = backend.statusChanges.find((c) => c.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
     markDeleted: async (id) => {
       backend.deletedSheep.add(id);
     },
+  };
+}
+
+function breedRepository(backend: FakeBackend, farmId: FarmId): FarmBreedRepository {
+  const ofFarm = () =>
+    backend.breeds.filter((b) => b.farmId === farmId && !backend.deletedBreeds.has(b.id));
+  const find = (id: BreedId) => ofFarm().find((b) => b.id === id);
+  return {
+    get: async (id) => {
+      const found = find(id);
+      return found === undefined ? null : { ...found };
+    },
+    list: async () => ofFarm().map((b) => ({ ...b })),
+    findByName: async (name) => ofFarm().filter((b) => breedNameKey(b.name) === breedNameKey(name)),
+    insert: async (fields) => {
+      const id = nextId(backend, "breed") as BreedId;
+      backend.breeds.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = find(id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    markDeleted: async (id) => {
+      backend.deletedBreeds.add(id);
+    },
+  };
+}
+
+/** The file storage of the fake. A browser would get a file from its URL. */
+function fileStorage(backend: FakeBackend): FileStorage {
+  return {
+    url: async (id) => (backend.files.has(id) ? `https://files.test/${id}` : null),
+    uploadUrl: async () => "https://upload.test",
+    get: async (id) => backend.files.get(id) ?? null,
   };
 }
 
@@ -798,9 +1009,13 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
       countFarms: async () => 1,
     },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
+    moneyCategories: moneyCategoryRepository(backend, farmId),
+    moneyRecords: moneyRecordRepository(backend, farmId),
     history: {
       listForTarget: async (target) =>
         backend.audit.filter(
@@ -824,9 +1039,13 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     invites: { insert: notInFake },
     passwordResets: { insert: notInFake },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
+    moneyCategories: moneyCategoryRepository(backend, farmId),
+    moneyRecords: moneyRecordRepository(backend, farmId),
     audit: {
       append: async (entry) => {
         backend.audit.push(entry);
@@ -886,6 +1105,86 @@ export const useChangeSheepOwner = (farmId: FarmId) =>
 export const useDeleteSheep = (farmId: FarmId) =>
   useMutation("deleteSheep", (backend, sheepId: SheepId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useChangeSheepStatus = (farmId: FarmId) =>
+  useMutation("changeSheepStatus", (backend, input: ExitInput & { sheepIds: readonly SheepId[] }) =>
+    changeSheepStatus(commandContext(backend, farmId), input),
+  );
+
+export const useMarkSheepFound = (farmId: FarmId) =>
+  useMutation(
+    "markSheepFound",
+    (backend, input: { sheepId: SheepId; date: CalendarDate; reason: string | null }) =>
+      markSheepFound(commandContext(backend, farmId), input),
+  );
+
+export const useUndoSheepStatusChange = (farmId: FarmId) =>
+  useMutation("undoSheepStatusChange", (backend, sheepId: SheepId) =>
+    undoSheepStatusChange(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useParentOptions = (farmId: FarmId) =>
+  useCoreQuery(`parents ${farmId}`, (backend) => listParentOptions(queryContext(backend, farmId)));
+
+export const useSheepPedigree = (farmId: FarmId, sheepId: SheepId) =>
+  useCoreQuery(`pedigree ${farmId} ${sheepId}`, (backend) =>
+    getSheepPedigree(queryContext(backend, farmId), { sheepId }),
+  );
+
+export const useRegisterExternalSheep = (farmId: FarmId) =>
+  useMutation("registerExternalSheep", (backend, input: ExternalSheepRegistration) =>
+    registerExternalSheep(commandContext(backend, farmId), input),
+  );
+
+/** The upload of a scan: the fake storage keeps its size and type, and gives its id. */
+// An upload of a scan waits for this, if a test holds the uploads (`holdUploads`).
+let uploadGate: Promise<void> | null = null;
+
+/** Holds each upload of a scan until the test calls the function that this gives. */
+export function holdUploads(): () => void {
+  let release = () => {};
+  uploadGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  return () => {
+    uploadGate = null;
+    release();
+  };
+}
+
+export const useUploadPassportScan = (farmId: FarmId) =>
+  useMutation("uploadPassportScan", async (backend, file: File): Promise<FileId> => {
+    if (uploadGate !== null) await uploadGate;
+    enterFakeFarm(backend, farmId);
+    const id = nextId(backend, "file") as FileId;
+    backend.files.set(id, { size: file.size, contentType: file.type === "" ? null : file.type });
+    return id;
+  });
+
+// The Breeds of a Farm, with the commands and queries of the core.
+
+export const useBreeds = (farmId: FarmId) =>
+  useCoreQuery(`breeds ${farmId}`, (backend) => listBreeds(queryContext(backend, farmId)));
+
+export const useAddBreed = (farmId: FarmId) =>
+  useMutation("addBreed", (backend, input: { name: string }) =>
+    addCoreBreed(commandContext(backend, farmId), input),
+  );
+
+export const useRenameBreed = (farmId: FarmId) =>
+  useMutation("renameBreed", (backend, input: { breedId: BreedId; name: string }) =>
+    renameBreed(commandContext(backend, farmId), input),
+  );
+
+export const useSetBreedArchived = (farmId: FarmId) =>
+  useMutation("setBreedArchived", (backend, input: { breedId: BreedId; archived: boolean }) =>
+    setBreedArchived(commandContext(backend, farmId), input),
+  );
+
+export const useDeleteBreed = (farmId: FarmId) =>
+  useMutation("deleteBreed", (backend, breedId: BreedId) =>
+    deleteBreed(commandContext(backend, farmId), { breedId }),
   );
 
 // Flocks, Locations and Shepherds. The fake runs the commands and queries of the core, as for the
@@ -975,6 +1274,11 @@ export function addFlockMove(sheepId: SheepId, flockId: FlockId | null, date: Ca
 /** The audit entries of the fake backend, for a test that checks one. */
 export function auditEntries(): readonly AuditEntry[] {
   return backend.audit;
+}
+
+/** The current record of a Sheep, for a test that checks the result of a command. */
+export function sheepState(sheepId: SheepId): Readonly<Sheep> | null {
+  return backend.sheep.find((sheep) => sheep.id === sheepId) ?? null;
 }
 
 export const useFlocks = (farmId: FarmId) =>
@@ -1087,4 +1391,227 @@ export const useArchiveShepherd = (farmId: FarmId) =>
 export const useUnarchiveShepherd = (farmId: FarmId) =>
   useMutation("unarchiveShepherd", (backend, shepherdId: ShepherdId) =>
     unarchiveShepherd(commandContext(backend, farmId), { shepherdId }),
+  );
+
+// Expenses, Incomes and their categories. The fake runs the commands and queries of the core, as
+// for the Flocks. A Farm of a test has no categories until the page makes them (the lazy seed), or
+// until the test puts them in with `addDefaultMoneyCategories`. The helpers write no audit entries.
+
+function moneyCategoryRepository(
+  backend: FakeBackend,
+  farmId: FarmId,
+): FarmMoneyCategoryRepository {
+  const all = () => backend.moneyCategories.filter((c) => c.farmId === farmId);
+  const ofFarm = () => all().filter((c) => c.deleted !== true);
+  return {
+    get: async (id) => ofFarm().find((c) => c.id === id) ?? null,
+    list: async (kind) =>
+      ofFarm()
+        .filter((c) => c.kind === kind)
+        .map((c) => ({ ...c })),
+    findByName: async (kind, name) =>
+      ofFarm().filter(
+        (c) => c.kind === kind && c.name !== null && nameKey(c.name) === nameKey(name),
+      ),
+    findByKey: async (kind, key) => ofFarm().find((c) => c.kind === kind && c.key === key) ?? null,
+    keysWithDeleted: async () =>
+      all().flatMap((c) => (c.key === null ? [] : [{ kind: c.kind, key: c.key }])),
+    insert: async (fields) => {
+      const id = nextId(backend, "money-category") as MoneyCategoryId;
+      backend.moneyCategories.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((c) => c.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    markDeleted: async (id) => {
+      const found = ofFarm().find((c) => c.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
+  };
+}
+
+function moneyRecordRepository(backend: FakeBackend, farmId: FarmId): FarmMoneyRecordRepository {
+  const all = () => backend.moneyRecords.filter((r) => r.farmId === farmId);
+  const ofFarm = () => all().filter((r) => r.deleted !== true);
+  return {
+    get: async (id) => ofFarm().find((r) => r.id === id) ?? null,
+    list: async (kind, period) =>
+      ofFarm()
+        .filter(
+          (r) =>
+            r.kind === kind &&
+            (period.from === null || r.date >= period.from) &&
+            (period.to === null || r.date <= period.to),
+        )
+        .map((r) => ({ ...r })),
+    usesCategoryWithDeleted: async (id) => all().some((r) => r.categoryId === id),
+    findBySource: async (source) =>
+      ofFarm().find((r) => r.source?.kind === source.kind && r.source.id === source.id) ?? null,
+    anyWithDeleted: async () => all().length > 0,
+    insert: async (fields) => {
+      const id = nextId(backend, "money-record") as MoneyRecordId;
+      backend.moneyRecords.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((r) => r.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    markDeleted: async (id) => {
+      const found = ofFarm().find((r) => r.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
+  };
+}
+
+/** The default categories of the Farm, as a new Farm gets them. */
+export function addDefaultMoneyCategories(farm: FakeFarm) {
+  updateFake((backend) => {
+    for (const kind of moneyKinds) {
+      for (const key of defaultCategoryKeys[kind]) {
+        const id = nextId(backend, "money-category") as MoneyCategoryId;
+        backend.moneyCategories.push({
+          id,
+          farmId: farm.id,
+          kind,
+          key,
+          name: null,
+          archivedAt: null,
+        });
+      }
+    }
+  });
+}
+
+/** The category of the Farm with the key, or the one with the name. */
+export function moneyCategoryOf(
+  farm: FakeFarm,
+  kind: MoneyKind,
+  keyOrName: string,
+): MoneyCategoryId {
+  const category = backend.moneyCategories.find(
+    (c) => c.farmId === farm.id && c.kind === kind && (c.key === keyOrName || c.name === keyOrName),
+  );
+  if (category === undefined) throw new Error(`The Farm has no category ${keyOrName}.`);
+  return category.id;
+}
+
+/** A category that a Member made. */
+export function addMoneyCategory(
+  farm: FakeFarm,
+  change: Partial<Omit<MoneyCategory, "id" | "farmId">> = {},
+) {
+  let id!: MoneyCategoryId;
+  updateFake((backend) => {
+    id = nextId(backend, "money-category") as MoneyCategoryId;
+    backend.moneyCategories.push({
+      id,
+      farmId: farm.id,
+      kind: "expense",
+      key: null,
+      name: "Транспорт",
+      archivedAt: null,
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** An Expense of the Farm made today, unless the test says otherwise. */
+export function addMoneyRecord(
+  farm: FakeFarm,
+  categoryId: MoneyCategoryId,
+  change: Partial<Omit<MoneyRecord, "id" | "farmId" | "categoryId">> = {},
+) {
+  let id!: MoneyRecordId;
+  updateFake((backend) => {
+    id = nextId(backend, "money-record") as MoneyRecordId;
+    backend.moneyRecords.push({
+      id,
+      farmId: farm.id,
+      categoryId,
+      kind: "expense",
+      date: dateAt(Date.now(), farm.timeZone),
+      amount: 100_00,
+      scope: { kind: "farm" },
+      shepherdId: null,
+      notes: null,
+      source: null,
+      createdAt: Date.now(),
+      ...change,
+    });
+  });
+  return id;
+}
+
+/**
+ * The categories of the kind. As the hook of the client, it calls the command of the lazy seed when
+ * the list is empty, and it is pending until the categories come.
+ */
+export const useMoneyCategories = (farmId: FarmId, kind: MoneyKind) => {
+  const list = useCoreQuery(`money categories ${farmId} ${kind}`, (backend) =>
+    listMoneyCategories(queryContext(backend, farmId), { kind }),
+  );
+  const seed = useMutation<void, number>("ensureMoneyCategories", (backend) =>
+    ensureFarmMoneyCategories(commandContext(backend, farmId)),
+  );
+  const empty = list.data?.length === 0;
+  const { isIdle, mutate } = seed;
+  useEffect(() => {
+    if (empty && isIdle) mutate();
+  }, [empty, isIdle, mutate]);
+  const data = empty ? undefined : list.data;
+  const error = list.error ?? seed.error;
+  return { data, error, isPending: data === undefined && error === null };
+};
+
+export const useMoneyRecords = (farmId: FarmId, filter: MoneyRecordFilter) =>
+  useCoreQuery(`money records ${farmId} ${JSON.stringify(filter)}`, (backend) =>
+    listMoneyRecords(queryContext(backend, farmId), filter),
+  );
+
+export const useCreateMoneyRecord = (farmId: FarmId) =>
+  useMutation("createMoneyRecord", (backend, input: MoneyRecordInput & { kind: MoneyKind }) =>
+    createMoneyRecord(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateMoneyRecord = (farmId: FarmId) =>
+  useMutation(
+    "updateMoneyRecord",
+    (backend, input: MoneyRecordInput & { recordId: MoneyRecordId }) =>
+      updateMoneyRecord(commandContext(backend, farmId), input),
+  );
+
+export const useDeleteMoneyRecord = (farmId: FarmId) =>
+  useMutation("deleteMoneyRecord", (backend, recordId: MoneyRecordId) =>
+    deleteMoneyRecord(commandContext(backend, farmId), { recordId }),
+  );
+
+export const useCreateMoneyCategory = (farmId: FarmId) =>
+  useMutation("createMoneyCategory", (backend, input: { kind: MoneyKind; name: string }) =>
+    createMoneyCategory(commandContext(backend, farmId), input),
+  );
+
+export const useRenameMoneyCategory = (farmId: FarmId) =>
+  useMutation(
+    "renameMoneyCategory",
+    (backend, input: { categoryId: MoneyCategoryId; name: string }) =>
+      renameMoneyCategory(commandContext(backend, farmId), input),
+  );
+
+export const useArchiveMoneyCategory = (farmId: FarmId) =>
+  useMutation("archiveMoneyCategory", (backend, categoryId: MoneyCategoryId) =>
+    archiveMoneyCategory(commandContext(backend, farmId), { categoryId }),
+  );
+
+export const useUnarchiveMoneyCategory = (farmId: FarmId) =>
+  useMutation("unarchiveMoneyCategory", (backend, categoryId: MoneyCategoryId) =>
+    unarchiveMoneyCategory(commandContext(backend, farmId), { categoryId }),
+  );
+
+export const useDeleteMoneyCategory = (farmId: FarmId) =>
+  useMutation("deleteMoneyCategory", (backend, categoryId: MoneyCategoryId) =>
+    deleteMoneyCategory(commandContext(backend, farmId), { categoryId }),
   );

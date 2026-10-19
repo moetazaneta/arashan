@@ -1,10 +1,16 @@
 import {
+  arashanBreedId,
   type AuditEntry,
   type AuditLog,
+  type Breed,
+  type BreedId,
+  breedNameKey,
   type CategoryKey,
   type CommandName,
   type Farm,
   type FarmAuditReader,
+  type FarmBreedReader,
+  type FarmBreedRepository,
   type FarmFlockReader,
   type FarmFlockRepository,
   type FarmId,
@@ -22,6 +28,9 @@ import {
   type FarmRepository,
   type FarmSheepReader,
   type FarmSheepRepository,
+  type FileId,
+  type FileReader,
+  type FileStorage,
   type FarmShepherdReader,
   type FarmShepherdRepository,
   type Flock,
@@ -70,6 +79,8 @@ import {
   type ShepherdFields,
   type ShepherdAssignmentId,
   type ShepherdId,
+  type StatusChange,
+  type StatusChangeId,
   tagKey,
   type TargetKind,
   type User,
@@ -77,7 +88,7 @@ import {
   type UserReader,
   type UserRepository,
 } from "@arashan/core";
-import type { WithoutSystemFields } from "convex/server";
+import type { StorageReader, StorageWriter, WithoutSystemFields } from "convex/server";
 
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../_generated/server";
@@ -158,6 +169,25 @@ function toSheep(doc: Doc<"sheep">): Sheep {
       doc.weightKg === undefined || doc.weighedOn === undefined
         ? null
         : { kg: doc.weightKg, date: doc.weighedOn },
+    motherId: doc.motherId === undefined ? null : (doc.motherId as string as SheepId),
+    fatherId: doc.fatherId === undefined ? null : (doc.fatherId as string as SheepId),
+    manualBreeds: (doc.manualBreeds ?? []).map((part) => ({
+      breedId: part.breedId as string as BreedId,
+      share: part.share,
+    })),
+    passport:
+      doc.passportNumber === undefined || doc.passportIssuedOn === undefined
+        ? null
+        : {
+            number: doc.passportNumber,
+            issueDate: doc.passportIssuedOn,
+            scanId:
+              doc.passportScanId === undefined ? null : (doc.passportScanId as string as FileId),
+          },
+    grade:
+      doc.grade === undefined || doc.gradedOn === undefined
+        ? null
+        : { grade: doc.grade, date: doc.gradedOn },
     flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     registeredAt: doc.registeredAt,
   };
@@ -184,8 +214,36 @@ function sheepColumns(
     notes: sheep.notes ?? undefined,
     weightKg: sheep.weight?.kg,
     weighedOn: sheep.weight?.date,
+    motherId: sheep.motherId === null ? undefined : idOf(sheep.motherId),
+    fatherId: sheep.fatherId === null ? undefined : idOf(sheep.fatherId),
+    // No parts by hand is no column, as in a row from before the pedigree.
+    manualBreeds:
+      sheep.manualBreeds.length === 0
+        ? undefined
+        : sheep.manualBreeds.map((part) => ({
+            breedId: part.breedId === arashanBreedId ? "arashan" : idOf<"breeds">(part.breedId),
+            share: part.share,
+          })),
+    passportNumber: sheep.passport?.number,
+    passportIssuedOn: sheep.passport?.issueDate,
+    passportScanId:
+      sheep.passport === null || sheep.passport.scanId === null
+        ? undefined
+        : (sheep.passport.scanId as string as Id<"_storage">),
+    grade: sheep.grade?.grade,
+    gradedOn: sheep.grade?.date,
     flockId: sheep.flockId === null ? undefined : idOf(sheep.flockId),
     registeredAt: sheep.registeredAt,
+  };
+}
+
+function toBreed(doc: Doc<"breeds">): Breed {
+  return {
+    id: doc._id as string as BreedId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    archivedAt: doc.archivedAt ?? null,
+    createdAt: doc.createdAt,
   };
 }
 
@@ -270,6 +328,19 @@ function toFlockMove(doc: Doc<"sheepFlockMoves">): FlockMove {
     sheepId: doc.sheepId as string as SheepId,
     flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     date: doc.date,
+    at: doc.at,
+  };
+}
+
+function toStatusChange(doc: Doc<"sheepStatusChanges">): StatusChange {
+  return {
+    id: doc._id as string as StatusChangeId,
+    sheepId: doc.sheepId as string as SheepId,
+    from: doc.from,
+    to: doc.to,
+    date: doc.date,
+    reason: doc.reason ?? null,
+    flockMoveId: doc.flockMoveId === undefined ? null : (doc.flockMoveId as string as FlockMoveId),
     at: doc.at,
   };
 }
@@ -658,6 +729,20 @@ async function sheepOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
 }
 
 function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
+  /** True if the Member owns at least one Sheep of the Farm with the Status. */
+  const ownsSheepWithStatus = async (status: "active" | "lost", ownerId: MembershipId) => {
+    const doc = await db
+      .query("sheep")
+      .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+        q
+          .eq("farmId", idOf(farmId))
+          .eq("deletedAt", undefined)
+          .eq("status", status)
+          .eq("ownerId", idOf(ownerId)),
+      )
+      .first();
+    return doc !== null;
+  };
   return {
     async get(id) {
       const doc = await sheepOfFarm(db, farmId, id);
@@ -683,6 +768,27 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .collect();
       return docs.map(toSheep);
     },
+    async children(parentId) {
+      const parentDocId = db.normalizeId("sheep", parentId);
+      if (parentDocId === null) return [];
+      const [asMother, asFather] = await Promise.all([
+        db
+          .query("sheep")
+          .withIndex("by_farmId_deletedAt_motherId", (q) =>
+            q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("motherId", parentDocId),
+          )
+          .collect(),
+        db
+          .query("sheep")
+          .withIndex("by_farmId_deletedAt_fatherId", (q) =>
+            q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("fatherId", parentDocId),
+          )
+          .collect(),
+      ]);
+      // A Sheep cannot be both parents of one child, but a broken row must not give a child twice.
+      const docs = new Map([...asMother, ...asFather].map((doc) => [doc._id, doc]));
+      return [...docs.values()].sort((a, b) => a._creationTime - b._creationTime).map(toSheep);
+    },
     async ownerChanges(sheepId) {
       const sheepDocId = db.normalizeId("sheep", sheepId);
       if (sheepDocId === null) return [];
@@ -695,18 +801,11 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .collect();
       return docs.map(toOwnerChange);
     },
-    async ownsActiveSheep(ownerId) {
-      const doc = await db
-        .query("sheep")
-        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
-          q
-            .eq("farmId", idOf(farmId))
-            .eq("deletedAt", undefined)
-            .eq("status", "active")
-            .eq("ownerId", idOf(ownerId)),
-        )
-        .first();
-      return doc !== null;
+    ownsActiveSheep(ownerId) {
+      return ownsSheepWithStatus("active", ownerId);
+    },
+    ownsLostSheep(ownerId) {
+      return ownsSheepWithStatus("lost", ownerId);
     },
     async listInFlock(flockId) {
       const flockDocId = db.normalizeId("flocks", flockId);
@@ -730,6 +829,18 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         )
         .collect();
       return docs.map(toFlockMove);
+    },
+    async statusChanges(sheepId) {
+      const sheepDocId = db.normalizeId("sheep", sheepId);
+      if (sheepDocId === null) return [];
+      // The order of creation, as in `ownerChanges`.
+      const docs = await db
+        .query("sheepStatusChanges")
+        .withIndex("by_farmId_deletedAt_sheepId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("sheepId", sheepDocId),
+        )
+        .collect();
+      return docs.map(toStatusChange);
     },
   };
 }
@@ -998,6 +1109,66 @@ function farmResourceReader(db: DatabaseReader, farmId: FarmId): FarmResourceRea
   };
 }
 
+/** The Breed of the Farm with the id, or null. Arashan has no row, so its id finds nothing. */
+async function breedOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
+  if (id === arashanBreedId) return null;
+  const doc = await getActive(db, "breeds", id);
+  return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
+}
+
+function farmBreedReader(db: DatabaseReader, farmId: FarmId): FarmBreedReader {
+  return {
+    async get(id) {
+      const doc = await breedOfFarm(db, farmId, id);
+      return doc === null ? null : toBreed(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("breeds")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toBreed);
+    },
+    async findByName(name) {
+      // Only the rows of this key, as in `findByTag`: two Breeds with the same name at one time
+      // conflict, and the second finds the first.
+      const docs = await db
+        .query("breeds")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("nameKey", breedNameKey(name)),
+        )
+        .collect();
+      return docs.map(toBreed);
+    },
+  };
+}
+
+// The file storage of Convex. Its ids are the ids of the system table `_storage`; a string that is
+// no such id finds no file.
+
+function fileReader(db: DatabaseReader, storage: StorageReader): FileReader {
+  return {
+    async url(id) {
+      const fileId = db.system.normalizeId("_storage", id);
+      return fileId === null ? null : storage.getUrl(fileId);
+    },
+  };
+}
+
+function fileStorage(db: DatabaseReader, storage: StorageWriter): FileStorage {
+  return {
+    ...fileReader(db, storage),
+    uploadUrl: () => storage.generateUploadUrl(),
+    async get(id) {
+      const fileId = db.system.normalizeId("_storage", id);
+      const doc = fileId === null ? null : await db.system.get("_storage", fileId);
+      return doc === null ? null : { size: doc.size, contentType: doc.contentType ?? null };
+    },
+  };
+}
+
 function farmAuditReader(db: DatabaseReader, farmId: FarmId): FarmAuditReader {
   return {
     async listForTarget(target) {
@@ -1017,7 +1188,11 @@ function farmAuditReader(db: DatabaseReader, farmId: FarmId): FarmAuditReader {
  * The readers of a query of one Farm, bound to the Farm after `enterFarm`. No method takes the id
  * of the Farm, so a query cannot reach a record of another Farm.
  */
-export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
+export function farmReaders(
+  db: DatabaseReader,
+  storage: StorageReader,
+  farmId: FarmId,
+): FarmReaders {
   return {
     memberships: {
       async list() {
@@ -1036,6 +1211,8 @@ export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
     },
     users: memberUserReader(db),
     sheep: farmSheepReader(db, farmId),
+    breeds: farmBreedReader(db, farmId),
+    files: fileReader(db, storage),
     flocks: farmFlockReader(db, farmId),
     locations: farmLocationReader(db, farmId),
     shepherds: farmShepherdReader(db, farmId),
@@ -1050,9 +1227,10 @@ export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
 export function farmRepositories(
   db: DatabaseWriter,
   auditDb: DatabaseWriter,
+  storage: StorageWriter,
   farmId: FarmId,
 ): FarmRepositories {
-  const readers = farmReaders(db, farmId);
+  const readers = farmReaders(db, storage, farmId);
   // A write checks the Farm again, so that it never reaches a record of another Farm.
   const patchMembership = async (id: string, fields: Partial<Doc<"memberships">>) => {
     const doc = await membershipOfFarm(db, farmId, id);
@@ -1098,9 +1276,55 @@ export function farmRepositories(
         await db.patch("sheepFlockMoves", doc._id, { deletedAt });
       }
     },
+    async insertStatusChange(change) {
+      return (await db.insert("sheepStatusChanges", {
+        farmId: idOf(farmId),
+        sheepId: idOf(change.sheepId),
+        from: change.from,
+        to: change.to,
+        date: change.date,
+        reason: change.reason ?? undefined,
+        flockMoveId: change.flockMoveId === null ? undefined : idOf(change.flockMoveId),
+        at: change.at,
+      })) as string as StatusChangeId;
+    },
+    async markStatusChangeDeleted(id, deletedAt) {
+      const doc = await getActive(db, "sheepStatusChanges", id);
+      if (doc !== null && doc.farmId === idOf<"farms">(farmId)) {
+        await db.patch("sheepStatusChanges", doc._id, { deletedAt });
+      }
+    },
     async markDeleted(id, deletedAt) {
       const doc = await sheepOfFarm(db, farmId, id);
       if (doc !== null) await db.patch("sheep", doc._id, { deletedAt });
+    },
+  };
+  const breeds: FarmBreedRepository = {
+    ...readers.breeds,
+    async insert(breed) {
+      return (await db.insert("breeds", {
+        farmId: idOf(farmId),
+        name: breed.name,
+        nameKey: breedNameKey(breed.name),
+        archivedAt: breed.archivedAt ?? undefined,
+        createdAt: breed.createdAt,
+      })) as string as BreedId;
+    },
+    async update(id, fields) {
+      const doc = await breedOfFarm(db, farmId, id);
+      if (doc === null) return;
+      // The key of the name follows the name, and an `archivedAt` of null takes the Breed out of
+      // the archive.
+      await db.patch("breeds", doc._id, {
+        ...(fields.name === undefined
+          ? {}
+          : { name: fields.name, nameKey: breedNameKey(fields.name) }),
+        ...(fields.archivedAt === undefined ? {} : { archivedAt: fields.archivedAt ?? undefined }),
+      });
+    },
+    async markDeleted(id, deletedAt) {
+      const doc = await breedOfFarm(db, farmId, id);
+      if (doc !== null) await db.patch("breeds", doc._id, { deletedAt });
     },
   };
   const locations: FarmLocationRepository = {
@@ -1273,6 +1497,8 @@ export function farmRepositories(
       },
     },
     sheep,
+    breeds,
+    files: fileStorage(db, storage),
     passwordResets: {
       async insert(reset) {
         return (await db.insert("passwordResets", {

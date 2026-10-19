@@ -34,43 +34,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             Arashan
           </Link>
           <FarmSwitcher currentFarmId={farm?.id ?? null} />
-          <nav aria-label={t`Разделы`} className="flex items-center gap-1">
-            {farm !== undefined && (
-              <Link
-                to="/farms/$farmId"
-                params={{ farmId: farm.id }}
-                activeOptions={{ exact: true }}
-                className={navLink}
-              >
-                <Trans>Ферма</Trans>
-              </Link>
-            )}
-            {farm !== undefined && (
-              <Link to="/farms/$farmId/sheep" params={{ farmId: farm.id }} className={navLink}>
-                <Trans>Бараны</Trans>
-              </Link>
-            )}
-            {farm !== undefined && (
-              <Link to="/farms/$farmId/flocks" params={{ farmId: farm.id }} className={navLink}>
-                <Trans>Стада</Trans>
-              </Link>
-            )}
-            {farm?.role === "admin" && (
-              <>
-                <Link to="/farms/$farmId/members" params={{ farmId: farm.id }} className={navLink}>
-                  <Trans>Участники</Trans>
-                </Link>
-                <Link to="/farms/$farmId/settings" params={{ farmId: farm.id }} className={navLink}>
-                  <Trans>Настройки</Trans>
-                </Link>
-              </>
-            )}
-            {viewer.user.isOperator && (
-              <Link to="/operator/farms" className={navLink}>
-                <Trans>Фермы</Trans>
-              </Link>
-            )}
-          </nav>
+          {viewer.user.isOperator && (
+            <Link to="/operator/farms" className={navLink}>
+              <Trans>Фермы</Trans>
+            </Link>
+          )}
           <div className="ml-auto flex items-center gap-3">
             <LocaleSwitch />
             <span className="max-w-40 truncate text-sm text-muted-foreground">
@@ -81,6 +49,47 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </div>
+        {/* The sections of the Farm have their own row: the list grows with each slice. */}
+        {farm !== undefined && (
+          <nav
+            aria-label={t`Разделы`}
+            className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-1 px-6 pb-2"
+          >
+            <Link
+              to="/farms/$farmId"
+              params={{ farmId: farm.id }}
+              activeOptions={{ exact: true }}
+              className={navLink}
+            >
+              <Trans>Ферма</Trans>
+            </Link>
+            <Link to="/farms/$farmId/sheep" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Бараны</Trans>
+            </Link>
+            <Link to="/farms/$farmId/breeds" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Породы</Trans>
+            </Link>
+            <Link to="/farms/$farmId/flocks" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Стада</Trans>
+            </Link>
+            <Link to="/farms/$farmId/expenses" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Расходы</Trans>
+            </Link>
+            <Link to="/farms/$farmId/incomes" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Доходы</Trans>
+            </Link>
+            {farm.role === "admin" && (
+              <>
+                <Link to="/farms/$farmId/members" params={{ farmId: farm.id }} className={navLink}>
+                  <Trans>Участники</Trans>
+                </Link>
+                <Link to="/farms/$farmId/settings" params={{ farmId: farm.id }} className={navLink}>
+                  <Trans>Настройки</Trans>
+                </Link>
+              </>
+            )}
+          </nav>
+        )}
       </header>
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-8">{children}</main>
       <footer className="mx-auto w-full max-w-5xl px-6 pb-4">

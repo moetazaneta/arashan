@@ -1,4 +1,4 @@
-import type { CommandName, Origin, Sex, SheepStatus } from "@arashan/core";
+import type { CommandName, Grade, Origin, Sex, SheepStatus } from "@arashan/core";
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 
@@ -24,6 +24,13 @@ export const originLabels: Record<Origin, MessageDescriptor> = {
   external: msg`Внешний`,
 };
 
+/** The Grade of a Sheep, from the grading (бонитировка). */
+export const gradeLabels: Record<Grade, MessageDescriptor> = {
+  elite: msg({ context: "grade", message: "Элита" }),
+  first: msg({ context: "grade", message: "Первый" }),
+  second: msg({ context: "grade", message: "Второй" }),
+};
+
 /** What each command did, for the history of a record. */
 export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "user.register": msg({ context: "history", message: "Пользователь зарегистрирован" }),
@@ -44,11 +51,22 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
     message: "Неизвестно, задан ли новый пароль",
   }),
   "sheep.register": msg({ context: "history", message: "Зарегистрирован" }),
+  "sheep.registerExternal": msg({ context: "history", message: "Записан как внешний" }),
   "sheep.update": msg({ context: "history", message: "Изменён" }),
   "sheep.changeOwner": msg({ context: "history", message: "Сменён владелец" }),
   "sheep.delete": msg({ context: "history", message: "Удалён" }),
+  "breed.add": msg({ context: "history", message: "Порода добавлена" }),
+  "breed.rename": msg({ context: "history", message: "Порода переименована" }),
+  "breed.archive": msg({ context: "history", message: "Порода в архиве" }),
+  "breed.unarchive": msg({ context: "history", message: "Порода возвращена из архива" }),
+  "breed.delete": msg({ context: "history", message: "Порода удалена" }),
   "sheep.move": msg({ context: "history", message: "Переведён в стадо" }),
   "sheep.undoMove": msg({ context: "history", message: "Перевод отменён" }),
+  "sheep.markSlaughtered": msg({ context: "history", message: "Забит" }),
+  "sheep.markDead": msg({ context: "history", message: "Пал" }),
+  "sheep.markLost": msg({ context: "history", message: "Потерян" }),
+  "sheep.markFound": msg({ context: "history", message: "Найден" }),
+  "sheep.undoStatusChange": msg({ context: "history", message: "Смена статуса отменена" }),
   "flock.create": msg({ context: "history", message: "Стадо создано" }),
   "flock.update": msg({ context: "history", message: "Стадо изменено" }),
   "flock.archive": msg({ context: "history", message: "Стадо в архиве" }),
@@ -64,4 +82,15 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "shepherd.update": msg({ context: "history", message: "Чабан изменён" }),
   "shepherd.archive": msg({ context: "history", message: "Чабан в архиве" }),
   "shepherd.unarchive": msg({ context: "history", message: "Чабан возвращён из архива" }),
+  "money.create": msg({ context: "history", message: "Запись добавлена" }),
+  "money.update": msg({ context: "history", message: "Запись изменена" }),
+  "money.delete": msg({ context: "history", message: "Запись удалена" }),
+  "moneyCategory.create": msg({ context: "history", message: "Категория добавлена" }),
+  "moneyCategory.update": msg({ context: "history", message: "Категория переименована" }),
+  "moneyCategory.archive": msg({ context: "history", message: "Категория в архиве" }),
+  "moneyCategory.unarchive": msg({
+    context: "history",
+    message: "Категория возвращена из архива",
+  }),
+  "moneyCategory.delete": msg({ context: "history", message: "Категория удалена" }),
 };

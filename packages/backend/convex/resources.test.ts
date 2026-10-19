@@ -171,8 +171,8 @@ describe("resources", () => {
     const other = await farmWithEditor(t, "Другая");
 
     expect(
-      await errorCode(other.editor.query(api.resources.get, { farmId: other.farmId, resourceId })),
-    ).toBe("resource.notFound");
+      await other.editor.query(api.resources.get, { farmId: other.farmId, resourceId }),
+    ).toBeNull();
     expect(await other.editor.query(api.resources.list, { farmId: other.farmId })).toEqual([]);
   });
 });

@@ -30,6 +30,8 @@ codes, never text for people (ADR 0004).
 | `src/access/`            | `requireUser`, `requireOperator`, `enterFarm`, and `can` with the matrix. |
 | `src/audit/`             | The audit log: `AuditEntry`, the port `AuditLog`, `CommandName`.          |
 | `src/<module>/`          | The types of a module, its repository ports, its commands and queries.    |
+| `src/pedigree/`          | The Breed composition and the rules of the parents (see "Pedigree").      |
+| `src/files/`             | The port of the file storage, such as the scans of Passports.             |
 | `src/testing/`           | The repositories in memory, for the tests of the core. Not exported.      |
 | `src/index.ts`           | The public API. The other layers import only from here.                   |
 
@@ -162,7 +164,12 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `sheep.update`          | yes   | yes    |
 | `sheep.changeOwner`     | yes   | yes    |
 | `sheep.delete`          | yes   | yes    |
+| `breed.view`            | yes   | yes    |
+| `breed.add`             | yes   | yes    |
+| `breed.update`          | yes   | yes    |
+| `breed.delete`          | yes   | yes    |
 | `sheep.move`            | yes   | yes    |
+| `sheep.changeStatus`    | yes   | yes    |
 | `flock.view`            | yes   | yes    |
 | `flock.create`          | yes   | yes    |
 | `flock.update`          | yes   | yes    |
@@ -202,7 +209,8 @@ stop the older ones, so that an Admin can invite many people at one time.
 - A Farm always has at least one Admin. The core refuses to remove the last Admin, or to make the
   last Admin an Editor, with `member.lastAdmin`.
 - The Owner of an Active Sheep is a Member. The core refuses to remove a Member who owns an Active
-  Sheep, with `member.ownsActiveSheep`: first give the Sheep to another Member.
+  Sheep, with `member.ownsActiveSheep`, or a Lost one, which can come back, with
+  `member.ownsLostSheep`: first give the Sheep to another Member.
 - **A new password for a Member** (ADR 0003): an Admin sets it through the Clerk Backend API, for
   example for a Member with no email who forgot the password. Clerk ends the Member's sessions.
   The account of a User is the same in all Farms, so the core refuses (`member.passwordNotAllowed`)
@@ -250,6 +258,60 @@ and its tab «История».
   (`core/src/dates.ts`). Two of them compare as strings. Today is the date in the time zone of the
   Farm (`dateAt`).
 
+## Pedigree and Breeds
+
+The pedigree slice (`core/src/pedigree/`, `core/src/breeds/`) adds the parents, the Breed composition,
+the Passport and the Grade of a Sheep, and the Breed list of the Farm («Породы»). The card shows them in
+the block «Дополнительно», and the pedigree tree in the tab «Родословная».
+
+- **Arashan is built in.** Each Farm has the Breed Arashan from the start, with the id
+  `arashanBreedId` ("arashan"). It is not a row of the table `breeds`, so a Farm needs no migration,
+  and a Member cannot rename, archive or delete it (`breed.arashanLocked`). The UI shows its name in
+  the language of the UI. The other Breeds are rows: their names are unique in the Farm by
+  `breedNameKey` (as `tagKey` for Tags), an Archived Breed keeps its name, and a form does not offer
+  it. A Breed that a Sheep uses can only become Archived (`breed.inUse`).
+- **The parents.** `motherId` and `fatherId` are optional. The Mother is an Ewe and the Father is a
+  Ram, of the Farm or External, and of any Status. If both dates are known, a parent was born before
+  the child. A Sheep is never its own ancestor: `requireParents` walks the ancestors of each new
+  parent. A Sheep that is a parent keeps its sex and stays born before its children. A parent cannot
+  become Deleted (`requireNotParent`, `sheep.isParent`): a command that makes a Sheep Deleted, such as
+  a cancelled Purchase, calls it too. The index `by_farmId_deletedAt_motherId` (and the one of the
+  Father) gives the children.
+- **The Breed composition is computed, never stored** (ADR 0007). A Sheep stores only its parents and
+  `manualBreeds`. These are the parts that a Member gave by hand, out of the Unknown part of the
+  unknown parents: up to 100 percent with no known parent, 50 with one, none with two (`manualLimit`).
+  `compositionOf(mother, father, manualBreeds)` is the average of the parents, and
+  `compositions(lookup)` computes it for many Sheep, each ancestor one time. Thus a change of a Sheep
+  changes the composition of all its descendants at once, and no command writes the descendants.
+- **The parts are integers in millionths** (`wholeShare` is 100 percent), so the sum is exact and
+  "100 percent Arashan" is an equality. When a half is not an integer (after about six generations),
+  the largest remainder method keeps the sum. It gives the extra millionths to the smallest parts
+  first, so a child is 100 percent Arashan only if both parents are.
+- **The Passport** (number, issue date, scan) needs 100 percent Arashan (`passport.notArashan`). A
+  Sheep with a Passport is 100 percent Arashan, so all its ancestors are too. Thus, when the
+  composition of a Sheep changes and it is not 100 percent Arashan, no descendant can keep a
+  Passport. The command then looks for a descendant with a Passport, and fails if it finds one
+  (`passport.descendantNotArashan`).
+- **The Grade** is the last value only: the Grade and its date. The audit log keeps the changes.
+- **An External Sheep** (`registerExternalSheep`, the mode «Внешний» of the panel «Добавить барана»)
+  has no Owner, and its Tag is not unique (the adapter writes no `tagKey`). It keeps the Status Active,
+  so a list of the Sheep on the Farm, a Sale or a report checks `isOnFarm`, not only the Status. It has
+  a card, but the table «Бараны» does not show it.
+
+### The file storage
+
+The core keeps only the id of a file (`FileId`). The port `FileStorage` (`core/src/files/files.ts`)
+gives an upload URL, the size and the type of a file, and its URL. The Convex adapter uses the Convex
+file storage (`ctx.storage`, the system table `_storage`).
+
+1. The form calls `sheep.passportUploadUrl` (`requestPassportScanUpload`), which writes no record.
+2. The client sends the file to that URL, and gets its id (`useUploadPassportScan`).
+3. The form sends the id as `passport.scanId` with `sheep.update`. The core checks that the file
+   exists, has at most 10 MB, and is a PDF, a JPEG, a PNG or a WebP if the storage knows its type.
+
+A file is never erased (ADR 0005): a new scan leaves the old file in the storage. The ids of the
+storage are not bound to a Farm, but they are random and only a Member of the Farm sees them.
+
 ## Flocks, Locations and Shepherds
 
 The module `core/src/flocks/` keeps the Flocks of a Farm, their Locations and their Shepherds, and
@@ -291,6 +353,44 @@ of a Flock, the column «Стадо» and the bulk action «Перевести �
   a move and writes it, without a permission check and without an audit entry: the command checks the
   permission and appends its own entry. A Sheep that stops being Active leaves its Flock with it
   first, and a Lamb goes into the Flock of its Mother.
+
+## The Status of a Sheep
+
+The module `core/src/sheep/lifecycle.ts` keeps the life of a Sheep on the Farm: it stops being Active
+when it is Slaughtered, Dead or Lost, and a Lost Sheep can come back. Sold comes with the Sale.
+
+- **A change of the Status is an event with a date** (`StatusChange`, in the table
+  `sheepStatusChanges`), with an optional reason. The card shows the changes, the newest first, in
+  the block «Смены статуса».
+- **`changeSheepStatus`** gives one Sheep or many Active Sheep the Status Slaughtered, Dead or Lost
+  on a date: the bulk action «Сменить статус» of the table «Бараны», or the card. It is one
+  command: if one Sheep cannot change, no Sheep changes, and each Sheep gets one audit entry
+  (`sheep.markSlaughtered`, `sheep.markDead`, `sheep.markLost`).
+- **The Flock membership closes on that date.** A Sheep in a Flock leaves it with a move out of all
+  Flocks (`recordFlockMove`), and the change keeps the id of that move (`flockMoveId`). On that day
+  the Sheep was still in its Flock (`flocksOn`).
+- **The date** is a real date, not in the future, and not before the birth date, the last move, the
+  last change of the Owner or the last change of the Status (`sheep.statusDateInvalid`). Thus the
+  history of a Sheep stays in the order of the dates. A later birth date is not after a change of
+  the Status either (`sheep.birthDateAfterStatusChange`).
+- **Slaughtered and Dead are final** (`sheep.notActive`). A Lost Sheep comes back with
+  `markSheepFound` (`sheep.markFound`): it is Active again from a date that is not before the loss,
+  the last move or the last change of the Owner, in no Flock. Its Owner must be a Member now
+  (`requireOwner`).
+- **A Lost Sheep keeps a Member as its Owner,** because it can come back: it can get a new Owner
+  (`changeSheepOwner`), and its Owner cannot be removed (`member.ownsLostSheep`). A move or a
+  change of the Owner is not dated before the last change of the Status: the Sheep was in no Flock
+  while it was Lost.
+- **A wrong change is undone** with `undoSheepStatusChange` (`sheep.undoStatusChange`): the last
+  change becomes Deleted (ADR 0005), and the Sheep gets its Status from before. A Sheep that is
+  Active again goes back to the Flock that it left, if that Flock is not Archived now; else it stays
+  in no Flock. A found Sheep that moved after it was found becomes Lost again only after the undo of
+  those moves (`sheep.movedAfterFound`). The undo takes only the changes of this module: a Sale has its own cancel.
+- **The table «Бараны» filters by Status**, with the number of Sheep of each. The default is Active;
+  the URL keeps another choice (`?status=dead`, `?status=all`).
+- **For a command of another slice,** `recordStatusChange(ctx, sheep, { status, date, reason })`
+  checks the rules and writes the change and the move out of the Flock, without a permission check
+  and without an audit entry, as `recordFlockMove` does. A Sale uses it to make its Sheep Sold.
 
 ## Expenses and Incomes
 
@@ -454,7 +554,7 @@ its own `VITE_CONVEX_URL`, the plugin does not change it.
 
 | Package            | What the tests do                                                              |
 | ------------------ | ------------------------------------------------------------------------------ |
-| `packages/core`    | Unit tests of the rules, with repositories in memory (`src/testing/`).         |
+| `packages/core`    | Unit tests of the rules, with repositories in memory (`src/testing/`). The pedigree tests use one pedigree of four generations. |
 | `packages/backend` | `convex-test` tests of the functions, the adapters, the error codes, the audit rows and the audit check. A test logs in with `logIn` of `convex/test.setup.ts`. |
 | `packages/client`  | Unit tests of the error conversion.                                            |
 | `apps/web`         | The views in jsdom, with the fake hooks in `apps/web/src/test/fake-client.ts`. |
