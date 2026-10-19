@@ -40,6 +40,14 @@ export const permissions = {
   "sheep.changeOwner": ["admin", "editor"],
   /** Make a Sheep Deleted, for a record made by mistake. */
   "sheep.delete": ["admin", "editor"],
+  /** See the Breeds of the Farm. */
+  "breed.view": ["admin", "editor"],
+  /** Add a Breed to the list of the Farm. */
+  "breed.add": ["admin", "editor"],
+  /** Rename a Breed, archive it, or take it out of the archive. */
+  "breed.update": ["admin", "editor"],
+  /** Make a Breed that no Sheep uses Deleted, for a record made by mistake. */
+  "breed.delete": ["admin", "editor"],
   /** Move Sheep into a Flock or out of all Flocks, on a date. */
   "sheep.move": ["admin", "editor"],
   /** See the Flocks, the Locations and the Shepherds, and the Flock history of a Sheep. */

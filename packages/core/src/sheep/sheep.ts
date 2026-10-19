@@ -1,7 +1,16 @@
 import { addMonths, type CalendarDate } from "../dates";
 import type { FarmSettings } from "../farms/farm";
 import type { FlockMove } from "../flocks/flock";
-import type { FarmId, FlockId, FlockMoveId, MembershipId, OwnerChangeId, SheepId } from "../ids";
+import type {
+  FarmId,
+  FileId,
+  FlockId,
+  FlockMoveId,
+  MembershipId,
+  OwnerChangeId,
+  SheepId,
+} from "../ids";
+import type { BreedShare } from "../pedigree/composition";
 
 /** The sex of a Sheep: a Ram or an Ewe. */
 export const sexes = ["ram", "ewe"] as const;
@@ -9,7 +18,7 @@ export type Sex = (typeof sexes)[number];
 
 /**
  * How the Farm knows a Sheep: Born on the Farm, Bought, or External (a parent that was never on the
- * Farm, with the pedigree slice).
+ * Farm: the Farm records it only as the Mother or the Father of its own Sheep).
  */
 export const origins = ["born", "bought", "external"] as const;
 export type Origin = (typeof origins)[number];
@@ -22,6 +31,27 @@ export type SheepStatus = (typeof sheepStatuses)[number];
 export interface Weighing {
   kg: number;
   date: CalendarDate;
+}
+
+/** The class that a Sheep got at grading (бонитировка). */
+export const grades = ["elite", "first", "second"] as const;
+export type Grade = (typeof grades)[number];
+
+/** The Grade of a Sheep and the date of the grading. A Sheep keeps only the last one. */
+export interface Grading {
+  grade: Grade;
+  date: CalendarDate;
+}
+
+/**
+ * The official veterinary document that shows that a Sheep is a legitimate Arashan. Only a Sheep with
+ * 100 percent Arashan can have one.
+ */
+export interface Passport {
+  number: string;
+  issueDate: CalendarDate;
+  /** The scan of the document in the file storage, or null if a Member did not attach it yet. */
+  scanId: FileId | null;
 }
 
 /** One animal of the Farm. */
@@ -43,6 +73,18 @@ export interface Sheep {
   notes: string | null;
   /** The last weighing, or null. */
   weight: Weighing | null;
+  /** The Mother (an Ewe), or null if nobody knows her. */
+  motherId: SheepId | null;
+  /** The Father (a Ram), or null if nobody knows him. */
+  fatherId: SheepId | null;
+  /**
+   * The parts of the Breed composition that a Member gave by hand, out of the Unknown part that the
+   * unknown parents give. The app computes the whole composition from the parents
+   * (`compositionOf`), so it is never stored.
+   */
+  manualBreeds: BreedShare[];
+  passport: Passport | null;
+  grade: Grading | null;
   /**
    * The Flock that the Sheep is in now, or null. Only an Active Sheep is in a Flock. A move changes
    * it and records the move (`FlockMove`), the history of the Flock membership.
@@ -64,12 +106,35 @@ export interface OwnerChange {
   at: number;
 }
 
+/**
+ * True if the Sheep is on the Farm now: it is Active and not External. An External Sheep keeps the
+ * Status Active, because it has no life on the Farm, so a list of the Sheep on the Farm, a Sale or a
+ * report checks this, not only the Status.
+ */
+export function isOnFarm(sheep: Pick<Sheep, "status" | "origin">): boolean {
+  return sheep.status === "active" && sheep.origin !== "external";
+}
+
 /** The longest Tag, name and notes. */
 export const maxTagLength = 30;
 export const maxSheepNameLength = 60;
 export const maxSheepNotesLength = 2000;
 /** The heaviest weight in kilograms that the app accepts. */
 export const maxWeightKg = 300;
+/** The longest number of a Passport. */
+export const maxPassportNumberLength = 50;
+/** The largest scan of a Passport: 10 MB. */
+export const maxScanBytes = 10 * 1024 * 1024;
+/**
+ * The types of file of a scan of a Passport: a PDF or a photo that a browser can show. A HEIC photo
+ * is not one: most browsers cannot show it.
+ */
+export const scanContentTypes = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
 
 // The Cyrillic letters that look like Latin ones. On a Russian keyboard, a Member can type «А12» for
 // the Tag "A12", so both give the same key.
@@ -145,6 +210,8 @@ export interface FarmSheepReader {
    * answer: its Tag never makes a Tag of the Farm taken.
    */
   findByTag(tag: string): Promise<Sheep[]>;
+  /** The Sheep whose Mother or Father is this Sheep, also the External ones. */
+  children(parentId: SheepId): Promise<Sheep[]>;
   /** The changes of the Owner of the Sheep, the oldest first. */
   ownerChanges(sheepId: SheepId): Promise<OwnerChange[]>;
   /** True if the Member is the Owner of at least one Active Sheep of the Farm. */

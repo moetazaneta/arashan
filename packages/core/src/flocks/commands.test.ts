@@ -3,7 +3,12 @@ import { describe, expect, test } from "vite-plus/test";
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
 import type { LocationId, SheepId, ShepherdAssignmentId } from "../ids";
-import { deleteSheep, registerSheep, type SheepRegistration } from "../sheep/commands";
+import {
+  deleteSheep,
+  registerExternalSheep,
+  registerSheep,
+  type SheepRegistration,
+} from "../sheep/commands";
 import { InMemoryStore } from "../testing/in-memory";
 import {
   archiveFlock,
@@ -1214,6 +1219,29 @@ describe("undoFlockMove", () => {
 });
 
 describe("recordFlockMove", () => {
+  test("an External Sheep never enters a Flock through either move command", async () => {
+    const { store, ctx, flock } = await setup();
+    const sheepId = await registerExternalSheep(ctx, {
+      tag: null,
+      name: "External father",
+      sex: "ram",
+      birthDate: null,
+      notes: null,
+    });
+    const flockId = await flock();
+    const log = auditFrom(store);
+
+    await expect(
+      moveSheep(ctx, { sheepIds: [sheepId], flockId, date: "2026-10-18" }),
+    ).rejects.toMatchObject({ code: "sheep.notFound" });
+    await expect(
+      recordFlockMove(ctx, sheepOf(store, sheepId), flockId, "2026-10-18"),
+    ).rejects.toMatchObject({ code: "sheep.notFound" });
+
+    expect(sheepOf(store, sheepId).flockId).toBeNull();
+    expect(store.flockMoves).toEqual([]);
+    expect(log()).toEqual([]);
+  });
   test("moves the Sheep with the rules of a move, but writes no audit entry", async () => {
     const { store, ctx, register, flock } = await setup();
     const sheepId = await register();

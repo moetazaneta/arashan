@@ -372,6 +372,7 @@ export async function recordFlockMove(
   flockId: FlockId | null,
   date: CalendarDate,
 ): Promise<boolean> {
+  if (sheep.origin === "external") throw new DomainError("sheep.notFound");
   if (sheep.flockId === flockId) return false;
   await requireTargetFlock(ctx, flockId);
   await requireMove(ctx, sheep, date);

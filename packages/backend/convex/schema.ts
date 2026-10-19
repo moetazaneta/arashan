@@ -18,6 +18,7 @@ const sheepStatus = v.union(
   v.literal("dead"),
   v.literal("lost"),
 );
+const grade = v.union(v.literal("elite"), v.literal("first"), v.literal("second"));
 
 export default defineSchema({
   users: defineTable({
@@ -89,6 +90,31 @@ export default defineSchema({
     /** The last weighing: the weight in kilograms and the date "YYYY-MM-DD". Both or none. */
     weightKg: v.optional(v.number()),
     weighedOn: v.optional(v.string()),
+    // The columns of the pedigree, the Passport and the Grade came after the first rows, so each
+    // one is optional: an older row has none of them.
+    /** The Mother and the Father, if they are known. */
+    motherId: v.optional(v.id("sheep")),
+    fatherId: v.optional(v.id("sheep")),
+    /**
+     * The parts of the Breed composition by hand, in millionths. Absent if there are none. Arashan
+     * has no row in `breeds`, so its part has the id "arashan". The composition itself is not
+     * stored: the app computes it from the parents.
+     */
+    manualBreeds: v.optional(
+      v.array(
+        v.object({ breedId: v.union(v.id("breeds"), v.literal("arashan")), share: v.number() }),
+      ),
+    ),
+    /**
+     * The Passport: the number, the issue date "YYYY-MM-DD", and the scan if a Member attached it.
+     * The number and the date are both or none, and the scan only comes with them.
+     */
+    passportNumber: v.optional(v.string()),
+    passportIssuedOn: v.optional(v.string()),
+    passportScanId: v.optional(v.id("_storage")),
+    /** The last Grade and the date of the grading "YYYY-MM-DD". Both or none. */
+    grade: v.optional(grade),
+    gradedOn: v.optional(v.string()),
     /** The Flock that the Sheep is in now. Absent if it is in no Flock. */
     flockId: v.optional(v.id("flocks")),
     registeredAt: v.number(),
@@ -97,8 +123,25 @@ export default defineSchema({
     .index("by_farmId_deletedAt_tagKey", ["farmId", "deletedAt", "tagKey"])
     // Also the index of the list of all Sheep of the Farm, with only `farmId` and `deletedAt`.
     .index("by_farmId_deletedAt_status_ownerId", ["farmId", "deletedAt", "status", "ownerId"])
+    // The children of a Sheep: the Sheep whose Mother or Father it is.
+    .index("by_farmId_deletedAt_motherId", ["farmId", "deletedAt", "motherId"])
+    .index("by_farmId_deletedAt_fatherId", ["farmId", "deletedAt", "fatherId"])
     .index("by_farmId_deletedAt_flockId", ["farmId", "deletedAt", "flockId"]),
 
+  // The Breeds that the Members of a Farm add. Arashan has no row: each Farm has it, built into the
+  // app.
+  breeds: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    /** The key of the name (`breedNameKey` of the core), to find a name that is taken. */
+    nameKey: v.string(),
+    /** When a Member archived the Breed. A form does not offer an Archived Breed. */
+    archivedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    ...deletable,
+  })
+    // Also the index of the list of the Breeds of the Farm, with only `farmId` and `deletedAt`.
+    .index("by_farmId_deletedAt_nameKey", ["farmId", "deletedAt", "nameKey"]),
   // The moves of a Sheep into a Flock or out of all Flocks: the history of its Flock membership.
   sheepFlockMoves: defineTable({
     farmId: v.id("farms"),
