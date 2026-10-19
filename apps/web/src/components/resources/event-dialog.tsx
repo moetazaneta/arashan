@@ -187,6 +187,8 @@ function EventForm({
       );
     } else if (kind === "usage") {
       if (quantityValue === 0 || flockId === null) return;
+      // The saved Usage changes the suggestion before the dialog closes: the field keeps its value.
+      setTypedQuantity(quantity);
       usage.mutate({ ...base, quantity: quantityValue, flockId }, { onSuccess: onDone });
     } else {
       adjustment.mutate({ ...base, counted: quantityValue, reason }, { onSuccess: onDone });
@@ -247,7 +249,7 @@ function EventForm({
               </Trans>
             </FieldDescription>
           )}
-          {kind === "usage" && suggested && (
+          {kind === "usage" && suggested && !usage.isPending && !usage.isSuccess && (
             <FieldDescription>
               {suggested.quantity > 0 ? (
                 <>
@@ -256,19 +258,20 @@ function EventForm({
                     день: {formatQuantity(suggested.perDay, i18n.locale)} {resource.unit}, дней:{" "}
                     {suggested.days}.
                   </Trans>
-                  {typedQuantity !== null && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setTypedQuantity(quantityText(suggested.quantity, i18n.locale));
-                        changed();
-                      }}
-                    >
-                      <Trans>Подставить</Trans>
-                    </Button>
-                  )}
+                  {typedQuantity !== null &&
+                    typedQuantity !== quantityText(suggested.quantity, i18n.locale) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTypedQuantity(quantityText(suggested.quantity, i18n.locale));
+                          changed();
+                        }}
+                      >
+                        <Trans>Подставить</Trans>
+                      </Button>
+                    )}
                 </>
               ) : suggested.days === 0 ? (
                 <Trans>В этот день стаду уже выдавали ресурс.</Trans>
