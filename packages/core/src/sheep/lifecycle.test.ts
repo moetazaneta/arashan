@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
-import { archiveFlock, createFlock, moveSheep } from "../flocks/commands";
+import { archiveFlock, createFlock, moveSheep, undoFlockMove } from "../flocks/commands";
 import { getSheepResponsible } from "../flocks/queries";
 import type { FarmId, SheepId } from "../ids";
 import { removeMember } from "../members/manage";
@@ -332,7 +332,7 @@ describe("markSheepFound", () => {
     ).rejects.toThrow("sheep.notLost");
   });
 
-  test("the Owner of a found Sheep is a Member now", async () => {
+  test("the Owner of a Lost Sheep stays a Member: give the Sheep away first", async () => {
     const { store, ctx, register, admin, editorId, farmId } = await setup();
     const sheepId = await register();
     await changeSheepStatus(ctx, {
@@ -342,11 +342,45 @@ describe("markSheepFound", () => {
       reason: null,
     });
     const adminCtx = await store.farmContext(admin, farmId);
+    await expect(removeMember(adminCtx, { membershipId: editorId })).rejects.toThrow(
+      "member.ownsLostSheep",
+    );
+
+    // A Lost Sheep can get a new Owner, but not before the loss.
+    const adminId = store.memberships.find((m) => m.farmId === farmId && m.role === "admin")!.id;
+    const give = (date: string) => changeSheepOwner(adminCtx, { sheepId, ownerId: adminId, date });
+    await expect(give("2026-10-09")).rejects.toThrow("sheep.ownerChangeDateInvalid");
+    await give("2026-10-11");
     await removeMember(adminCtx, { membershipId: editorId });
 
+    // The found date is not before that change of the Owner.
     await expect(
-      markSheepFound(adminCtx, { sheepId, date: "2026-10-18", reason: null }),
-    ).rejects.toThrow("sheep.ownerNotMember");
+      markSheepFound(adminCtx, { sheepId, date: "2026-10-10", reason: null }),
+    ).rejects.toThrow("sheep.statusDateInvalid");
+    await markSheepFound(adminCtx, { sheepId, date: "2026-10-11", reason: null });
+    expect(sheepOf(store, sheepId)).toMatchObject({ status: "active", ownerId: adminId });
+  });
+
+  test("a found Sheep moves only from the day it was found", async () => {
+    const { ctx, register, flock } = await setup();
+    const sheepId = await register();
+    await moveSheep(ctx, { sheepIds: [sheepId], flockId: await flock(), date: "2026-09-01" });
+    await changeSheepStatus(ctx, {
+      sheepIds: [sheepId],
+      status: "lost",
+      date: "2026-10-01",
+      reason: null,
+    });
+    await markSheepFound(ctx, { sheepId, date: "2026-10-10", reason: null });
+    const move = (date: string) => moveSheep(ctx, { sheepIds: [sheepId], flockId: null, date });
+
+    // Out of all Flocks is no move for a Sheep in no Flock; a move into a Flock is one.
+    const other = await flock("Другое");
+    await expect(
+      moveSheep(ctx, { sheepIds: [sheepId], flockId: other, date: "2026-10-05" }),
+    ).rejects.toThrow("sheep.moveDateInvalid");
+    await moveSheep(ctx, { sheepIds: [sheepId], flockId: other, date: "2026-10-10" });
+    await move("2026-10-12");
   });
 });
 
@@ -416,7 +450,7 @@ describe("undoSheepStatusChange", () => {
     );
   });
 
-  test("a found Sheep in a Flock must leave it before it is Lost again", async () => {
+  test("a found Sheep that moved after it was found is Lost again only after the undo of the moves", async () => {
     const { store, ctx, register, flock } = await setup();
     const sheepId = await register();
     await changeSheepStatus(ctx, {
@@ -426,10 +460,19 @@ describe("undoSheepStatusChange", () => {
       reason: null,
     });
     await markSheepFound(ctx, { sheepId, date: "2026-10-12", reason: null });
+    // The moves come a minute after the found Sheep, as on a real clock.
+    store.time += 60_000;
     await moveSheep(ctx, { sheepIds: [sheepId], flockId: await flock(), date: "2026-10-12" });
+    await moveSheep(ctx, { sheepIds: [sheepId], flockId: null, date: "2026-10-13" });
 
-    await expect(undoSheepStatusChange(ctx, { sheepId })).rejects.toThrow("sheep.inFlock");
+    // Also out of all Flocks again, the stay in the Flock would fall inside the loss.
+    await expect(undoSheepStatusChange(ctx, { sheepId })).rejects.toThrow("sheep.movedAfterFound");
     expect(sheepOf(store, sheepId).status).toBe("active");
+
+    await undoFlockMove(ctx, { sheepId });
+    await undoFlockMove(ctx, { sheepId });
+    await undoSheepStatusChange(ctx, { sheepId });
+    expect(sheepOf(store, sheepId)).toMatchObject({ status: "lost", flockId: null });
   });
 
   test("the Owner of a Sheep that becomes Active again is a Member now", async () => {

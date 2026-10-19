@@ -525,6 +525,20 @@ async function sheepOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
 }
 
 function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
+  /** True if the Member owns at least one Sheep of the Farm with the Status. */
+  const ownsSheepWithStatus = async (status: "active" | "lost", ownerId: MembershipId) => {
+    const doc = await db
+      .query("sheep")
+      .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+        q
+          .eq("farmId", idOf(farmId))
+          .eq("deletedAt", undefined)
+          .eq("status", status)
+          .eq("ownerId", idOf(ownerId)),
+      )
+      .first();
+    return doc !== null;
+  };
   return {
     async get(id) {
       const doc = await sheepOfFarm(db, farmId, id);
@@ -562,18 +576,11 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .collect();
       return docs.map(toOwnerChange);
     },
-    async ownsActiveSheep(ownerId) {
-      const doc = await db
-        .query("sheep")
-        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
-          q
-            .eq("farmId", idOf(farmId))
-            .eq("deletedAt", undefined)
-            .eq("status", "active")
-            .eq("ownerId", idOf(ownerId)),
-        )
-        .first();
-      return doc !== null;
+    ownsActiveSheep(ownerId) {
+      return ownsSheepWithStatus("active", ownerId);
+    },
+    ownsLostSheep(ownerId) {
+      return ownsSheepWithStatus("lost", ownerId);
     },
     async listInFlock(flockId) {
       const flockDocId = db.normalizeId("flocks", flockId);

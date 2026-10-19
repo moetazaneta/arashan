@@ -195,7 +195,8 @@ stop the older ones, so that an Admin can invite many people at one time.
 - A Farm always has at least one Admin. The core refuses to remove the last Admin, or to make the
   last Admin an Editor, with `member.lastAdmin`.
 - The Owner of an Active Sheep is a Member. The core refuses to remove a Member who owns an Active
-  Sheep, with `member.ownsActiveSheep`: first give the Sheep to another Member.
+  Sheep, with `member.ownsActiveSheep`, or a Lost one, which can come back, with
+  `member.ownsLostSheep`: first give the Sheep to another Member.
 - **A new password for a Member** (ADR 0003): an Admin sets it through the Clerk Backend API, for
   example for a Member with no email who forgot the password. Clerk ends the Member's sessions.
   The account of a User is the same in all Farms, so the core refuses (`member.passwordNotAllowed`)
@@ -306,12 +307,17 @@ when it is Slaughtered, Dead or Lost, and a Lost Sheep can come back. Sold comes
   the Status either (`sheep.birthDateAfterStatusChange`).
 - **Slaughtered and Dead are final** (`sheep.notActive`). A Lost Sheep comes back with
   `markSheepFound` (`sheep.markFound`): it is Active again from a date that is not before the loss,
-  in no Flock. Its Owner must be a Member now (`requireOwner`).
+  the last move or the last change of the Owner, in no Flock. Its Owner must be a Member now
+  (`requireOwner`).
+- **A Lost Sheep keeps a Member as its Owner,** because it can come back: it can get a new Owner
+  (`changeSheepOwner`), and its Owner cannot be removed (`member.ownsLostSheep`). A move or a
+  change of the Owner is not dated before the last change of the Status: the Sheep was in no Flock
+  while it was Lost.
 - **A wrong change is undone** with `undoSheepStatusChange` (`sheep.undoStatusChange`): the last
   change becomes Deleted (ADR 0005), and the Sheep gets its Status from before. A Sheep that is
   Active again goes back to the Flock that it left, if that Flock is not Archived now; else it stays
-  in no Flock. A found Sheep that is in a Flock again must leave it before the undo makes it Lost
-  (`sheep.inFlock`). The undo takes only the changes of this module: a Sale has its own cancel.
+  in no Flock. A found Sheep that moved after it was found becomes Lost again only after the undo of
+  those moves (`sheep.movedAfterFound`). The undo takes only the changes of this module: a Sale has its own cancel.
 - **The table «Бараны» filters by Status**, with the number of Sheep of each. The default is Active;
   the URL keeps another choice (`?status=dead`, `?status=all`).
 - **For a command of another slice,** `recordStatusChange(ctx, sheep, { status, date, reason })`

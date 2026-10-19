@@ -174,3 +174,19 @@ test("a Lost Sheep is found, its card shows both Status changes, and undo makes 
       .map((item) => item.textContent),
   ).toEqual(["Потерян — 01.05.2026Отменить"]);
 });
+
+test("another filter clears the selection, also when it shows no Sheep", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  addSheep(farm, { tag: "1" });
+  addSheep(farm, { tag: "2" });
+  renderApp(`/farms/${farm.id}/sheep`);
+
+  await user.click(await screen.findByRole("checkbox", { name: "Выбрать барана 1" }));
+  expect(screen.getByText("Выбрано: 1")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Потерянные0" }));
+
+  expect(await screen.findByText("Нет баранов с этим статусом.")).toBeTruthy();
+  expect(screen.queryByText(/Выбрано/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Сменить статус" })).toBeNull();
+});

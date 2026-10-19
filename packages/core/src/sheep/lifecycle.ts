@@ -84,8 +84,8 @@ export async function recordStatusChange(
 
 /**
  * A Member records that a Lost Sheep came back: it is Active again from the date, in no Flock. The
- * date is not before the day when it was Lost, and not in the future. Its Owner must be a Member now
- * (`sheep.ownerNotMember`).
+ * date is not in the future, and not before the loss, the last move or the last change of the Owner.
+ * Its Owner must be a Member now (`sheep.ownerNotMember`).
  */
 export async function markSheepFound(
   ctx: FarmCommandContext,
@@ -96,8 +96,13 @@ export async function markSheepFound(
   if (sheep.status !== "lost") throw new DomainError("sheep.notLost");
   const reason = validReason(input.reason);
   const date = validDate(input.date);
-  const lost = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
-  if (date > today(ctx) || (lost !== undefined && date < lost.date)) {
+  const [changes, moves, owners] = await Promise.all([
+    ctx.repos.sheep.statusChanges(sheep.id),
+    ctx.repos.sheep.flockMoves(sheep.id),
+    ctx.repos.sheep.ownerChanges(sheep.id),
+  ]);
+  const before = [changes.at(-1)?.date, moves.at(-1)?.date, owners.at(-1)?.date];
+  if (date > today(ctx) || before.some((other) => other !== undefined && date < other)) {
     throw new DomainError("sheep.statusDateInvalid");
   }
   if (sheep.ownerId !== null) await requireOwner(ctx, sheep.ownerId);
@@ -123,8 +128,8 @@ export async function markSheepFound(
  *
  * - A Sheep that becomes Active again goes back to the Flock that it left with the change, if that
  *   Flock is not Archived now; else it stays in no Flock. Its Owner must be a Member now.
- * - A Sheep that becomes Lost again must first leave its Flock (`sheep.inFlock`): only an Active
- *   Sheep is in a Flock.
+ * - A Sheep that becomes Lost again was in no Flock since the loss: the moves after it was found are
+ *   undone first (`sheep.movedAfterFound`).
  */
 export async function undoSheepStatusChange(
   ctx: FarmCommandContext,
@@ -139,8 +144,10 @@ export async function undoSheepStatusChange(
   if (last.from === "active") {
     if (sheep.ownerId !== null) await requireOwner(ctx, sheep.ownerId);
     await returnToFlock(ctx, sheep, last);
-  } else if (sheep.flockId !== null) {
-    throw new DomainError("sheep.inFlock");
+  } else {
+    // The Sheep was in no Flock while it was Lost: the moves after it was found must go first.
+    const moves = await ctx.repos.sheep.flockMoves(sheep.id);
+    if (moves.some((move) => move.at > last.at)) throw new DomainError("sheep.movedAfterFound");
   }
   await ctx.repos.sheep.markStatusChangeDeleted(last.id, ctx.now());
   await ctx.repos.sheep.update(sheep.id, { status: last.from });

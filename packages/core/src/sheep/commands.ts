@@ -115,8 +115,9 @@ export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): 
 }
 
 /**
- * A Member gives an Active Sheep to another Member of the Farm, on a date. The date is not in the
- * future, and not before the birth date or the last change of the Owner. The card shows the history
+ * A Member gives an Active or a Lost Sheep to another Member of the Farm, on a date. The date is not
+ * in the future, and not before the birth date, the last change of the Owner or the last change of
+ * the Status. The card shows the history
  * of the Owners.
  */
 export async function changeSheepOwner(
@@ -125,15 +126,20 @@ export async function changeSheepOwner(
 ): Promise<void> {
   authorize(ctx.member, "sheep.changeOwner", { farmId: ctx.farm.id });
   const sheep = await requireSheep(ctx, input.sheepId);
-  if (sheep.status !== "active" || sheep.ownerId === null) throw new DomainError("sheep.notActive");
+  // A Lost Sheep can come back, so it can get a new Owner too, for example before a removal.
+  if ((sheep.status !== "active" && sheep.status !== "lost") || sheep.ownerId === null) {
+    throw new DomainError("sheep.notActive");
+  }
   if (input.ownerId === sheep.ownerId) throw new DomainError("sheep.sameOwner");
   await requireOwner(ctx, input.ownerId);
   const date = validDate(input.date);
   const lastChange = (await ctx.repos.sheep.ownerChanges(sheep.id)).at(-1);
+  const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
-    (lastChange !== undefined && date < lastChange.date)
+    (lastChange !== undefined && date < lastChange.date) ||
+    (lastStatusChange !== undefined && date < lastStatusChange.date)
   ) {
     throw new DomainError("sheep.ownerChangeDateInvalid");
   }

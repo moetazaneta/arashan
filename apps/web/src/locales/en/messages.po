@@ -86,10 +86,6 @@ msgctxt "filter"
 msgid "Активные"
 msgstr "Active"
 
-#: src/errors.ts
-msgid "Баран в стаде. Сначала выведите его из стада."
-msgstr "The Sheep is in a Flock. Move it out first."
-
 #: src/components/sheep/sheep-flocks.tsx
 msgid "Баран вернётся туда, где был до этого перевода."
 msgstr "The sheep will go back to where it was before this move."
@@ -1071,6 +1067,10 @@ msgstr "User registered"
 msgid "Попросите администратора фермы прислать ссылку-приглашение."
 msgstr "Ask an Admin of a farm to send you an invite link."
 
+#: src/errors.ts
+msgid "После находки барана переводили между стадами. Сначала отмените эти переводы."
+msgstr "The Sheep was moved between Flocks after it was found. Undo those moves first."
+
 #: src/components/flocks/shepherds-tab.tsx
 msgid "Последний день работы"
 msgstr "Last day of work"
@@ -1628,6 +1628,10 @@ msgstr "This section is for the operator only"
 #: src/errors.ts
 msgid "Этот участник — владелец активных баранов. Сначала передайте их другому участнику."
 msgstr "This member owns active sheep. First give them to another member."
+
+#: src/errors.ts
+msgid "Этот участник — владелец потерянных баранов: они могут найтись. Сначала передайте их другому участнику."
+msgstr "This Member owns Lost Sheep, which can still be found. Give them to another Member first."
 
 #: src/errors.ts
 msgid "Этот чабан в архиве. Сначала верните его из архива."

@@ -79,13 +79,16 @@ function SheepPage() {
     }
   }, []);
 
-  const changeFilter = (next: StatusFilter) =>
+  // Another filter shows other Sheep: a selection of Sheep that it hides would act on them unseen.
+  const changeFilter = (next: StatusFilter) => {
+    setSelection(noSelection);
     void navigate({
       to: "/farms/$farmId/sheep",
       params: { farmId },
       search: next === "active" ? {} : { status: next },
       replace: true,
     });
+  };
 
   const openCard = useCallback(
     (sheepId: SheepId) =>

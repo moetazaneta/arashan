@@ -269,6 +269,8 @@ export class InMemoryStore {
         this.ownerChanges
           .filter((c) => c.sheepId === sheepId && c.deletedAt === undefined)
           .map(withoutDeletedAt),
+      ownsLostSheep: async (ownerId) =>
+        ofFarm().some((s) => s.ownerId === ownerId && s.status === "lost"),
       ownsActiveSheep: async (ownerId) =>
         ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
       listInFlock: async (flockId) =>

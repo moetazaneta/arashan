@@ -97,7 +97,9 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
               <Trans>Перевести в стадо</Trans>
             </Button>
           )}
-          {sheep.status === "active" && <ChangeOwnerDialog farm={farm} sheep={sheep} />}
+          {(sheep.status === "active" || sheep.status === "lost") && (
+            <ChangeOwnerDialog farm={farm} sheep={sheep} />
+          )}
           {sheep.status === "active" && (
             <Button variant="outline" onClick={() => setChangingStatus(true)}>
               <Trans>Сменить статус</Trans>

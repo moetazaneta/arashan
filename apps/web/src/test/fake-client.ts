@@ -673,6 +673,8 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     findByTag: async (tag) =>
       ofFarm().filter((s) => s.tag !== null && tagKey(s.tag) === tagKey(tag)),
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
+    ownsLostSheep: async (ownerId) =>
+      ofFarm().some((s) => s.ownerId === ownerId && s.status === "lost"),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
     listInFlock: async (flockId) => ofFarm().filter((s) => s.flockId === flockId),

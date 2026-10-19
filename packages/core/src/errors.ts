@@ -33,6 +33,7 @@ export const errorCodes = [
   "member.passwordRejected",
   "user.passwordResetPending",
   "member.ownsActiveSheep",
+  "member.ownsLostSheep",
   // Sheep.
   "sheep.notFound",
   "sheep.tagTaken",
@@ -61,7 +62,7 @@ export const errorCodes = [
   "sheep.reasonTooLong",
   "sheep.tooManyToChangeStatus",
   "sheep.noStatusChangeToUndo",
-  "sheep.inFlock",
+  "sheep.movedAfterFound",
   // Locations.
   "location.notFound",
   "location.nameRequired",

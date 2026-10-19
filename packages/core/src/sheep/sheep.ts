@@ -191,6 +191,8 @@ export interface FarmSheepReader {
   ownerChanges(sheepId: SheepId): Promise<OwnerChange[]>;
   /** True if the Member is the Owner of at least one Active Sheep of the Farm. */
   ownsActiveSheep(ownerId: MembershipId): Promise<boolean>;
+  /** True if the Member is the Owner of at least one Lost Sheep of the Farm: it can come back. */
+  ownsLostSheep(ownerId: MembershipId): Promise<boolean>;
   /** The Sheep that are in the Flock now. */
   listInFlock(flockId: FlockId): Promise<Sheep[]>;
   /** The moves of the Sheep between Flocks, in the order in which a Member recorded them. */
