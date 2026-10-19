@@ -97,7 +97,7 @@ export async function unarchiveResource(
  * «Пополнение ресурса», of the Farm as a whole; the Farm's own harvest has no price. The Expense
  * keeps the price, and it goes away when a Member cancels the Restock.
  */
-export async function restockResource(
+export async function recordRestock(
   ctx: FarmCommandContext,
   input: {
     resourceId: ResourceId;
@@ -135,7 +135,7 @@ export async function restockResource(
  * A Member records a Usage: a quantity of the Resource went to a Flock on a date. The Flock is not
  * Archived. The Stock can become less than 0: a Member can record the Restock later.
  */
-export async function useResource(
+export async function recordUsage(
   ctx: FarmCommandContext,
   input: { resourceId: ResourceId; date: CalendarDate; quantity: number; flockId: FlockId },
 ): Promise<ResourceEventId> {
@@ -163,7 +163,7 @@ export async function useResource(
  * Stock on the date becomes the counted quantity. A count that finds the Stock as it is changes
  * nothing (`resource.adjustmentNoChange`). The reason is required, for example «сено сгнило».
  */
-export async function adjustResource(
+export async function recordAdjustment(
   ctx: FarmCommandContext,
   input: { resourceId: ResourceId; date: CalendarDate; counted: number; reason: string },
 ): Promise<ResourceEventId> {

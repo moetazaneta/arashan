@@ -63,16 +63,16 @@ export {
 export { SignInForm, useSession, useSignOut } from "./session";
 export type { Session } from "./session-state";
 export {
-  useAdjustResource,
+  useRecordAdjustment,
   useArchiveResource,
   useCancelResourceEvent,
   useCreateResource,
   useResource,
   useResources,
-  useRestockResource,
+  useRecordRestock,
   useUnarchiveResource,
   useUpdateResource,
-  useUseResource,
+  useRecordUsage,
 } from "./resources";
 export {
   useChangeSheepOwner,

@@ -1,5 +1,5 @@
 import {
-  adjustResource,
+  recordAdjustment,
   archiveResource,
   cancelResourceEvent,
   createResource,
@@ -8,10 +8,10 @@ import {
   listResources,
   type ResourceEventId,
   type ResourceId,
-  restockResource,
+  recordRestock,
   unarchiveResource,
   updateResource,
-  useResource,
+  recordUsage,
 } from "@arashan/core";
 import { v } from "convex/values";
 
@@ -70,14 +70,14 @@ export const restock = farmCommand({
     price: v.union(v.number(), v.null()),
   },
   handler: (ctx, args) =>
-    restockResource(ctx, { ...args, resourceId: args.resourceId as ResourceId }),
+    recordRestock(ctx, { ...args, resourceId: args.resourceId as ResourceId }),
 });
 
 /** A Member records a Usage of a Resource by a Flock, and gets its id. */
 export const use = farmCommand({
   args: { resourceId: v.string(), date: v.string(), quantity: v.number(), flockId: v.string() },
   handler: (ctx, args) =>
-    useResource(ctx, {
+    recordUsage(ctx, {
       ...args,
       resourceId: args.resourceId as ResourceId,
       flockId: args.flockId as FlockId,
@@ -88,7 +88,7 @@ export const use = farmCommand({
 export const adjust = farmCommand({
   args: { resourceId: v.string(), date: v.string(), counted: v.number(), reason: v.string() },
   handler: (ctx, args) =>
-    adjustResource(ctx, { ...args, resourceId: args.resourceId as ResourceId }),
+    recordAdjustment(ctx, { ...args, resourceId: args.resourceId as ResourceId }),
 });
 
 /** A Member cancels an event made by mistake. */

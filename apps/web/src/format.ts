@@ -1,3 +1,5 @@
+import { quantityScale } from "@arashan/client";
+
 // The names of currencies and time zones, in the language of the UI. The browser knows them all, so
 // the app keeps no lists of its own.
 
@@ -182,6 +184,47 @@ export function parseAmount(text: string): number | null {
   const [whole = "", fraction = ""] = normalized.replaceAll(" ", "").split(/[.,]/);
   const amount = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   return Number.isSafeInteger(amount) ? amount : null;
+}
+
+// Quantities of a Resource. A quantity is an integer of thousandths of the unit of the Resource
+// (`quantityScale` of the core): 1500 is 1,5 kg.
+
+const quantityFormats = new Map<string, Intl.NumberFormat>();
+
+function quantityFormat(locale: string, grouping: boolean, signed: boolean): Intl.NumberFormat {
+  const key = `${locale} ${grouping} ${signed}`;
+  let format = quantityFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 3,
+      useGrouping: grouping,
+      signDisplay: signed ? "exceptZero" : "auto",
+    });
+    quantityFormats.set(key, format);
+  }
+  return format;
+}
+
+/** A quantity as a number, with at most three decimals: «1 250,5». `signed` adds «+» to a gain. */
+export function formatQuantity(quantity: number, locale: string, signed = false): string {
+  return quantityFormat(locale, true, signed).format(quantity / quantityScale);
+}
+
+/** A quantity as the text of a quantity field, which `parseQuantity` reads back: «1250,5». */
+export function quantityText(quantity: number, locale: string): string {
+  return quantityFormat(locale, false, false).format(quantity / quantityScale);
+}
+
+/**
+ * The quantity in a text that a Member typed, in thousandths, or null if it is not a quantity: as
+ * `parseAmount`, but with at most three digits after "," or ".".
+ */
+export function parseQuantity(text: string): number | null {
+  const normalized = text.trim().replace(/[\u00a0\u202f]/g, " ");
+  if (!/^(?:\d+|\d{1,3}(?: \d{3})+)(?:[.,]\d{1,3})?$/.test(normalized)) return null;
+  const [whole = "", fraction = ""] = normalized.replaceAll(" ", "").split(/[.,]/);
+  const quantity = Number(whole) * quantityScale + Number(fraction.padEnd(3, "0"));
+  return Number.isSafeInteger(quantity) ? quantity : null;
 }
 
 const currencySymbols = new Map<string, string>();

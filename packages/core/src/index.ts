@@ -244,15 +244,15 @@ export {
   type MoneySheepRef,
 } from "./money/queries";
 export {
-  adjustResource,
+  recordAdjustment,
   archiveResource,
   cancelResourceEvent,
   createResource,
-  restockResource,
+  recordRestock,
   restockSource,
   unarchiveResource,
   updateResource,
-  useResource,
+  recordUsage,
   type ResourceInput,
 } from "./resources/commands";
 export {

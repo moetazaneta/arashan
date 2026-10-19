@@ -189,6 +189,11 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `moneyCategory.update`  | yes   | yes    |
 | `moneyCategory.archive` | yes   | yes    |
 | `moneyCategory.delete`  | yes   | yes    |
+| `resource.view`         | yes   | yes    |
+| `resource.create`       | yes   | yes    |
+| `resource.update`       | yes   | yes    |
+| `resource.archive`      | yes   | yes    |
+| `resource.record`       | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -453,6 +458,42 @@ with the name of the command of the event.
   the two never differ. A Member changes the amount (and the notes) of an Automatic record in the
   table, as of any record; its event owns the date, the category and the scope, and a Member cannot
   delete it (`money.automatic`).
+
+## Resources
+
+The module `core/src/resources/` keeps the feed of a Farm: the Resources (hay, grain…), their Stock,
+and the events that change it. The page «Ресурсы» lists the Resources with their Stock, and the card
+of a Resource shows its Stock and its events, the newest first, each with the Stock after it.
+
+- **A quantity is an integer of thousandths** of the unit of its Resource (`quantityScale`): 1500 is
+  1,5 kg. A sum is then exact, and a quantity has at most three decimals. One event has at most
+  `maxQuantity` (1 000 000 units). The web app reads and shows quantities with `parseQuantity` and
+  `formatQuantity` of `format.ts`.
+- **A Resource** has a name (unique in the Farm, also among the Archived ones, by `nameKey`) and one
+  unit of measure, a text that the Member writes, such as «кг», «тюк» or «мешок». The unit changes
+  only while the Resource has no events (`resource.unitLocked`). An Archived Resource stays in the
+  list and keeps its card, but it gets no new events (`resource.archived`).
+- **The events** (`resourceEvents`) are a Restock, a Usage and an Adjustment. Each one has a date
+  (not in the future) and a quantity. A Usage has a Flock that is not Archived; an Adjustment has a
+  reason. An event never changes: a Member cancels one made by mistake (`cancelResourceEvent`), and
+  it becomes Deleted.
+- **The Stock** is the sum of the Restocks, minus the Usages, plus or minus the Adjustments
+  (`stockOf`). It can be less than 0, for example when a Member records a Usage before the Restock;
+  the UI shows it red. The row of a Resource keeps its Stock (`Resource.stock`), so that the list
+  reads no events: each command that adds or cancels an event computes it again from all the events
+  of the Resource. The card computes it from the events itself.
+- **An Adjustment after a count.** The Member gives the quantity that the count found on a date. The
+  core keeps the difference from the Stock at the end of that date (`stockOn`), so the Stock on the
+  date becomes the counted quantity. A count that changes nothing is refused
+  (`resource.adjustmentNoChange`).
+- **A Restock with a price** makes an Automatic Expense of the System category «Пополнение ресурса»
+  (`restock`), of the Farm as a whole, with `createAutomaticRecord` and the source
+  `{ kind: "restock", id }` (`restockSource`). The Expense keeps the price: the card reads it with
+  `findBySource`, and a Member changes it in the table of Expenses. Cancelling the Restock makes the
+  Expense Deleted. The Farm's own harvest is a Restock with no price.
+- **Audit.** A command of an event appends an entry for the event (`ResourceEvent`), one for its
+  Resource and, for a Usage, one for its Flock. A Restock with a price also appends the entry of its
+  Expense.
 
 ## The audit log
 

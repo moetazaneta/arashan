@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { amountText, formatAmount, parseAmount } from "./format";
+import {
+  amountText,
+  formatAmount,
+  formatQuantity,
+  parseAmount,
+  parseQuantity,
+  quantityText,
+} from "./format";
 
 describe("parseAmount", () => {
   it.each([
@@ -44,4 +51,29 @@ describe("amountText", () => {
         expect(parseAmount(amountText(amount, locale))).toBe(amount);
     },
   );
+});
+
+describe("parseQuantity", () => {
+  it.each([
+    ["12", 12_000],
+    ["1 250,5", 1_250_500],
+    ["0.125", 125],
+    ["0,001", 1],
+    ["0", 0],
+  ])("reads «%s» as %i thousandths", (text, expected) => {
+    expect(parseQuantity(text)).toBe(expected);
+  });
+
+  it.each(["", "-1", "1,2345", "1.", ",5", "1e3", "12 кг"])("rejects «%s»", (text) => {
+    expect(parseQuantity(text)).toBeNull();
+  });
+});
+
+describe("formatQuantity", () => {
+  it("shows at most three decimals, and a sign on request", () => {
+    expect(formatQuantity(1_250_500, "en")).toBe("1,250.5");
+    expect(formatQuantity(-9_500, "en", true)).toBe("-9.5");
+    expect(formatQuantity(9_500, "en", true)).toBe("+9.5");
+    expect(parseQuantity(quantityText(1_250_125, "ru"))).toBe(1_250_125);
+  });
 });

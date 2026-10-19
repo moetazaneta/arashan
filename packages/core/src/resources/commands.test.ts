@@ -8,14 +8,14 @@ import { updateMoneyRecord } from "../money/commands";
 import { listMoneyRecords } from "../money/queries";
 import { InMemoryStore } from "../testing/in-memory";
 import {
-  adjustResource,
+  recordAdjustment,
   archiveResource,
   cancelResourceEvent,
   createResource,
-  restockResource,
+  recordRestock,
   unarchiveResource,
   updateResource,
-  useResource,
+  recordUsage,
 } from "./commands";
 import { getResource, listResources } from "./queries";
 import { stockOf, stockOn } from "./resource";
@@ -39,9 +39,9 @@ async function setup() {
   /** The Stock of the hay, as the list of Resources shows it. */
   const stock = async () => (await listResources(ctx)).find((r) => r.id === hay)!.stock;
   const restock = (quantity: number, price: number | null = null, date = "2026-10-01") =>
-    restockResource(ctx, { resourceId: hay, date, quantity, price });
+    recordRestock(ctx, { resourceId: hay, date, quantity, price });
   const use = (quantity: number, date = "2026-10-02") =>
-    useResource(ctx, { resourceId: hay, date, quantity, flockId });
+    recordUsage(ctx, { resourceId: hay, date, quantity, flockId });
   return { store, farmId, admin, editor, as, ctx, flockId, hay, stock, restock, use };
 }
 
@@ -122,7 +122,7 @@ describe("an Adjustment", () => {
     await use(5_000, "2026-10-15");
 
     // On 2026-10-12 the Stock was 80 kg; the count found 70,5 kg: 9,5 kg rotted.
-    await adjustResource(ctx, {
+    await recordAdjustment(ctx, {
       resourceId: hay,
       date: "2026-10-12",
       counted: 70_500,
@@ -142,7 +142,7 @@ describe("an Adjustment", () => {
   test("can add to the Stock when the count finds more", async () => {
     const { ctx, hay, stock, restock } = await setup();
     await restock(1_000);
-    await adjustResource(ctx, {
+    await recordAdjustment(ctx, {
       resourceId: hay,
       date: "2026-10-18",
       counted: 1_250,
@@ -155,7 +155,7 @@ describe("an Adjustment", () => {
     const { ctx, hay, restock } = await setup();
     await restock(1_000);
     const adjust = (counted: number, reason: string) =>
-      errorOf(adjustResource(ctx, { resourceId: hay, date: "2026-10-18", counted, reason }));
+      errorOf(recordAdjustment(ctx, { resourceId: hay, date: "2026-10-18", counted, reason }));
     expect(await adjust(500, " ")).toBe("resource.reasonRequired");
     expect(await adjust(500, "x".repeat(201))).toBe("resource.reasonTooLong");
     expect(await adjust(1_000, "пересчёт")).toBe("resource.adjustmentNoChange");
@@ -269,12 +269,12 @@ describe("the events", () => {
     await archiveFlock(ctx, { flockId: empty, date: "2026-10-18" });
     expect(
       await errorOf(
-        useResource(ctx, { resourceId: hay, date: "2026-10-18", quantity: 1, flockId: empty }),
+        recordUsage(ctx, { resourceId: hay, date: "2026-10-18", quantity: 1, flockId: empty }),
       ),
     ).toBe("flock.archived");
     expect(
       await errorOf(
-        useResource(ctx, {
+        recordUsage(ctx, {
           resourceId: hay,
           date: "2026-10-18",
           quantity: 1,

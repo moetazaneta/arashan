@@ -60,7 +60,7 @@ export function useUnarchiveResource(farmId: FarmId) {
 }
 
 /** A Member records a Restock. A price makes an Automatic Expense. */
-export function useRestockResource(farmId: FarmId) {
+export function useRecordRestock(farmId: FarmId) {
   const restock = useConvexMutation(api.resources.restock);
   return useMutation({
     mutationFn: async (input: {
@@ -73,7 +73,7 @@ export function useRestockResource(farmId: FarmId) {
 }
 
 /** A Member records a Usage of a Resource by a Flock. */
-export function useUseResource(farmId: FarmId) {
+export function useRecordUsage(farmId: FarmId) {
   const use = useConvexMutation(api.resources.use);
   return useMutation({
     mutationFn: async (input: {
@@ -86,7 +86,7 @@ export function useUseResource(farmId: FarmId) {
 }
 
 /** A Member records an Adjustment: the quantity that a count found on the date, and why. */
-export function useAdjustResource(farmId: FarmId) {
+export function useRecordAdjustment(farmId: FarmId) {
   const adjust = useConvexMutation(api.resources.adjust);
   return useMutation({
     mutationFn: async (input: {
