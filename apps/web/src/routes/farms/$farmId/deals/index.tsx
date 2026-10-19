@@ -87,6 +87,7 @@ function DealsPage() {
         aria-label={t`Вид сделки`}
         variant="outline"
         size="sm"
+        spacing={0}
         className="w-fit"
         value={[kind ?? "all"]}
         onValueChange={(value) => {
