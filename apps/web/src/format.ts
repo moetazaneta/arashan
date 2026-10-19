@@ -133,3 +133,67 @@ export function formatKg(kg: number, locale: string): string {
   }
   return format.format(kg);
 }
+
+// Amounts of money. An amount is an integer of hundredths of the currency unit of the Farm: 150050
+// is 1 500,50. The tables show the currency once, in the header, and the amounts as numbers.
+
+const amountFormats = new Map<string, Intl.NumberFormat>();
+
+function amountFormat(locale: string, hundredths: boolean, grouping: boolean): Intl.NumberFormat {
+  const key = `${locale} ${hundredths} ${grouping}`;
+  let format = amountFormats.get(key);
+  if (format === undefined) {
+    const digits = hundredths ? 2 : 0;
+    format = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+      useGrouping: grouping,
+    });
+    amountFormats.set(key, format);
+  }
+  return format;
+}
+
+/**
+ * An amount as a number: «1 500» or «1 500,50». The figures of a column line up when all its amounts
+ * show the hundredths or none does, so a table gives `hundredths` for all its rows.
+ */
+export function formatAmount(
+  amount: number,
+  locale: string,
+  hundredths = amount % 100 !== 0,
+): string {
+  return amountFormat(locale, hundredths, true).format(amount / 100);
+}
+
+/** An amount as the text of an amount field, which `parseAmount` reads back: «1500» or «1500,50». */
+export function amountText(amount: number, locale: string): string {
+  return amountFormat(locale, amount % 100 !== 0, false).format(amount / 100);
+}
+
+/**
+ * The amount in a text that a Member typed, in hundredths, or null if it is not an amount: digits,
+ * groups of three digits split by spaces, and at most two digits after "," or ".". The text is read
+ * digit by digit, so no rounding of a floating-point number changes it.
+ */
+export function parseAmount(text: string): number | null {
+  const normalized = text.trim().replace(/[\u00a0\u202f]/g, " ");
+  if (!/^(?:\d+|\d{1,3}(?: \d{3})+)(?:[.,]\d{1,2})?$/.test(normalized)) return null;
+  const [whole = "", fraction = ""] = normalized.replaceAll(" ", "").split(/[.,]/);
+  const amount = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(amount) ? amount : null;
+}
+
+const currencySymbols = new Map<string, string>();
+
+/** The symbol of a currency, such as «$», or its code if it has no common symbol: «KGS». */
+export function currencySymbol(currency: string, locale: string): string {
+  const key = `${locale} ${currency}`;
+  let symbol = currencySymbols.get(key);
+  if (symbol === undefined) {
+    const parts = new Intl.NumberFormat(locale, { style: "currency", currency }).formatToParts(0);
+    symbol = parts.find((part) => part.type === "currency")?.value ?? currency;
+    currencySymbols.set(key, symbol);
+  }
+  return symbol;
+}

@@ -14,6 +14,8 @@ import { Route as FarmsFarmIdRouteRouteImport } from './routes/farms/$farmId/rou
 import { Route as InviteTokenRouteImport } from './routes/invite/$token'
 import { Route as OperatorFarmsRouteImport } from './routes/operator/farms'
 import { Route as FarmsFarmIdIndexRouteImport } from './routes/farms/$farmId/index'
+import { Route as FarmsFarmIdExpensesRouteImport } from './routes/farms/$farmId/expenses'
+import { Route as FarmsFarmIdIncomesRouteImport } from './routes/farms/$farmId/incomes'
 import { Route as FarmsFarmIdMembersRouteImport } from './routes/farms/$farmId/members'
 import { Route as FarmsFarmIdSettingsRouteImport } from './routes/farms/$farmId/settings'
 import { Route as FarmsFarmIdFlocksIndexRouteImport } from './routes/farms/$farmId/flocks/index'
@@ -44,6 +46,16 @@ const OperatorFarmsRoute = OperatorFarmsRouteImport.update({
 const FarmsFarmIdIndexRoute = FarmsFarmIdIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => FarmsFarmIdRouteRoute,
+} as any)
+const FarmsFarmIdExpensesRoute = FarmsFarmIdExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => FarmsFarmIdRouteRoute,
+} as any)
+const FarmsFarmIdIncomesRoute = FarmsFarmIdIncomesRouteImport.update({
+  id: '/incomes',
+  path: '/incomes',
   getParentRoute: () => FarmsFarmIdRouteRoute,
 } as any)
 const FarmsFarmIdMembersRoute = FarmsFarmIdMembersRouteImport.update({
@@ -83,6 +95,8 @@ export interface FileRoutesByFullPath {
   '/farms/$farmId': typeof FarmsFarmIdRouteRouteWithChildren
   '/invite/$token': typeof InviteTokenRoute
   '/operator/farms': typeof OperatorFarmsRoute
+  '/farms/$farmId/expenses': typeof FarmsFarmIdExpensesRoute
+  '/farms/$farmId/incomes': typeof FarmsFarmIdIncomesRoute
   '/farms/$farmId/members': typeof FarmsFarmIdMembersRoute
   '/farms/$farmId/settings': typeof FarmsFarmIdSettingsRoute
   '/farms/$farmId/': typeof FarmsFarmIdIndexRoute
@@ -95,6 +109,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/invite/$token': typeof InviteTokenRoute
   '/operator/farms': typeof OperatorFarmsRoute
+  '/farms/$farmId/expenses': typeof FarmsFarmIdExpensesRoute
+  '/farms/$farmId/incomes': typeof FarmsFarmIdIncomesRoute
   '/farms/$farmId/members': typeof FarmsFarmIdMembersRoute
   '/farms/$farmId/settings': typeof FarmsFarmIdSettingsRoute
   '/farms/$farmId': typeof FarmsFarmIdIndexRoute
@@ -109,6 +125,8 @@ export interface FileRoutesById {
   '/farms/$farmId': typeof FarmsFarmIdRouteRouteWithChildren
   '/invite/$token': typeof InviteTokenRoute
   '/operator/farms': typeof OperatorFarmsRoute
+  '/farms/$farmId/expenses': typeof FarmsFarmIdExpensesRoute
+  '/farms/$farmId/incomes': typeof FarmsFarmIdIncomesRoute
   '/farms/$farmId/members': typeof FarmsFarmIdMembersRoute
   '/farms/$farmId/settings': typeof FarmsFarmIdSettingsRoute
   '/farms/$farmId/': typeof FarmsFarmIdIndexRoute
@@ -124,6 +142,8 @@ export interface FileRouteTypes {
     | '/farms/$farmId'
     | '/invite/$token'
     | '/operator/farms'
+    | '/farms/$farmId/expenses'
+    | '/farms/$farmId/incomes'
     | '/farms/$farmId/members'
     | '/farms/$farmId/settings'
     | '/farms/$farmId/'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/'
     | '/invite/$token'
     | '/operator/farms'
+    | '/farms/$farmId/expenses'
+    | '/farms/$farmId/incomes'
     | '/farms/$farmId/members'
     | '/farms/$farmId/settings'
     | '/farms/$farmId'
@@ -149,6 +171,8 @@ export interface FileRouteTypes {
     | '/farms/$farmId'
     | '/invite/$token'
     | '/operator/farms'
+    | '/farms/$farmId/expenses'
+    | '/farms/$farmId/incomes'
     | '/farms/$farmId/members'
     | '/farms/$farmId/settings'
     | '/farms/$farmId/'
@@ -202,6 +226,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FarmsFarmIdIndexRouteImport
       parentRoute: typeof FarmsFarmIdRouteRoute
     }
+    '/farms/$farmId/expenses': {
+      id: '/farms/$farmId/expenses'
+      path: '/expenses'
+      fullPath: '/farms/$farmId/expenses'
+      preLoaderRoute: typeof FarmsFarmIdExpensesRouteImport
+      parentRoute: typeof FarmsFarmIdRouteRoute
+    }
+    '/farms/$farmId/incomes': {
+      id: '/farms/$farmId/incomes'
+      path: '/incomes'
+      fullPath: '/farms/$farmId/incomes'
+      preLoaderRoute: typeof FarmsFarmIdIncomesRouteImport
+      parentRoute: typeof FarmsFarmIdRouteRoute
+    }
     '/farms/$farmId/members': {
       id: '/farms/$farmId/members'
       path: '/members'
@@ -248,6 +286,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface FarmsFarmIdRouteRouteChildren {
+  FarmsFarmIdExpensesRoute: typeof FarmsFarmIdExpensesRoute
+  FarmsFarmIdIncomesRoute: typeof FarmsFarmIdIncomesRoute
   FarmsFarmIdMembersRoute: typeof FarmsFarmIdMembersRoute
   FarmsFarmIdSettingsRoute: typeof FarmsFarmIdSettingsRoute
   FarmsFarmIdIndexRoute: typeof FarmsFarmIdIndexRoute
@@ -258,6 +298,8 @@ interface FarmsFarmIdRouteRouteChildren {
 }
 
 const FarmsFarmIdRouteRouteChildren: FarmsFarmIdRouteRouteChildren = {
+  FarmsFarmIdExpensesRoute: FarmsFarmIdExpensesRoute,
+  FarmsFarmIdIncomesRoute: FarmsFarmIdIncomesRoute,
   FarmsFarmIdMembersRoute: FarmsFarmIdMembersRoute,
   FarmsFarmIdSettingsRoute: FarmsFarmIdSettingsRoute,
   FarmsFarmIdIndexRoute: FarmsFarmIdIndexRoute,

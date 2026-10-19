@@ -1,6 +1,8 @@
 import type { ErrorCode } from "@arashan/core";
 import {
+  maxCategoryNameLength,
   maxLambAgeMonths,
+  maxMoneyNotesLength,
   maxNameLength,
   maxNotesLength,
   maxPasswordLength,
@@ -31,6 +33,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "farm.hasMembers": msg`В ферме уже есть участник: новая ссылка не нужна.`,
   "farm.nameRequired": msg`Введите название фермы.`,
   "farm.currencyInvalid": msg`Выберите валюту из списка.`,
+  "farm.currencyLocked": msg`У фермы уже есть расходы или доходы, поэтому валюту изменить нельзя.`,
   "farm.timeZoneInvalid": msg`Выберите часовой пояс из списка.`,
   "farm.lambAgeInvalid": msg`Введите целое число месяцев от ${minLambAgeMonths} до ${maxLambAgeMonths}.`,
   "invite.notFound": msg`Такой ссылки-приглашения нет. Проверьте, что ссылка скопирована целиком.`,
@@ -88,6 +91,23 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "flock.assignmentDatesInvalid": msg`Даты не могут быть в будущем, и дата «по» не может быть раньше даты «с».`,
   "flock.assignmentOverlaps": msg`В эти дни этот чабан уже работает в этом стаде.`,
   "flock.endDateInvalid": msg`Дата не может быть в будущем или раньше начала работы чабана в стаде.`,
+  "money.notFound": msg`Такой записи нет. Возможно, её уже удалили.`,
+  "money.dateInvalid": msg`Введите дату полностью: день, месяц и год.`,
+  "money.dateInFuture": msg`Дата не может быть в будущем.`,
+  "money.periodInvalid": msg`Проверьте период: дата «по» не может быть раньше даты «с».`,
+  // The largest amount is `maxAmount`: 1 000 000 000,00.
+  "money.amountInvalid": msg`Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50.`,
+  "money.notesTooLong": msg`Примечание не длиннее ${maxMoneyNotesLength} символов. Сократите текст.`,
+  "money.shepherdRequired": msg`Выберите чабана, которому заплатили.`,
+  "money.shepherdNotAllowed": msg`Чабана указывают только в расходе «Оплата чабану».`,
+  "money.automatic": msg`Эту запись сделало приложение: в ней можно изменить только сумму и примечание, а удалить её нельзя.`,
+  "moneyCategory.notFound": msg`Такой категории нет. Возможно, её уже удалили.`,
+  "moneyCategory.nameRequired": msg`Введите название категории.`,
+  "moneyCategory.nameTooLong": msg`Название не длиннее ${maxCategoryNameLength} символов.`,
+  "moneyCategory.nameTaken": msg`Категория с таким названием уже есть, может быть, в архиве.`,
+  "moneyCategory.system": msg`Это системная категория: её записи делает само приложение. Её нельзя выбрать, изменить или удалить.`,
+  "moneyCategory.archived": msg`Эта категория в архиве. Выберите другую или верните эту категорию из архива.`,
+  "moneyCategory.inUse": msg`В этой категории есть записи, поэтому её нельзя удалить. Отправьте её в архив.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;
@@ -104,6 +124,15 @@ export function useError(error: unknown): ErrorInfo | null {
   if (error === null || error === undefined) return null;
   const code = toDomainError(error)?.code ?? null;
   return { code, message: i18n._(code === null ? unknownErrorMessage : errorMessages[code]) };
+}
+
+/**
+ * The error of a rule that the view checks before it calls a hook, such as an amount that does not
+ * parse, or null. It has the message of the code, as if the core gave it.
+ */
+export function useCodeError(code: ErrorCode | null): ErrorInfo | null {
+  const { i18n } = useLingui();
+  return code === null ? null : { code, message: i18n._(errorMessages[code]) };
 }
 
 /** The message for an error from a hook, in the language of the UI, or null if there is no error. */
