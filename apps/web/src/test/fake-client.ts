@@ -1619,6 +1619,10 @@ export const useMoneyRecords = (farmId: FarmId, filter: MoneyRecordFilter) =>
     listMoneyRecords(queryContext(backend, farmId), filter),
   );
 
+/** Today in the time zone. The tests do not cross midnight, so it does not change. */
+export const useToday = (timeZone: string | undefined) =>
+  timeZone === undefined ? undefined : dateAt(Date.now(), timeZone);
+
 export const useHeadCountReport = (farmId: FarmId) =>
   useCoreQuery(`head count ${farmId}`, (backend) => {
     const ctx = queryContext(backend, farmId);

@@ -4,6 +4,7 @@ import {
   useFlocks,
   useMoneyCategories,
   useMoneyRecords,
+  useToday,
 } from "@arashan/client";
 import type {
   CalendarDate,
@@ -138,7 +139,8 @@ export function RecordsTab({
   onAdd: () => void;
 }) {
   const { i18n } = useLingui();
-  const today = dateAt(Date.now(), farm.timeZone);
+  // Today changes at midnight in the Farm, also on a page that stays open.
+  const today = useToday(farm.timeZone) ?? dateAt(Date.now(), farm.timeZone);
   const period = periodOf(filters, today);
   const records = useMoneyRecords(farm.id, {
     kind,

@@ -1,4 +1,4 @@
-import { dateAt, useMoneyReport } from "@arashan/client";
+import { dateAt, useMoneyReport, useToday } from "@arashan/client";
 import type { Farm, MoneyKind, MoneyReportPart } from "@arashan/core";
 import { Trans, useLingui } from "@lingui/react/macro";
 
@@ -31,7 +31,8 @@ export function MoneyTab({
   onPeriodChange: (period: PeriodChoice) => void;
 }) {
   const { i18n, t } = useLingui();
-  const today = dateAt(Date.now(), farm.timeZone);
+  // Today changes at midnight in the Farm, also on a page that stays open.
+  const today = useToday(farm.timeZone) ?? dateAt(Date.now(), farm.timeZone);
   const report = useMoneyReport(farm.id, periodOf(period, today));
   const error = useErrorMessage(report.error);
   const data = report.data;
