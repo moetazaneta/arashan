@@ -134,6 +134,8 @@ export const errorCodes = [
   "moneyCategory.system",
   "moneyCategory.archived",
   "moneyCategory.inUse",
+  // Reports.
+  "report.dateInvalid",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

@@ -60,6 +60,7 @@ export {
   useUnarchiveMoneyCategory,
   useUpdateMoneyRecord,
 } from "./money";
+export { useHeadCountReport, useMoneyReport } from "./reports";
 export { SignInForm, useSession, useSignOut } from "./session";
 export type { Session } from "./session-state";
 export {
