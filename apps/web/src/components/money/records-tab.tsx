@@ -178,7 +178,9 @@ export function RecordsTab({
     categoryId: filters.categoryId,
     scope: scopeFilterOf(filters.scope),
   });
-  const error = useErrorMessage(records.error);
+  // The filters and the form need the categories: a failed lazy seed shows here too.
+  const categories = useMoneyCategories(farm.id, kind);
+  const error = useErrorMessage(records.error ?? categories.error);
   // The record of a dialog stays as it was when the dialog opened, also while it closes.
   const [editing, setEditing] = useState<MoneyRecordRow | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -234,6 +236,7 @@ export function RecordsTab({
       )}
       {editing !== null && (
         <RecordDialog
+          key={editing.id}
           farm={farm}
           kind={kind}
           record={editing}

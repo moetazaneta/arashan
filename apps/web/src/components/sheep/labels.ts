@@ -99,4 +99,12 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "purchase.create": msg({ context: "history", message: "Покупка" }),
   "purchase.updatePrice": msg({ context: "history", message: "Изменена сумма покупки" }),
   "purchase.cancel": msg({ context: "history", message: "Покупка отменена" }),
+  "resource.create": msg({ context: "history", message: "Ресурс добавлен" }),
+  "resource.update": msg({ context: "history", message: "Ресурс изменён" }),
+  "resource.archive": msg({ context: "history", message: "Ресурс отправлен в архив" }),
+  "resource.unarchive": msg({ context: "history", message: "Ресурс возвращён из архива" }),
+  "resource.restock": msg({ context: "history", message: "Пополнение" }),
+  "resource.use": msg({ context: "history", message: "Выдача" }),
+  "resource.adjust": msg({ context: "history", message: "Корректировка" }),
+  "resource.cancelEvent": msg({ context: "history", message: "Запись ресурса отменена" }),
 };

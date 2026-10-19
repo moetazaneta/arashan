@@ -193,6 +193,11 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `deal.create`           | yes   | yes    |
 | `deal.update`           | yes   | yes    |
 | `deal.cancel`           | yes   | yes    |
+| `resource.view`         | yes   | yes    |
+| `resource.create`       | yes   | yes    |
+| `resource.update`       | yes   | yes    |
+| `resource.archive`      | yes   | yes    |
+| `resource.record`       | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -416,7 +421,9 @@ have the same fields, so one module keeps both: a money record is an Expense or 
   rule finds a category by its key, never by its name: «Оплата чабану» is the key `shepherdPay`,
   also after a rename. The core keeps no names (ADR 0004), so the web app has the name of each key
   (`components/money/category-names.ts`), and a new key fails its type check until it has one. The
-  names of a list are unique (`nameKey`), also among the Archived categories. A category in use (by
+  names of a list are unique (`nameKey`), also among the Archived categories. The core sees only the
+  names that Members gave, so the view refuses the shown name of a category of the app
+  (`isNameOfKey`): else a Member could make a second «Оплата чабану» without its rule. A category in use (by
   a record, also a Deleted one, which a Member can restore) can only become Archived; one that no
   record uses can become Deleted.
 - **The default lists.** Each Farm has these categories:
@@ -450,6 +457,7 @@ with the name of the command of the event.
 
 - `createAutomaticRecord(ctx, command, { key, source, date, amount, scope })` makes the record in
   the System category of the key, with `source: { kind: "sale" | "purchase" | "restock", id }`.
+  An event has one record: a second call for the same source throws.
 - `updateAutomaticRecord(ctx, command, source, { date, amount, scope })` changes it when the event
   changes. `deleteAutomaticRecord(ctx, command, source)` makes it Deleted when someone cancels the
   event. The repository finds the record of an event with `findBySource`.
@@ -504,6 +512,47 @@ Sheep (`sheepIds`, in the order of the form) and the Flock of a Purchase.
 - **The audit entries.** Each command appends one entry for the deal (`Sale` or `Purchase`), one for
   its record and one for each of its Sheep: `sale.create`, `sale.updatePrice`, `sale.cancel`,
   `purchase.create`, `purchase.updatePrice`, `purchase.cancel`.
+
+## Resources
+
+The module `core/src/resources/` keeps the feed of a Farm: the Resources (hay, grain…), their Stock,
+and the events that change it. The page «Ресурсы» lists the Resources with their Stock, and the card
+of a Resource shows its Stock and its events, the newest first, each with the Stock after it.
+
+- **A quantity is an integer of thousandths** of the unit of its Resource (`quantityScale`): 1500 is
+  1,5 kg. A sum is then exact, and a quantity has at most three decimals. One event has at most
+  `maxQuantity` (1 000 000 units). The web app reads and shows quantities with `parseQuantity` and
+  `formatQuantity` of `format.ts`. With three decimals «1,500» is ambiguous, so `parseQuantity` reads
+  it in the language of the UI: 1,5 in Russian, 1500 in English.
+- **A Resource** has a name (unique in the Farm, also among the Archived ones, by `nameKey`) and one
+  unit of measure, a text that the Member writes, such as «кг», «тюк» or «мешок». The unit changes
+  only while the Resource has no events (`resource.unitLocked`). An Archived Resource stays in the
+  list and keeps its card, but it gets no new events (`resource.archived`).
+- **The events** (`resourceEvents`) are a Restock, a Usage and an Adjustment. Each one has a date
+  (not in the future) and a quantity. A Usage has a Flock that is not Archived; an Adjustment has a
+  reason. An event never changes: a Member cancels one made by mistake (`cancelResourceEvent`), and
+  it becomes Deleted.
+- **The Stock** is the sum of the Restocks, minus the Usages, plus or minus the Adjustments
+  (`stockOf`). `stockSteps` computes it event by event, in the order of `inEventOrder`: by date, and
+  in one date the Restocks and the Usages in the order of recording, then the Adjustments. The Stock
+  can be less than 0, for example when a Member records a Usage before the Restock; the UI shows it
+  red. The row of a Resource keeps its Stock (`Resource.stock`), so that the list reads no events:
+  each command that adds or cancels an event computes it again from all the events of the Resource.
+  The card computes it from the events itself.
+- **An Adjustment is a count.** It keeps the quantity that the count found (its `quantity`), and the
+  Stock at the end of its date becomes that quantity: its change is the difference from the Stock
+  before it. Thus a Usage that a Member records later with a date before the count, or a wrong
+  Restock that a Member cancels and records again, does not move the Stock after the count: the
+  count already saw the real quantity. A count equal to the Stock on its date is refused
+  (`resource.adjustmentNoChange`).
+- **A Restock with a price** makes an Automatic Expense of the System category «Пополнение ресурса»
+  (`restock`), of the Farm as a whole, with `createAutomaticRecord` and the source
+  `{ kind: "restock", id }` (`restockSource`). The Expense keeps the price: the card reads it with
+  `findBySource`, and a Member changes it in the table of Expenses. Cancelling the Restock makes the
+  Expense Deleted. The Farm's own harvest is a Restock with no price.
+- **Audit.** A command of an event appends an entry for the event (`ResourceEvent`), one for its
+  Resource and, for a Usage, one for its Flock. A Restock with a price also appends the entry of its
+  Expense.
 
 ## The audit log
 

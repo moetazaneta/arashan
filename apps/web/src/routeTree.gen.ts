@@ -23,6 +23,8 @@ import { Route as FarmsFarmIdDealsIndexRouteImport } from './routes/farms/$farmI
 import { Route as FarmsFarmIdDealsDealIdRouteImport } from './routes/farms/$farmId/deals/$dealId'
 import { Route as FarmsFarmIdFlocksIndexRouteImport } from './routes/farms/$farmId/flocks/index'
 import { Route as FarmsFarmIdFlocksFlockIdRouteImport } from './routes/farms/$farmId/flocks/$flockId'
+import { Route as FarmsFarmIdResourcesIndexRouteImport } from './routes/farms/$farmId/resources/index'
+import { Route as FarmsFarmIdResourcesResourceIdRouteImport } from './routes/farms/$farmId/resources/$resourceId'
 import { Route as FarmsFarmIdSheepIndexRouteImport } from './routes/farms/$farmId/sheep/index'
 import { Route as FarmsFarmIdSheepSheepIdRouteImport } from './routes/farms/$farmId/sheep/$sheepId'
 
@@ -97,6 +99,18 @@ const FarmsFarmIdFlocksFlockIdRoute =
     path: '/flocks/$flockId',
     getParentRoute: () => FarmsFarmIdRouteRoute,
   } as any)
+const FarmsFarmIdResourcesIndexRoute =
+  FarmsFarmIdResourcesIndexRouteImport.update({
+    id: '/resources/',
+    path: '/resources/',
+    getParentRoute: () => FarmsFarmIdRouteRoute,
+  } as any)
+const FarmsFarmIdResourcesResourceIdRoute =
+  FarmsFarmIdResourcesResourceIdRouteImport.update({
+    id: '/resources/$resourceId',
+    path: '/resources/$resourceId',
+    getParentRoute: () => FarmsFarmIdRouteRoute,
+  } as any)
 const FarmsFarmIdSheepIndexRoute = FarmsFarmIdSheepIndexRouteImport.update({
   id: '/sheep/',
   path: '/sheep/',
@@ -121,9 +135,11 @@ export interface FileRoutesByFullPath {
   '/farms/$farmId/': typeof FarmsFarmIdIndexRoute
   '/farms/$farmId/deals/$dealId': typeof FarmsFarmIdDealsDealIdRoute
   '/farms/$farmId/flocks/$flockId': typeof FarmsFarmIdFlocksFlockIdRoute
+  '/farms/$farmId/resources/$resourceId': typeof FarmsFarmIdResourcesResourceIdRoute
   '/farms/$farmId/sheep/$sheepId': typeof FarmsFarmIdSheepSheepIdRoute
   '/farms/$farmId/deals/': typeof FarmsFarmIdDealsIndexRoute
   '/farms/$farmId/flocks/': typeof FarmsFarmIdFlocksIndexRoute
+  '/farms/$farmId/resources/': typeof FarmsFarmIdResourcesIndexRoute
   '/farms/$farmId/sheep/': typeof FarmsFarmIdSheepIndexRoute
 }
 export interface FileRoutesByTo {
@@ -138,9 +154,11 @@ export interface FileRoutesByTo {
   '/farms/$farmId': typeof FarmsFarmIdIndexRoute
   '/farms/$farmId/deals/$dealId': typeof FarmsFarmIdDealsDealIdRoute
   '/farms/$farmId/flocks/$flockId': typeof FarmsFarmIdFlocksFlockIdRoute
+  '/farms/$farmId/resources/$resourceId': typeof FarmsFarmIdResourcesResourceIdRoute
   '/farms/$farmId/sheep/$sheepId': typeof FarmsFarmIdSheepSheepIdRoute
   '/farms/$farmId/deals': typeof FarmsFarmIdDealsIndexRoute
   '/farms/$farmId/flocks': typeof FarmsFarmIdFlocksIndexRoute
+  '/farms/$farmId/resources': typeof FarmsFarmIdResourcesIndexRoute
   '/farms/$farmId/sheep': typeof FarmsFarmIdSheepIndexRoute
 }
 export interface FileRoutesById {
@@ -157,9 +175,11 @@ export interface FileRoutesById {
   '/farms/$farmId/': typeof FarmsFarmIdIndexRoute
   '/farms/$farmId/deals/$dealId': typeof FarmsFarmIdDealsDealIdRoute
   '/farms/$farmId/flocks/$flockId': typeof FarmsFarmIdFlocksFlockIdRoute
+  '/farms/$farmId/resources/$resourceId': typeof FarmsFarmIdResourcesResourceIdRoute
   '/farms/$farmId/sheep/$sheepId': typeof FarmsFarmIdSheepSheepIdRoute
   '/farms/$farmId/deals/': typeof FarmsFarmIdDealsIndexRoute
   '/farms/$farmId/flocks/': typeof FarmsFarmIdFlocksIndexRoute
+  '/farms/$farmId/resources/': typeof FarmsFarmIdResourcesIndexRoute
   '/farms/$farmId/sheep/': typeof FarmsFarmIdSheepIndexRoute
 }
 export interface FileRouteTypes {
@@ -177,9 +197,11 @@ export interface FileRouteTypes {
     | '/farms/$farmId/'
     | '/farms/$farmId/deals/$dealId'
     | '/farms/$farmId/flocks/$flockId'
+    | '/farms/$farmId/resources/$resourceId'
     | '/farms/$farmId/sheep/$sheepId'
     | '/farms/$farmId/deals/'
     | '/farms/$farmId/flocks/'
+    | '/farms/$farmId/resources/'
     | '/farms/$farmId/sheep/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -194,9 +216,11 @@ export interface FileRouteTypes {
     | '/farms/$farmId'
     | '/farms/$farmId/deals/$dealId'
     | '/farms/$farmId/flocks/$flockId'
+    | '/farms/$farmId/resources/$resourceId'
     | '/farms/$farmId/sheep/$sheepId'
     | '/farms/$farmId/deals'
     | '/farms/$farmId/flocks'
+    | '/farms/$farmId/resources'
     | '/farms/$farmId/sheep'
   id:
     | '__root__'
@@ -212,9 +236,11 @@ export interface FileRouteTypes {
     | '/farms/$farmId/'
     | '/farms/$farmId/deals/$dealId'
     | '/farms/$farmId/flocks/$flockId'
+    | '/farms/$farmId/resources/$resourceId'
     | '/farms/$farmId/sheep/$sheepId'
     | '/farms/$farmId/deals/'
     | '/farms/$farmId/flocks/'
+    | '/farms/$farmId/resources/'
     | '/farms/$farmId/sheep/'
   fileRoutesById: FileRoutesById
 }
@@ -325,6 +351,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FarmsFarmIdFlocksFlockIdRouteImport
       parentRoute: typeof FarmsFarmIdRouteRoute
     }
+    '/farms/$farmId/resources/': {
+      id: '/farms/$farmId/resources/'
+      path: '/resources'
+      fullPath: '/farms/$farmId/resources/'
+      preLoaderRoute: typeof FarmsFarmIdResourcesIndexRouteImport
+      parentRoute: typeof FarmsFarmIdRouteRoute
+    }
+    '/farms/$farmId/resources/$resourceId': {
+      id: '/farms/$farmId/resources/$resourceId'
+      path: '/resources/$resourceId'
+      fullPath: '/farms/$farmId/resources/$resourceId'
+      preLoaderRoute: typeof FarmsFarmIdResourcesResourceIdRouteImport
+      parentRoute: typeof FarmsFarmIdRouteRoute
+    }
     '/farms/$farmId/sheep/': {
       id: '/farms/$farmId/sheep/'
       path: '/sheep'
@@ -351,9 +391,11 @@ interface FarmsFarmIdRouteRouteChildren {
   FarmsFarmIdIndexRoute: typeof FarmsFarmIdIndexRoute
   FarmsFarmIdDealsDealIdRoute: typeof FarmsFarmIdDealsDealIdRoute
   FarmsFarmIdFlocksFlockIdRoute: typeof FarmsFarmIdFlocksFlockIdRoute
+  FarmsFarmIdResourcesResourceIdRoute: typeof FarmsFarmIdResourcesResourceIdRoute
   FarmsFarmIdSheepSheepIdRoute: typeof FarmsFarmIdSheepSheepIdRoute
   FarmsFarmIdDealsIndexRoute: typeof FarmsFarmIdDealsIndexRoute
   FarmsFarmIdFlocksIndexRoute: typeof FarmsFarmIdFlocksIndexRoute
+  FarmsFarmIdResourcesIndexRoute: typeof FarmsFarmIdResourcesIndexRoute
   FarmsFarmIdSheepIndexRoute: typeof FarmsFarmIdSheepIndexRoute
 }
 
@@ -366,9 +408,11 @@ const FarmsFarmIdRouteRouteChildren: FarmsFarmIdRouteRouteChildren = {
   FarmsFarmIdIndexRoute: FarmsFarmIdIndexRoute,
   FarmsFarmIdDealsDealIdRoute: FarmsFarmIdDealsDealIdRoute,
   FarmsFarmIdFlocksFlockIdRoute: FarmsFarmIdFlocksFlockIdRoute,
+  FarmsFarmIdResourcesResourceIdRoute: FarmsFarmIdResourcesResourceIdRoute,
   FarmsFarmIdSheepSheepIdRoute: FarmsFarmIdSheepSheepIdRoute,
   FarmsFarmIdDealsIndexRoute: FarmsFarmIdDealsIndexRoute,
   FarmsFarmIdFlocksIndexRoute: FarmsFarmIdFlocksIndexRoute,
+  FarmsFarmIdResourcesIndexRoute: FarmsFarmIdResourcesIndexRoute,
   FarmsFarmIdSheepIndexRoute: FarmsFarmIdSheepIndexRoute,
 }
 

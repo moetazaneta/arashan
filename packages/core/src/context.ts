@@ -36,6 +36,7 @@ import type {
   FarmMoneyRecordRepository,
   MoneyCategorySeedRepository,
 } from "./money/money";
+import type { FarmResourceReader, FarmResourceRepository } from "./resources/resource";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
@@ -98,6 +99,7 @@ export interface FarmReaders {
   moneyRecords: FarmMoneyRecordReader;
   /** The Sales and the Purchases. */
   deals: FarmDealReader;
+  resources: FarmResourceReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -121,6 +123,7 @@ export interface FarmRepositories {
   moneyCategories: FarmMoneyCategoryRepository;
   moneyRecords: FarmMoneyRecordRepository;
   deals: FarmDealRepository;
+  resources: FarmResourceRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

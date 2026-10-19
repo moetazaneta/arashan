@@ -144,6 +144,22 @@ export const errorCodes = [
   "deal.priceInvalid",
   "deal.bornAfterPurchase",
   "deal.sheepSold",
+  // Resources and their events.
+  "resource.notFound",
+  "resource.nameRequired",
+  "resource.nameTooLong",
+  "resource.nameTaken",
+  "resource.unitRequired",
+  "resource.unitTooLong",
+  "resource.unitLocked",
+  "resource.archived",
+  "resource.dateInvalid",
+  "resource.dateInFuture",
+  "resource.quantityInvalid",
+  "resource.reasonRequired",
+  "resource.reasonTooLong",
+  "resource.adjustmentNoChange",
+  "resource.eventNotFound",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

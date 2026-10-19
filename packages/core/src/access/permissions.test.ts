@@ -54,6 +54,11 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "deal.create": { admin: true, editor: true },
   "deal.update": { admin: true, editor: true },
   "deal.cancel": { admin: true, editor: true },
+  "resource.view": { admin: true, editor: true },
+  "resource.create": { admin: true, editor: true },
+  "resource.update": { admin: true, editor: true },
+  "resource.archive": { admin: true, editor: true },
+  "resource.record": { admin: true, editor: true },
 };
 
 describe("can", () => {

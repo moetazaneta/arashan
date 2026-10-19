@@ -22,6 +22,7 @@ import type * as lib_tokens from "../lib/tokens.js";
 import type * as locations from "../locations.js";
 import type * as members from "../members.js";
 import type * as money from "../money.js";
+import type * as resources from "../resources.js";
 import type * as sheep from "../sheep.js";
 import type * as shepherds from "../shepherds.js";
 import type * as users from "../users.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   locations: typeof locations;
   members: typeof members;
   money: typeof money;
+  resources: typeof resources;
   sheep: typeof sheep;
   shepherds: typeof shepherds;
   users: typeof users;

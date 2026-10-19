@@ -65,7 +65,15 @@ export type CommandName =
   | "sale.cancel"
   | "purchase.create"
   | "purchase.updatePrice"
-  | "purchase.cancel";
+  | "purchase.cancel"
+  | "resource.create"
+  | "resource.update"
+  | "resource.archive"
+  | "resource.unarchive"
+  | "resource.restock"
+  | "resource.use"
+  | "resource.adjust"
+  | "resource.cancelEvent";
 
 /** The kind of record that a command changed. */
 export type TargetKind =
@@ -83,7 +91,9 @@ export type TargetKind =
   | "ExpenseCategory"
   | "IncomeCategory"
   | "Sale"
-  | "Purchase";
+  | "Purchase"
+  | "Resource"
+  | "ResourceEvent";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

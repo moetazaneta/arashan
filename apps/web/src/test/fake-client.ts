@@ -20,6 +20,7 @@ import type {
   FarmMoneyRecordRepository,
   FarmQueryContext,
   FarmRepositories,
+  FarmResourceRepository,
   FarmSettings,
   FarmBreedRepository,
   FarmSheepRepository,
@@ -65,6 +66,11 @@ import type {
   StatusChangeId,
   UserId,
   Viewer,
+  Resource,
+  ResourceEvent,
+  ResourceEventId,
+  ResourceId,
+  ResourceInput,
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
@@ -74,6 +80,17 @@ import {
   getDeal,
   listDeals,
   sellSheep,
+  archiveResource,
+  cancelResourceEvent,
+  createResource,
+  getResource,
+  listResources,
+  recordAdjustment,
+  recordRestock,
+  recordUsage,
+  stockOf,
+  unarchiveResource,
+  updateResource,
   breedNameKey,
   archiveFlock,
   archiveLocation,
@@ -175,7 +192,13 @@ export {
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  nameKey,
   pedigreeDepth,
+  quantityScale,
+  maxQuantity,
+  maxReasonLength,
+  maxResourceNameLength,
+  maxUnitLength,
   scanContentTypes,
   sexes,
   wholeShare,
@@ -242,7 +265,15 @@ type CommandName =
   | "sellSheep"
   | "buySheep"
   | "changeDealPrice"
-  | "cancelDeal";
+  | "cancelDeal"
+  | "createResource"
+  | "updateResource"
+  | "archiveResource"
+  | "unarchiveResource"
+  | "recordRestock"
+  | "recordUsage"
+  | "recordAdjustment"
+  | "cancelResourceEvent";
 
 interface FakeBackend {
   session: Client.Session;
@@ -277,6 +308,9 @@ interface FakeBackend {
   moneyRecords: (MoneyRecord & { deleted?: boolean })[];
   /** The Sales and the Purchases, also the cancelled ones. */
   deals: (Deal & { deleted?: boolean })[];
+  resources: Resource[];
+  /** The events of the Resources, also the cancelled ones. */
+  resourceEvents: (ResourceEvent & { farmId: FarmId; deleted?: boolean })[];
   audit: AuditEntry[];
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
@@ -305,6 +339,8 @@ const emptyBackend = (): FakeBackend => ({
   moneyCategories: [],
   moneyRecords: [],
   deals: [],
+  resources: [],
+  resourceEvents: [],
   audit: [],
   failures: {},
   tokens: 0,
@@ -325,6 +361,7 @@ export function updateFake(change: (backend: FakeBackend) => void) {
 export function resetFake() {
   backend = emptyBackend();
   uploadGate = null;
+  seededFarms.clear();
   version += 1;
 }
 
@@ -1041,6 +1078,7 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
     deals: dealRepository(backend, farmId),
+    resources: resourceRepository(backend, farmId),
     history: {
       listForTarget: async (target) =>
         backend.audit.filter(
@@ -1072,6 +1110,7 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
     deals: dealRepository(backend, farmId),
+    resources: resourceRepository(backend, farmId),
     audit: {
       append: async (entry) => {
         backend.audit.push(entry);
@@ -1572,6 +1611,9 @@ export function addMoneyRecord(
   return id;
 }
 
+/** The Farms whose lazy seed ran: as the client, the fake runs it one time for each Farm. */
+const seededFarms = new Set<FarmId>();
+
 /**
  * The categories of the kind. As the hook of the client, it calls the command of the lazy seed when
  * the list is empty, and it is pending until the categories come.
@@ -1586,8 +1628,10 @@ export const useMoneyCategories = (farmId: FarmId, kind: MoneyKind) => {
   const empty = list.data?.length === 0;
   const { isIdle, mutate } = seed;
   useEffect(() => {
-    if (empty && isIdle) mutate();
-  }, [empty, isIdle, mutate]);
+    if (!empty || !isIdle || seededFarms.has(farmId)) return;
+    seededFarms.add(farmId);
+    mutate();
+  }, [empty, isIdle, mutate, farmId]);
   const data = empty ? undefined : list.data;
   const error = list.error ?? seed.error;
   return { data, error, isPending: data === undefined && error === null };
@@ -1713,4 +1757,172 @@ export const useChangeDealPrice = (farmId: FarmId) =>
 export const useCancelDeal = (farmId: FarmId) =>
   useMutation("cancelDeal", (backend, dealId: DealId) =>
     cancelDeal(commandContext(backend, farmId), { dealId }),
+  );
+
+// Resources and their events. The fake runs the commands and queries of the core, as for the Flocks.
+// The helpers write no audit entries.
+
+function resourceRepository(backend: FakeBackend, farmId: FarmId): FarmResourceRepository {
+  const ofFarm = () => backend.resources.filter((r) => r.farmId === farmId);
+  const events = () =>
+    backend.resourceEvents.filter((e) => e.farmId === farmId && e.deleted !== true);
+  const eventOf = (stored: FakeBackend["resourceEvents"][number]): ResourceEvent => ({
+    id: stored.id,
+    resourceId: stored.resourceId,
+    kind: stored.kind,
+    date: stored.date,
+    quantity: stored.quantity,
+    flockId: stored.flockId,
+    reason: stored.reason,
+    createdAt: stored.createdAt,
+  });
+  return {
+    get: async (id) => ofFarm().find((r) => r.id === id) ?? null,
+    list: async () => ofFarm().map((r) => ({ ...r })),
+    findByName: async (name) => ofFarm().filter((r) => nameKey(r.name) === nameKey(name)),
+    getEvent: async (id) => {
+      const found = events().find((e) => e.id === id);
+      return found === undefined ? null : eventOf(found);
+    },
+    events: async (resourceId) =>
+      events()
+        .filter((e) => e.resourceId === resourceId)
+        .map(eventOf),
+    insert: async (fields) => {
+      const id = nextId(backend, "resource") as ResourceId;
+      backend.resources.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = ofFarm().find((r) => r.id === id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    insertEvent: async (event) => {
+      const id = nextId(backend, "resource-event") as ResourceEventId;
+      backend.resourceEvents.push({ id, farmId, ...event });
+      return id;
+    },
+    markEventDeleted: async (id) => {
+      const found = events().find((e) => e.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
+  };
+}
+
+/** Puts a Resource into the Farm: «Сено» in kg with a Stock of 0, or with the changes. */
+export function addResource(
+  farm: FakeFarm,
+  change: Partial<Omit<Resource, "id" | "farmId">> = {},
+): Resource {
+  let resource: Resource | undefined;
+  updateFake((backend) => {
+    resource = {
+      id: nextId(backend, "resource") as ResourceId,
+      farmId: farm.id,
+      name: "Сено",
+      unit: "кг",
+      stock: 0,
+      archivedAt: null,
+      ...change,
+    };
+    backend.resources.push(resource);
+  });
+  return resource!;
+}
+
+/** Puts an event of the Resource into the fake backend, and adds it to the Stock. */
+export function addResourceEvent(
+  resource: Resource,
+  event: Pick<ResourceEvent, "kind" | "date" | "quantity"> & Partial<ResourceEvent>,
+) {
+  updateFake((backend) => {
+    backend.resourceEvents.push({
+      id: nextId(backend, "resource-event") as ResourceEventId,
+      farmId: resource.farmId,
+      resourceId: resource.id,
+      flockId: null,
+      reason: null,
+      createdAt: Date.now(),
+      ...event,
+    });
+    const stored = backend.resources.find((r) => r.id === resource.id)!;
+    stored.stock = stockOf(
+      backend.resourceEvents.filter((e) => e.resourceId === resource.id && e.deleted !== true),
+    );
+  });
+}
+
+/** The Resources of all Farms, as the fake backend keeps them. */
+export function fakeResources(): readonly Resource[] {
+  return backend.resources;
+}
+
+/** The events of the Resources, also the cancelled ones. */
+export function fakeResourceEvents(): FakeBackend["resourceEvents"] {
+  return backend.resourceEvents;
+}
+
+/** The Expenses and the Incomes, also the Deleted ones. */
+export function fakeMoneyRecords(): FakeBackend["moneyRecords"] {
+  return backend.moneyRecords;
+}
+
+export const useResources = (farmId: FarmId) =>
+  useCoreQuery(`resources ${farmId}`, (backend) => listResources(queryContext(backend, farmId)));
+
+export const useResource = (farmId: FarmId, resourceId: ResourceId) =>
+  useCoreQuery(`resource ${farmId} ${resourceId}`, (backend) =>
+    getResource(queryContext(backend, farmId), { resourceId }),
+  );
+
+export const useCreateResource = (farmId: FarmId) =>
+  useMutation("createResource", (backend, input: ResourceInput) =>
+    createResource(commandContext(backend, farmId), input),
+  );
+
+export const useUpdateResource = (farmId: FarmId) =>
+  useMutation("updateResource", (backend, input: ResourceInput & { resourceId: ResourceId }) =>
+    updateResource(commandContext(backend, farmId), input),
+  );
+
+export const useArchiveResource = (farmId: FarmId) =>
+  useMutation("archiveResource", (backend, resourceId: ResourceId) =>
+    archiveResource(commandContext(backend, farmId), { resourceId }),
+  );
+
+export const useUnarchiveResource = (farmId: FarmId) =>
+  useMutation("unarchiveResource", (backend, resourceId: ResourceId) =>
+    unarchiveResource(commandContext(backend, farmId), { resourceId }),
+  );
+
+export const useRecordRestock = (farmId: FarmId) =>
+  useMutation(
+    "recordRestock",
+    (
+      backend,
+      input: { resourceId: ResourceId; date: CalendarDate; quantity: number; price: number | null },
+    ) => recordRestock(commandContext(backend, farmId), input),
+  );
+
+export const useRecordUsage = (farmId: FarmId) =>
+  useMutation(
+    "recordUsage",
+    (
+      backend,
+      input: { resourceId: ResourceId; date: CalendarDate; quantity: number; flockId: FlockId },
+    ) => recordUsage(commandContext(backend, farmId), input),
+  );
+
+export const useRecordAdjustment = (farmId: FarmId) =>
+  useMutation(
+    "recordAdjustment",
+    (
+      backend,
+      input: { resourceId: ResourceId; date: CalendarDate; counted: number; reason: string },
+    ) => recordAdjustment(commandContext(backend, farmId), input),
+  );
+
+export const useCancelResourceEvent = (farmId: FarmId) =>
+  useMutation("cancelResourceEvent", (backend, eventId: ResourceEventId) =>
+    cancelResourceEvent(commandContext(backend, farmId), { eventId }),
   );
