@@ -277,6 +277,7 @@ export default defineSchema({
 
   // The Resources of a Farm: hay, grain…
   resources: defineTable({
+    norms: v.optional(v.object({ ram: v.number(), ewe: v.number(), lamb: v.number() })),
     farmId: v.id("farms"),
     name: v.string(),
     /** The key of the name (`nameKey` of the core), to find a name that is taken. */
