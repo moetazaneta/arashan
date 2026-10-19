@@ -5,6 +5,7 @@ import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError, type ErrorCode } from "../errors";
 import type { FlockId, LocationId, SheepId, ShepherdAssignmentId, ShepherdId } from "../ids";
 import { lastLambingDate } from "../lambings/lambing";
+import { purchaseDate } from "../sheep/commands";
 import type { Sheep } from "../sheep/sheep";
 import {
   type Flock,
@@ -429,9 +430,11 @@ async function requireMove(
   const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
   // The Lambs of an Ewe went into her Flock of the date of her Lambing.
   const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
+  const bought = await purchaseDate(ctx, sheep);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
+    (bought !== null && date < bought) ||
     (lastMove !== undefined && date < lastMove.date) ||
     (lastStatusChange !== undefined && date < lastStatusChange.date) ||
     (lastLambing !== null && date < lastLambing)

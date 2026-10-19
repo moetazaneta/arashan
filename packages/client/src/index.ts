@@ -8,6 +8,14 @@ export {
   useSetBreedArchived,
 } from "./breeds";
 export { ClientProvider, createClient, type Client, type Locale } from "./client";
+export {
+  useBuySheep,
+  useCancelDeal,
+  useChangeDealPrice,
+  useDeal,
+  useDeals,
+  useSellSheep,
+} from "./deals";
 export { toDomainError } from "./errors";
 export {
   useCreateFarm,
@@ -101,6 +109,7 @@ export {
   arashanShare,
   compositionOf,
   dateAt,
+  dealSheepPreview,
   defaultLambAgeMonths,
   exitStatuses,
   grades,
@@ -126,6 +135,8 @@ export {
   maxSheepNotesLength,
   maxSheepPerMove,
   maxStillborn,
+  maxSheepPerPurchase,
+  maxSheepPerSale,
   maxUnitLength,
   maxSheepPerStatusChange,
   maxStatusReasonLength,

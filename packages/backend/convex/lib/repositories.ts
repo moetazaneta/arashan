@@ -7,8 +7,12 @@ import {
   breedNameKey,
   type CategoryKey,
   type CommandName,
+  type Deal,
+  type DealId,
   type Farm,
   type FarmAuditReader,
+  type FarmDealReader,
+  type FarmDealRepository,
   type FarmBreedReader,
   type FarmBreedRepository,
   type FarmFlockReader,
@@ -194,6 +198,7 @@ function toSheep(doc: Doc<"sheep">): Sheep {
         : { grade: doc.grade, date: doc.gradedOn },
     flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     registeredAt: doc.registeredAt,
+    purchaseId: doc.purchaseId === undefined ? null : (doc.purchaseId as string as DealId),
   };
 }
 
@@ -238,6 +243,7 @@ function sheepColumns(
     gradedOn: sheep.grade?.date,
     flockId: sheep.flockId === null ? undefined : idOf(sheep.flockId),
     registeredAt: sheep.registeredAt,
+    purchaseId: sheep.purchaseId === null ? undefined : idOf(sheep.purchaseId),
   };
 }
 
@@ -358,7 +364,20 @@ function toStatusChange(doc: Doc<"sheepStatusChanges">): StatusChange {
     date: doc.date,
     reason: doc.reason ?? null,
     flockMoveId: doc.flockMoveId === undefined ? null : (doc.flockMoveId as string as FlockMoveId),
+    saleId: doc.saleId === undefined ? null : (doc.saleId as string as DealId),
     at: doc.at,
+  };
+}
+
+function toDeal(doc: Doc<"deals">): Deal {
+  return {
+    id: doc._id as string as DealId,
+    farmId: doc.farmId as string as FarmId,
+    kind: doc.kind,
+    date: doc.date,
+    sheepIds: doc.sheepIds.map((id) => id as string as SheepId),
+    flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
+    createdAt: doc.createdAt,
   };
 }
 
@@ -871,6 +890,7 @@ async function ofFarm<
     | "flockAssignments"
     | "moneyCategories"
     | "moneyRecords"
+    | "deals"
     | "resources"
     | "resourceEvents",
 >(db: DatabaseReader, table: Table, farmId: FarmId, id: string): Promise<Doc<Table> | null> {
@@ -1045,6 +1065,24 @@ function farmMoneyCategoryReader(db: DatabaseReader, farmId: FarmId): FarmMoneyC
         .collect();
       const doc = docs.find((d) => d.deletedAt === undefined && d.kind === kind);
       return doc === undefined ? null : toMoneyCategory(doc);
+    },
+  };
+}
+
+function farmDealReader(db: DatabaseReader, farmId: FarmId): FarmDealReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "deals", farmId, id);
+      return doc === null ? null : toDeal(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("deals")
+        .withIndex("by_farmId_deletedAt_date", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toDeal);
     },
   };
 }
@@ -1257,6 +1295,7 @@ export function farmReaders(
     lambings: farmLambingReader(db, farmId),
     moneyCategories: farmMoneyCategoryReader(db, farmId),
     moneyRecords: farmMoneyRecordReader(db, farmId),
+    deals: farmDealReader(db, farmId),
     resources: farmResourceReader(db, farmId),
     history: farmAuditReader(db, farmId),
   };
@@ -1324,6 +1363,7 @@ export function farmRepositories(
         date: change.date,
         reason: change.reason ?? undefined,
         flockMoveId: change.flockMoveId === null ? undefined : idOf(change.flockMoveId),
+        saleId: change.saleId === null ? undefined : idOf(change.saleId),
         at: change.at,
       })) as string as StatusChangeId;
     },
@@ -1490,6 +1530,29 @@ export function farmRepositories(
       if (doc !== null) await db.patch("moneyRecords", doc._id, { deletedAt });
     },
   };
+  const deals: FarmDealRepository = {
+    ...readers.deals,
+    async insert(fields) {
+      return (await db.insert("deals", {
+        farmId: idOf(farmId),
+        kind: fields.kind,
+        date: fields.date,
+        sheepIds: fields.sheepIds.map((id) => idOf<"sheep">(id)),
+        flockId: fields.flockId === null ? undefined : idOf(fields.flockId),
+        createdAt: fields.createdAt,
+      })) as string as DealId;
+    },
+    async setSheep(id, sheepIds) {
+      const doc = await ofFarm(db, "deals", farmId, id);
+      if (doc !== null) {
+        await db.patch("deals", doc._id, { sheepIds: sheepIds.map((one) => idOf<"sheep">(one)) });
+      }
+    },
+    async markDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "deals", farmId, id);
+      if (doc !== null) await db.patch("deals", doc._id, { deletedAt });
+    },
+  };
   const resources: FarmResourceRepository = {
     ...readers.resources,
     async insert(fields) {
@@ -1528,6 +1591,7 @@ export function farmRepositories(
     lambings,
     moneyCategories,
     moneyRecords,
+    deals,
     resources,
     farm: {
       async updateSettings(settings) {

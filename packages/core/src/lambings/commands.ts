@@ -7,7 +7,7 @@ import { recordFlockMove } from "../flocks/commands";
 import { flockAt } from "../flocks/flock";
 import type { FlockId, LambingId, MembershipId, SheepId } from "../ids";
 import { cachedLookup, requireParents } from "../pedigree/pedigree";
-import { requireFreeTag, requireOwner } from "../sheep/commands";
+import { purchaseDate, requireFreeTag, requireOwner } from "../sheep/commands";
 import { maxTagLength, type Sex, type Sheep, type SheepFields, tagKey } from "../sheep/sheep";
 import { maxLambs, maxStillborn, ownerAt } from "./lambing";
 
@@ -79,6 +79,9 @@ export async function recordLambing(
 
   // All checks come before the first write.
   const mother = await requireMother(ctx, input.motherId);
+  // A bought Ewe lambs on the Farm from the day of her Purchase.
+  const bought = await purchaseDate(ctx, mother);
+  if (bought !== null && date < bought) throw new DomainError("lambing.dateInvalid");
   const fatherId = input.fatherId;
   await requireParents(
     cachedLookup((id) => ctx.repos.sheep.get(id)),
@@ -107,6 +110,7 @@ export async function recordLambing(
       passport: null,
       grade: null,
       flockId: null,
+      purchaseId: null,
       registeredAt: ctx.now(),
     };
     const lambId = await ctx.repos.sheep.insert(fields);

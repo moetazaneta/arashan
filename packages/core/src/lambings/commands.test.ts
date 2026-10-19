@@ -3,6 +3,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { addBreed } from "../breeds/commands";
 import { arashanBreedId } from "../breeds/breed";
 import type { CommandContext } from "../context";
+import { buySheep } from "../deals/commands";
 import { createFarm } from "../farms/commands";
 import { archiveFlock, createFlock, moveSheep, undoFlockMove } from "../flocks/commands";
 import type { MembershipId, SheepId } from "../ids";
@@ -136,6 +137,7 @@ describe("recordLambing", () => {
         passport: null,
         grade: null,
         flockId: null,
+        purchaseId: null,
         registeredAt: store.time,
       },
       expect.objectContaining({ id: lambIds[1], tag: null, sex: "ewe", ownerId: editorId }),
@@ -458,6 +460,26 @@ describe("recordLambing", () => {
         "sheep.undoBeforeLambing",
       );
       expect(sheepOf(store, motherId).status).toBe("active");
+    });
+
+    test("lambs on the Farm from the day of her Purchase", async () => {
+      const { store, ctx, editorId, lambing } = await setup();
+      const dealId = await buySheep(ctx, {
+        sheep: [
+          { tag: "B-1", name: null, sex: "ewe", birthDate: null, notes: null, ownerId: editorId },
+        ],
+        date: "2026-10-05",
+        price: 100,
+        flockId: null,
+      });
+      const bought = store.sheep.find((s) => s.purchaseId === dealId)!.id;
+
+      await expect(lambing({ motherId: bought, date: "2026-10-04" })).rejects.toThrow(
+        "lambing.dateInvalid",
+      );
+      await expect(lambing({ motherId: bought, date: "2026-10-05" })).resolves.toMatchObject({
+        lambIds: [expect.any(String)],
+      });
     });
 
     test("is not an External Sheep", async () => {

@@ -90,6 +90,7 @@ describe("changeSheepStatus", () => {
           date: "2026-10-15",
           reason: "Причина",
           flockMoveId: null,
+          saleId: null,
           at: store.time,
         },
       ]);
@@ -298,6 +299,7 @@ describe("markSheepFound", () => {
       date: "2026-10-12",
       reason: "У соседа",
       flockMoveId: null,
+      saleId: null,
     });
     expect(audit()).toEqual([`sheep.markFound ${sheepId}`]);
     const card = await getSheep(ctx, { sheepId });

@@ -5,6 +5,10 @@ import type {
   Breed,
   BreedId,
   CalendarDate,
+  Deal,
+  DealId,
+  DealKind,
+  FarmDealRepository,
   ExitInput,
   ExternalSheepRegistration,
   Farm,
@@ -60,6 +64,8 @@ import type {
   ShepherdAssignmentId,
   ShepherdId,
   ShepherdInput,
+  PurchaseInput,
+  SaleInput,
   StatusChange,
   StatusChangeId,
   UserId,
@@ -72,6 +78,12 @@ import type {
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
+  buySheep,
+  cancelDeal,
+  changeDealPrice,
+  getDeal,
+  listDeals,
+  sellSheep,
   archiveResource,
   cancelResourceEvent,
   createResource,
@@ -158,6 +170,7 @@ export {
   arashanShare,
   compositionOf,
   dateAt,
+  dealSheepPreview,
   defaultLambAgeMonths,
   exitStatuses,
   grades,
@@ -180,6 +193,8 @@ export {
   maxSheepNotesLength,
   maxSheepPerMove,
   maxStillborn,
+  maxSheepPerPurchase,
+  maxSheepPerSale,
   maxSheepPerStatusChange,
   maxStatusReasonLength,
   maxTagLength,
@@ -256,6 +271,10 @@ type CommandName =
   | "archiveMoneyCategory"
   | "unarchiveMoneyCategory"
   | "deleteMoneyCategory"
+  | "sellSheep"
+  | "buySheep"
+  | "changeDealPrice"
+  | "cancelDeal"
   | "createResource"
   | "updateResource"
   | "archiveResource"
@@ -298,6 +317,8 @@ interface FakeBackend {
   moneyCategories: (MoneyCategory & { deleted?: boolean })[];
   /** The Expenses and the Incomes, also the Deleted ones. */
   moneyRecords: (MoneyRecord & { deleted?: boolean })[];
+  /** The Sales and the Purchases, also the cancelled ones. */
+  deals: (Deal & { deleted?: boolean })[];
   resources: Resource[];
   /** The events of the Resources, also the cancelled ones. */
   resourceEvents: (ResourceEvent & { farmId: FarmId; deleted?: boolean })[];
@@ -329,6 +350,7 @@ const emptyBackend = (): FakeBackend => ({
   lambings: [],
   moneyCategories: [],
   moneyRecords: [],
+  deals: [],
   resources: [],
   resourceEvents: [],
   audit: [],
@@ -731,6 +753,7 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       grade: null,
       flockId: null,
       registeredAt: Date.now(),
+      purchaseId: null,
       ...change,
       ownerId,
     });
@@ -894,7 +917,7 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     statusChanges: async (sheepId) =>
       backend.statusChanges
         .filter((c) => c.sheepId === sheepId && c.deleted !== true)
-        .map(({ id, from, to, date, reason, flockMoveId, at }) => ({
+        .map(({ id, from, to, date, reason, flockMoveId, saleId, at }) => ({
           id,
           sheepId,
           from,
@@ -902,6 +925,7 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
           date,
           reason,
           flockMoveId,
+          saleId,
           at,
         })),
     insertStatusChange: async (change) => {
@@ -1086,6 +1110,7 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
     lambings: lambingRepository(backend, farmId),
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
+    deals: dealRepository(backend, farmId),
     resources: resourceRepository(backend, farmId),
     history: {
       listForTarget: async (target) =>
@@ -1118,6 +1143,7 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     lambings: lambingRepository(backend, farmId),
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
+    deals: dealRepository(backend, farmId),
     resources: resourceRepository(backend, farmId),
     audit: {
       append: async (entry) => {
@@ -1745,6 +1771,79 @@ export const useUnarchiveMoneyCategory = (farmId: FarmId) =>
 export const useDeleteMoneyCategory = (farmId: FarmId) =>
   useMutation("deleteMoneyCategory", (backend, categoryId: MoneyCategoryId) =>
     deleteMoneyCategory(commandContext(backend, farmId), { categoryId }),
+  );
+
+// The Sales and the Purchases. The fake runs the commands and queries of the core, so a deal makes
+// its Automatic record in the money records of the fake.
+
+function dealRepository(backend: FakeBackend, farmId: FarmId): FarmDealRepository {
+  const ofFarm = () => backend.deals.filter((d) => d.farmId === farmId && d.deleted !== true);
+  const plain = ({ id, kind, date, sheepIds, flockId, createdAt }: Deal): Deal => ({
+    id,
+    farmId,
+    kind,
+    date,
+    sheepIds: [...sheepIds],
+    flockId,
+    createdAt,
+  });
+  return {
+    get: async (id) => {
+      const found = ofFarm().find((d) => d.id === id);
+      return found === undefined ? null : plain(found);
+    },
+    list: async () => ofFarm().map(plain),
+    insert: async (fields) => {
+      const id = nextId(backend, "deal") as DealId;
+      backend.deals.push({ id, farmId, ...fields, sheepIds: [...fields.sheepIds] });
+      return id;
+    },
+    setSheep: async (id, sheepIds) => {
+      const found = ofFarm().find((d) => d.id === id);
+      if (found !== undefined) found.sheepIds = [...sheepIds];
+    },
+    markDeleted: async (id) => {
+      const found = ofFarm().find((d) => d.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
+  };
+}
+
+/** A Sale of the Sheep, made with the command of the core, as if the signed-in Member made it. */
+export async function addSale(farm: FakeFarm, input: SaleInput): Promise<DealId> {
+  const dealId = await sellSheep(commandContext(backend, farm.id), input);
+  updateFake(() => {});
+  return dealId;
+}
+
+export const useDeals = (farmId: FarmId, kind: DealKind | null) =>
+  useCoreQuery(`deals ${farmId} ${kind}`, (backend) =>
+    listDeals(queryContext(backend, farmId), { kind }),
+  );
+
+export const useDeal = (farmId: FarmId, dealId: DealId) =>
+  useCoreQuery(`deal ${farmId} ${dealId}`, (backend) =>
+    getDeal(queryContext(backend, farmId), { dealId }),
+  );
+
+export const useSellSheep = (farmId: FarmId) =>
+  useMutation("sellSheep", (backend, input: SaleInput) =>
+    sellSheep(commandContext(backend, farmId), input),
+  );
+
+export const useBuySheep = (farmId: FarmId) =>
+  useMutation("buySheep", (backend, input: PurchaseInput) =>
+    buySheep(commandContext(backend, farmId), input),
+  );
+
+export const useChangeDealPrice = (farmId: FarmId) =>
+  useMutation("changeDealPrice", (backend, input: { dealId: DealId; price: number }) =>
+    changeDealPrice(commandContext(backend, farmId), input),
+  );
+
+export const useCancelDeal = (farmId: FarmId) =>
+  useMutation("cancelDeal", (backend, dealId: DealId) =>
+    cancelDeal(commandContext(backend, farmId), { dealId }),
   );
 
 // Resources and their events. The fake runs the commands and queries of the core, as for the Flocks.
