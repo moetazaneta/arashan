@@ -80,6 +80,16 @@ export const permissions = {
   "moneyCategory.archive": ["admin", "editor"],
   /** Make a category that no record uses Deleted. */
   "moneyCategory.delete": ["admin", "editor"],
+  /** See the Resources, their Stock and their events. */
+  "resource.view": ["admin", "editor"],
+  /** Add a Resource. */
+  "resource.create": ["admin", "editor"],
+  /** Change the name or the unit of a Resource. */
+  "resource.update": ["admin", "editor"],
+  /** Archive a Resource, or take it out of the archive. */
+  "resource.archive": ["admin", "editor"],
+  /** Record a Restock, a Usage or an Adjustment of a Resource, or cancel one. */
+  "resource.record": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

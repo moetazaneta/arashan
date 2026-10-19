@@ -119,6 +119,8 @@ export type {
   MembershipId,
   MoneyCategoryId,
   MoneyRecordId,
+  ResourceEventId,
+  ResourceId,
   OwnerChangeId,
   PasswordResetId,
   SheepId,
@@ -221,6 +223,43 @@ export {
   type MoneyScopeRef,
   type MoneySheepRef,
 } from "./money/queries";
+export {
+  adjustResource,
+  archiveResource,
+  cancelResourceEvent,
+  createResource,
+  restockResource,
+  restockSource,
+  unarchiveResource,
+  updateResource,
+  useResource,
+  type ResourceInput,
+} from "./resources/commands";
+export {
+  getResource,
+  listResources,
+  type ResourceCard,
+  type ResourceEventRow,
+  type ResourceRow,
+} from "./resources/queries";
+export {
+  inEventOrder,
+  maxQuantity,
+  maxReasonLength,
+  maxResourceNameLength,
+  maxUnitLength,
+  quantityScale,
+  resourceEventKinds,
+  stockChange,
+  stockOf,
+  stockOn,
+  type FarmResourceReader,
+  type FarmResourceRepository,
+  type Resource,
+  type ResourceEvent,
+  type ResourceEventKind,
+  type ResourceFields,
+} from "./resources/resource";
 export {
   changeSheepOwner,
   deleteSheep,

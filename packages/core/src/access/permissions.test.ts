@@ -45,6 +45,11 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "moneyCategory.update": { admin: true, editor: true },
   "moneyCategory.archive": { admin: true, editor: true },
   "moneyCategory.delete": { admin: true, editor: true },
+  "resource.view": { admin: true, editor: true },
+  "resource.create": { admin: true, editor: true },
+  "resource.update": { admin: true, editor: true },
+  "resource.archive": { admin: true, editor: true },
+  "resource.record": { admin: true, editor: true },
 };
 
 describe("can", () => {
