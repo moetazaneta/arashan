@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import type { CommandContext } from "../context";
+import { sellSheep } from "../deals/commands";
 import { createFarm } from "../farms/commands";
 import {
   archiveFlock,
@@ -13,7 +14,6 @@ import type { MembershipId, MoneyCategoryId } from "../ids";
 import { removeMember } from "../members/manage";
 import {
   archiveMoneyCategory,
-  createAutomaticRecord,
   createMoneyCategory,
   createMoneyRecord,
   deleteMoneyRecord,
@@ -174,7 +174,7 @@ describe("getHeadCountReport", () => {
 describe("getMoneyReport", () => {
   /** The Expenses and the Incomes of 2025 and 2026, Automatic ones too. */
   async function farmWithMoney() {
-    const { store, farmId, ctx } = await setup();
+    const { store, farmId, ctx, membershipOf } = await setup();
     const category = (kind: MoneyKind, key: CategoryKey): MoneyCategoryId =>
       store.moneyCategories.find((c) => c.farmId === farmId && c.kind === kind && c.key === key)!
         .id;
@@ -200,14 +200,19 @@ describe("getMoneyReport", () => {
     await record("expense", feed, "2026-04-01", 30_000);
     await archiveMoneyCategory(ctx, { categoryId: feed });
     await record("income", category("income", "wool"), "2026-07-01", 200_000);
-    // The Automatic record of a Sale, as the command of a Sale (#12) makes it.
-    await createAutomaticRecord(ctx, "money.create", {
-      key: "sheepSale",
-      source: { kind: "sale", id: "sale-1" },
-      date: "2026-09-01",
-      amount: 500_000,
-      scope: { kind: "farm" },
+    // A Sale of a Sheep: its Automatic Income.
+    const sold = await registerSheep(ctx, {
+      tag: null,
+      name: null,
+      sex: "ram",
+      birthDate: null,
+      notes: null,
+      weight: null,
+      ownerId: membershipOf("editor"),
+      origin: "born",
+      initialEntry: true,
     });
+    await sellSheep(ctx, { sheepIds: [sold], date: "2026-09-01", price: 500_000 });
     // A Restock of hay with a price, and a cancelled one: its Expense is Deleted.
     const hay = await createResource(ctx, { name: "Сено", unit: "кг" });
     await recordRestock(ctx, {

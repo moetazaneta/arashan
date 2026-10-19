@@ -4,8 +4,8 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import { recordFlockMove } from "../flocks/commands";
-import type { SheepId } from "../ids";
-import { requireOwner } from "./commands";
+import type { DealId, SheepId } from "../ids";
+import { purchaseDate, requireOwner } from "./commands";
 import {
   type ExitStatus,
   exitStatuses,
@@ -57,7 +57,7 @@ export async function changeSheepStatus(
     changing.push(sheep);
   }
   for (const sheep of changing) {
-    await writeExit(ctx, sheep, { status: input.status, date: input.date, reason });
+    await writeExit(ctx, sheep, { status: input.status, date: input.date, reason, saleId: null });
     await recordFarmAudit(ctx, {
       command: exitCommands[input.status],
       target: { kind: "Sheep", id: sheep.id },
@@ -68,18 +68,53 @@ export async function changeSheepStatus(
 
 /**
  * The Status of an Active Sheep changes, for a command of another slice: for example, a Sale makes
- * its Sheep Sold. It checks the rules, as `changeSheepStatus` does: the Sheep is Active
- * (`sheep.notActive`), and the date is a real date, not in the future and not before the last event
- * of the Sheep (`sheep.statusDateInvalid`). The Sheep leaves its Flock on that date. The command that
- * calls it checks the permission and appends its own audit entry.
+ * its Sheep Sold, with the id of the Sale (`saleId`). It checks the rules, as `changeSheepStatus`
+ * does: see `requireStatusChange`. The Sheep leaves its Flock on that date. The command that calls it
+ * checks the permission and appends its own audit entry.
  */
 export async function recordStatusChange(
   ctx: FarmCommandContext,
   sheep: Sheep,
-  change: { status: LeftStatus; date: CalendarDate; reason: string | null },
+  change: { status: LeftStatus; date: CalendarDate; reason: string | null; saleId?: DealId },
 ): Promise<void> {
   await requireExit(ctx, sheep, change.date);
-  await writeExit(ctx, sheep, { ...change, reason: validReason(change.reason) });
+  await writeExit(ctx, sheep, {
+    status: change.status,
+    date: change.date,
+    reason: validReason(change.reason),
+    saleId: change.saleId ?? null,
+  });
+}
+
+/**
+ * Throws the error of the first rule that a change of the Status of the Sheep on the date breaks:
+ * the Sheep is Active (`sheep.notActive`), and the date is a real date, not in the future and not
+ * before the last event of the Sheep (`sheep.statusDateInvalid`). A command of another slice that
+ * changes many Sheep checks all of them first, so that it writes nothing when one cannot change.
+ */
+export function requireStatusChange(
+  ctx: FarmCommandContext,
+  sheep: Sheep,
+  date: CalendarDate,
+): Promise<void> {
+  return requireExit(ctx, sheep, date);
+}
+
+/**
+ * Undoes a change of the Status that made an Active Sheep leave the Farm, for a command of another
+ * slice: for example, a cancelled Sale makes its Sheep Active again. The change becomes Deleted, the
+ * Sheep gets the Status from before it, and it goes back to the Flock that it left, if that Flock is
+ * not Archived now. The command checks first that the Owner is a Member now (`requireOwner`), checks
+ * the permission and appends its own audit entry.
+ */
+export async function revertStatusChange(
+  ctx: FarmCommandContext,
+  sheep: Sheep,
+  change: StatusChange,
+): Promise<void> {
+  if (change.from === "active") await returnToFlock(ctx, sheep, change);
+  await ctx.repos.sheep.markStatusChangeDeleted(change.id, ctx.now());
+  await ctx.repos.sheep.update(sheep.id, { status: change.from });
 }
 
 /**
@@ -113,6 +148,7 @@ export async function markSheepFound(
     date,
     reason,
     flockMoveId: null,
+    saleId: null,
     at: ctx.now(),
   });
   await ctx.repos.sheep.update(sheep.id, { status: "active" });
@@ -143,14 +179,12 @@ export async function undoSheepStatusChange(
   }
   if (last.from === "active") {
     if (sheep.ownerId !== null) await requireOwner(ctx, sheep.ownerId);
-    await returnToFlock(ctx, sheep, last);
   } else {
     // The Sheep was in no Flock while it was Lost: the moves after it was found must go first.
     const moves = await ctx.repos.sheep.flockMoves(sheep.id);
     if (moves.some((move) => move.at > last.at)) throw new DomainError("sheep.movedAfterFound");
   }
-  await ctx.repos.sheep.markStatusChangeDeleted(last.id, ctx.now());
-  await ctx.repos.sheep.update(sheep.id, { status: last.from });
+  await revertStatusChange(ctx, sheep, last);
   await recordFarmAudit(ctx, {
     command: "sheep.undoStatusChange",
     target: { kind: "Sheep", id: sheep.id },
@@ -175,18 +209,25 @@ function undoable(change: StatusChange): boolean {
 
 /**
  * The Sheep is Active, and the date of its change is good: a real date, not in the future, and not
- * before its birth date, its last move, its last change of the Owner or its last change of the
+ * before its birth date, the day of its Purchase, its last move, its last change of the Owner or its last change of the
  * Status. Thus the history of the Sheep stays in the order of the dates.
  */
 async function requireExit(ctx: FarmCommandContext, sheep: Sheep, date: CalendarDate) {
   if (sheep.status !== "active") throw new DomainError("sheep.notActive");
   validDate(date);
-  const [moves, owners, changes] = await Promise.all([
+  const [moves, owners, changes, bought] = await Promise.all([
     ctx.repos.sheep.flockMoves(sheep.id),
     ctx.repos.sheep.ownerChanges(sheep.id),
     ctx.repos.sheep.statusChanges(sheep.id),
+    purchaseDate(ctx, sheep),
   ]);
-  const before = [sheep.birthDate, moves.at(-1)?.date, owners.at(-1)?.date, changes.at(-1)?.date];
+  const before = [
+    sheep.birthDate,
+    bought,
+    moves.at(-1)?.date,
+    owners.at(-1)?.date,
+    changes.at(-1)?.date,
+  ];
   if (date > today(ctx) || before.some((other) => other != null && date < other)) {
     throw new DomainError("sheep.statusDateInvalid");
   }
@@ -196,7 +237,7 @@ async function requireExit(ctx: FarmCommandContext, sheep: Sheep, date: Calendar
 async function writeExit(
   ctx: FarmCommandContext,
   sheep: Sheep,
-  change: { status: LeftStatus; date: CalendarDate; reason: string | null },
+  change: { status: LeftStatus; date: CalendarDate; reason: string | null; saleId: DealId | null },
 ): Promise<void> {
   let flockMoveId: StatusChange["flockMoveId"] = null;
   if (await recordFlockMove(ctx, sheep, null, change.date)) {
@@ -209,6 +250,7 @@ async function writeExit(
     date: change.date,
     reason: change.reason,
     flockMoveId,
+    saleId: change.saleId,
     at: ctx.now(),
   });
   await ctx.repos.sheep.update(sheep.id, { status: change.status });

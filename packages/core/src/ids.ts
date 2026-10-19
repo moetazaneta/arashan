@@ -24,3 +24,5 @@ export type MoneyRecordId = Id<"MoneyRecord">;
 export type ResourceId = Id<"Resource">;
 export type ResourceEventId = Id<"ResourceEvent">;
 export type StatusChangeId = Id<"StatusChange">;
+/** A Sale or a Purchase. */
+export type DealId = Id<"Deal">;

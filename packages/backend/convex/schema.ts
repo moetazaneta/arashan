@@ -118,6 +118,8 @@ export default defineSchema({
     /** The Flock that the Sheep is in now. Absent if it is in no Flock. */
     flockId: v.optional(v.id("flocks")),
     registeredAt: v.number(),
+    /** The Purchase that brought a Bought Sheep. Absent if no Purchase brought it. */
+    purchaseId: v.optional(v.id("deals")),
     ...deletable,
   })
     .index("by_farmId_deletedAt_tagKey", ["farmId", "deletedAt", "tagKey"])
@@ -166,6 +168,8 @@ export default defineSchema({
     reason: v.optional(v.string()),
     /** The move out of all Flocks that the change made. Absent if it made none. */
     flockMoveId: v.optional(v.id("sheepFlockMoves")),
+    /** The Sale that made the Sheep Sold. Absent for a change of another kind. */
+    saleId: v.optional(v.id("deals")),
     /** When a Member recorded the change. */
     at: v.number(),
     ...deletable,
@@ -274,6 +278,23 @@ export default defineSchema({
       "sourceKind",
       "sourceId",
     ]),
+
+  // The Sales and the Purchases of Sheep. The price is the amount of the Automatic record in
+  // `moneyRecords` (its source is the deal), so a deal stores no copy. A cancelled deal is Deleted.
+  deals: defineTable({
+    farmId: v.id("farms"),
+    kind: v.union(v.literal("sale"), v.literal("purchase")),
+    /** "YYYY-MM-DD". */
+    date: v.string(),
+    /** The Sheep of the deal, in the order of the form. */
+    sheepIds: v.array(v.id("sheep")),
+    /** The Flock of the new Sheep of a Purchase. Absent for a Sale, and for a Purchase without one. */
+    flockId: v.optional(v.id("flocks")),
+    createdAt: v.number(),
+    ...deletable,
+  })
+    // The deals of the Farm by date.
+    .index("by_farmId_deletedAt_date", ["farmId", "deletedAt", "date"]),
 
   // The Resources of a Farm: hay, grain…
   resources: defineTable({
