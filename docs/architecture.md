@@ -198,6 +198,7 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `resource.update`       | yes   | yes    |
 | `resource.archive`      | yes   | yes    |
 | `resource.record`       | yes   | yes    |
+| `lambing.record`        | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -362,6 +363,55 @@ of a Flock, the column «Стадо» and the bulk action «Перевести �
   a move and writes it, without a permission check and without an audit entry: the command checks the
   permission and appends its own entry. A Sheep that stops being Active leaves its Flock with it
   first, and a Lamb goes into the Flock of its Mother.
+
+## Lambings
+
+The module `core/src/lambings/` records a Lambing: one form registers all live Lambs of an Ewe at
+once (`recordLambing`, `lambings.record`). The panel «Окот» opens from the table «Бараны» and from
+the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
+
+- **A Lambing is a record** (`lambings`): the Mother, the Father or none, the date, the ids of the
+  live Lambs and the number of stillborn Lambs. A stillborn Lamb is only that number, not a Sheep. A
+  Lambing has 1 to `maxLambs` (8) live Lambs and 0 to `maxStillborn` (8) stillborn ones.
+- **Each live Lamb is a new Sheep:** Origin Born, Active, not an Initial entry, born on the date of
+  the Lambing, with the Mother and the Father as its parents. Its Breed composition comes from them
+  (ADR 0007): the Lamb stores no parts by hand, so an unknown Father gives his half as Unknown. Its
+  Tag is optional, unique in the Farm (`requireFreeTag`, `sheep.tagTaken`) and in the Lambing
+  (`lambing.tagRepeated`, by `tagKey`).
+- **The Mother** is an Ewe of the Farm, not an External Sheep (`lambing.motherExternal`), and is
+  Active now (`lambing.motherNotActive`): the Lambs join the Farm now, with an Owner who is a Member
+  now and a Flock in use now. Thus a Member records a Lambing before the Sale or the death of the
+  Mother; the death can have the same date. **The Father** is optional: a Ram of the Farm or an
+  External one, of any Status, as for the pedigree. Each parent was born before the date
+  (`pedigree.parentBornAfterChild`).
+- **The date** is a real date, not in the future, and not before the Purchase of a bought Mother
+  (`lambing.dateInvalid`).
+- **The Owner** of each Lamb is the Owner of the Mother at the end of the date (`ownerAt`, from the
+  changes of her Owner), unless the form gives another Member for that Lamb. Each Owner is a Member
+  now (`requireOwner`). The query `lambings.defaults` (`getLambingDefaults`) gives this Owner to the
+  form, or null if that Member left the Farm.
+- **The Flock** of each Lamb is the Flock that had the Mother at the end of the date (`flockAt`),
+  and `recordFlockMove` writes the move of the Lamb on that date. A Mother in no Flock on that date
+  gives Lambs in no Flock, for example a Mother that was Lost then (a Lost Sheep leaves its Flock).
+  Later moves of the Mother do not move the Lambs: a Member moves them with «Перевести в стадо». An
+  Archived Flock has no Sheep, so if the Flock of the Mother on the date is Archived now, the
+  command fails (`lambing.flockArchived`); the form shows it before the Member saves.
+  `lambings.defaults` gives this Flock too.
+- **The Mother keeps her later events after the Lambing.** A move, a change of the Owner or a change
+  of the Status of the Mother is not dated before her last Lambing (`lastLambingDate`): her Lambs
+  got her Owner and her Flock of that date, and she was Active then. The same date is good. For the
+  same reason, the undo of her move dated on or before her last Lambing, and the undo of «Баран
+  нашёлся» dated on or before it, fail with `sheep.undoBeforeLambing`.
+- **The list of the Lambings** skips a Lamb that is Deleted, or that got another Mother or birth date
+  later on its card.
+- **No partial Lambing.** The command checks all rules (the counts, the parents, the Flock, each Tag
+  and each Owner) before the first write, so a wrong last Lamb writes nothing, also in the core
+  tests with the repositories in memory. A Convex mutation is a transaction too.
+- **The audit log** gets one entry `lambing.record` for each Lamb (kind `Sheep`), so the tab
+  «История» of a Lamb shows its Lambing, and one for the Lambing (kind `Lambing`). The permission is
+  `lambing.record`; the queries need `sheep.view`.
+- **Not in this slice:** a change or a cancel of a Lambing. A Lamb registered by mistake becomes
+  Deleted as any Sheep (`deleteSheep`), and the list of the Lambings then skips it.
 
 ## The Status of a Sheep
 

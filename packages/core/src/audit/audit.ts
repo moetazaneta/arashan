@@ -74,7 +74,8 @@ export type CommandName =
   | "resource.restock"
   | "resource.use"
   | "resource.adjust"
-  | "resource.cancelEvent";
+  | "resource.cancelEvent"
+  | "lambing.record";
 
 /** The kind of record that a command changed. */
 export type TargetKind =
@@ -94,7 +95,8 @@ export type TargetKind =
   | "Sale"
   | "Purchase"
   | "Resource"
-  | "ResourceEvent";
+  | "ResourceEvent"
+  | "Lambing";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

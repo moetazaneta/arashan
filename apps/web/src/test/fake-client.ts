@@ -15,6 +15,7 @@ import type {
   FarmCommandContext,
   FarmFlockRepository,
   FarmId,
+  FarmLambingRepository,
   FarmLocationRepository,
   FarmMoneyCategoryRepository,
   FarmMoneyRecordRepository,
@@ -33,6 +34,9 @@ import type {
   FlockInput,
   FlockMove,
   FlockMoveId,
+  Lambing,
+  LambingId,
+  LambingInput,
   Location,
   LocationId,
   LocationInput,
@@ -118,6 +122,7 @@ import {
   DomainError,
   ensureFarmMoneyCategories,
   getFlock,
+  getLambingDefaults,
   getSheep,
   getHeadCountReport,
   getMoneyReport,
@@ -128,6 +133,7 @@ import {
   listBreeds,
   listParentOptions,
   listFlocks,
+  listLambings,
   listLocations,
   listMoneyCategories,
   listMoneyRecords,
@@ -139,6 +145,7 @@ import {
   moneyKinds,
   moveSheep,
   nameKey,
+  recordLambing,
   registerSheep,
   renameBreed,
   setBreedArchived,
@@ -181,6 +188,7 @@ export {
   maxBreedNameLength,
   maxCategoryNameLength,
   maxLambAgeMonths,
+  maxLambs,
   maxMoneyNotesLength,
   maxPassportNumberLength,
   maxNameLength,
@@ -191,6 +199,7 @@ export {
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxStillborn,
   maxSheepPerPurchase,
   maxSheepPerSale,
   maxSheepPerStatusChange,
@@ -284,7 +293,8 @@ type CommandName =
   | "recordRestock"
   | "recordUsage"
   | "recordAdjustment"
-  | "cancelResourceEvent";
+  | "cancelResourceEvent"
+  | "recordLambing";
 
 interface FakeBackend {
   session: Client.Session;
@@ -313,6 +323,7 @@ interface FakeBackend {
   shepherds: Shepherd[];
   /** The assignments of Shepherds to Flocks, also the removed ones. */
   assignments: (ShepherdAssignment & { farmId: FarmId; deleted?: boolean })[];
+  lambings: Lambing[];
   /** The categories of Expenses and Incomes, also the Deleted ones. */
   moneyCategories: (MoneyCategory & { deleted?: boolean })[];
   /** The Expenses and the Incomes, also the Deleted ones. */
@@ -347,6 +358,7 @@ const emptyBackend = (): FakeBackend => ({
   locations: [],
   shepherds: [],
   assignments: [],
+  lambings: [],
   moneyCategories: [],
   moneyRecords: [],
   deals: [],
@@ -1065,6 +1077,26 @@ function flockRepository(backend: FakeBackend, farmId: FarmId): FarmFlockReposit
   };
 }
 
+function lambingRepository(backend: FakeBackend, farmId: FarmId): FarmLambingRepository {
+  const ofFarm = () => backend.lambings.filter((l) => l.farmId === farmId);
+  const copy = (lambing: Lambing): Lambing => ({ ...lambing, lambIds: [...lambing.lambIds] });
+  return {
+    get: async (id) => {
+      const found = ofFarm().find((l) => l.id === id);
+      return found === undefined ? null : copy(found);
+    },
+    listOfMother: async (motherId) =>
+      ofFarm()
+        .filter((l) => l.motherId === motherId)
+        .map(copy),
+    insert: async (fields) => {
+      const id = nextId(backend, "lambing") as LambingId;
+      backend.lambings.push({ id, farmId, ...fields, lambIds: [...fields.lambIds] });
+      return id;
+    },
+  };
+}
+
 function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["repos"] {
   const memberships = () => membershipsOf(backend, farmId);
   return {
@@ -1086,6 +1118,7 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
+    lambings: lambingRepository(backend, farmId),
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
     deals: dealRepository(backend, farmId),
@@ -1118,6 +1151,7 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
+    lambings: lambingRepository(backend, farmId),
     moneyCategories: moneyCategoryRepository(backend, farmId),
     moneyRecords: moneyRecordRepository(backend, farmId),
     deals: dealRepository(backend, farmId),
@@ -1351,6 +1385,59 @@ export function addFlockMove(sheepId: SheepId, flockId: FlockId | null, date: Ca
 export function auditEntries(): readonly AuditEntry[] {
   return backend.audit;
 }
+
+// Lambings. The fake runs the command and the queries of the core, so its rules apply.
+
+/**
+ * A Lambing that a Member recorded before: the Lambs must be Sheep of the Farm already, with the
+ * Mother as their parent. The fake does not check the rules of the core here.
+ */
+export function addLambing(
+  farm: FakeFarm,
+  lambing: Pick<Lambing, "motherId" | "date" | "lambIds"> &
+    Partial<Pick<Lambing, "fatherId" | "stillborn">>,
+) {
+  let id!: LambingId;
+  updateFake((backend) => {
+    id = nextId(backend, "lambing") as LambingId;
+    backend.lambings.push({
+      id,
+      farmId: farm.id,
+      fatherId: null,
+      stillborn: 0,
+      recordedAt: Date.now(),
+      ...lambing,
+    });
+  });
+  return id;
+}
+
+/** The Lambings in the fake backend, for a test that checks what a command wrote. */
+export function lambingsOf(farm: FakeFarm): readonly Lambing[] {
+  return backend.lambings.filter((lambing) => lambing.farmId === farm.id);
+}
+
+export const useLambingDefaults = (
+  farmId: FarmId,
+  motherId: SheepId | null,
+  date: CalendarDate | null,
+) =>
+  useCoreQuery(`lambing defaults ${farmId} ${motherId} ${date}`, async (backend) =>
+    // The query waits while the Mother or the date is not chosen, as `skip` does.
+    motherId === null || date === null
+      ? new Promise<never>(() => {})
+      : getLambingDefaults(queryContext(backend, farmId), { motherId, date }),
+  );
+
+export const useLambings = (farmId: FarmId, motherId: SheepId) =>
+  useCoreQuery(`lambings ${farmId} ${motherId}`, (backend) =>
+    listLambings(queryContext(backend, farmId), { motherId }),
+  );
+
+export const useRecordLambing = (farmId: FarmId) =>
+  useMutation("recordLambing", (backend, input: LambingInput) =>
+    recordLambing(commandContext(backend, farmId), input),
+  );
 
 /** The current record of a Sheep, for a test that checks the result of a command. */
 export function sheepState(sheepId: SheepId): Readonly<Sheep> | null {

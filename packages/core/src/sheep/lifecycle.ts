@@ -4,6 +4,7 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import { recordFlockMove } from "../flocks/commands";
+import { lastLambingDate } from "../lambings/lambing";
 import type { DealId, SheepId } from "../ids";
 import { purchaseDate, requireOwner } from "./commands";
 import {
@@ -183,6 +184,11 @@ export async function undoSheepStatusChange(
     // The Sheep was in no Flock while it was Lost: the moves after it was found must go first.
     const moves = await ctx.repos.sheep.flockMoves(sheep.id);
     if (moves.some((move) => move.at > last.at)) throw new DomainError("sheep.movedAfterFound");
+    // An Ewe that lambed on the day she was found or later was on the Farm then.
+    const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
+    if (lastLambing !== null && last.date <= lastLambing) {
+      throw new DomainError("sheep.undoBeforeLambing");
+    }
   }
   await revertStatusChange(ctx, sheep, last);
   await recordFarmAudit(ctx, {
@@ -215,11 +221,12 @@ function undoable(change: StatusChange): boolean {
 async function requireExit(ctx: FarmCommandContext, sheep: Sheep, date: CalendarDate) {
   if (sheep.status !== "active") throw new DomainError("sheep.notActive");
   validDate(date);
-  const [moves, owners, changes, bought] = await Promise.all([
+  const [moves, owners, changes, bought, lambing] = await Promise.all([
     ctx.repos.sheep.flockMoves(sheep.id),
     ctx.repos.sheep.ownerChanges(sheep.id),
     ctx.repos.sheep.statusChanges(sheep.id),
     purchaseDate(ctx, sheep),
+    lastLambingDate(ctx.repos.lambings, sheep.id),
   ]);
   const before = [
     sheep.birthDate,
@@ -227,6 +234,7 @@ async function requireExit(ctx: FarmCommandContext, sheep: Sheep, date: Calendar
     moves.at(-1)?.date,
     owners.at(-1)?.date,
     changes.at(-1)?.date,
+    lambing,
   ];
   if (date > today(ctx) || before.some((other) => other != null && date < other)) {
     throw new DomainError("sheep.statusDateInvalid");

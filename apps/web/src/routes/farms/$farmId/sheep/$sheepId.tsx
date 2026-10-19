@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { SellSheepDialog } from "@/components/deals/sell-dialog";
 import { Loading } from "@/components/loading";
+import { LambsRecorded, RecordLambingSheet } from "@/components/sheep/lambing-form";
 import { PedigreeTree } from "@/components/sheep/pedigree-tree";
 import { MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { ChangeOwnerDialog, DeleteSheepDialog } from "@/components/sheep/sheep-dialogs";
@@ -57,7 +58,8 @@ function SheepCardPage() {
       ) : sheep.data === null ? (
         <Gone farmId={farmId} />
       ) : (
-        <SheepCard farm={farm} sheep={sheep.data} />
+        // A new key for each Sheep: the result of a Lambing stays on the card of its Mother.
+        <SheepCard key={sheep.data.id} farm={farm} sheep={sheep.data} />
       )}
     </div>
   );
@@ -88,6 +90,10 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [lambing, setLambing] = useState(false);
+  const [recorded, setRecorded] = useState<number | null>(null);
+  // Only an Active Ewe of the Farm gives birth to Lambs of the Farm.
+  const canLamb = sheep.sex === "ewe" && sheep.status === "active" && sheep.origin !== "external";
   const [changingStatus, setChangingStatus] = useState(false);
   const [selling, setSelling] = useState(false);
 
@@ -96,6 +102,14 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
       <header className="flex flex-wrap items-start gap-4">
         <SheepTitle sheep={sheep} />
         <div className="ml-auto flex items-center gap-2">
+          <p role="status" className="mr-2 text-sm text-muted-foreground">
+            {recorded !== null && <LambsRecorded count={recorded} />}
+          </p>
+          {canLamb && (
+            <Button onClick={() => setLambing(true)}>
+              <Trans>Записать окот</Trans>
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setEditing(true)}>
             <Trans>Изменить</Trans>
           </Button>
@@ -149,6 +163,15 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
         </TabsContent>
       </Tabs>
       <EditSheepSheet farm={farm} sheep={sheep} open={editing} onOpenChange={setEditing} />
+      {canLamb && (
+        <RecordLambingSheet
+          farm={farm}
+          motherId={sheep.id}
+          open={lambing}
+          onOpenChange={setLambing}
+          onRecorded={setRecorded}
+        />
+      )}
       {sheep.origin !== "external" && (
         <>
           <MoveSheepDialog

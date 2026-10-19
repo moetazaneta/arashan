@@ -77,6 +77,8 @@ export const permissions = {
   "shepherd.update": ["admin", "editor"],
   /** Archive a Shepherd, or take the Shepherd out of the archive. */
   "shepherd.archive": ["admin", "editor"],
+  /** Record a Lambing: it registers its live Lambs as new Sheep. */
+  "lambing.record": ["admin", "editor"],
   /** See the Expenses and the Incomes, and their categories. */
   "money.view": ["admin", "editor"],
   /** Record an Expense or an Income. */

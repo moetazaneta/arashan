@@ -42,6 +42,7 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "shepherd.create": { admin: true, editor: true },
   "shepherd.update": { admin: true, editor: true },
   "shepherd.archive": { admin: true, editor: true },
+  "lambing.record": { admin: true, editor: true },
   "money.view": { admin: true, editor: true },
   "money.create": { admin: true, editor: true },
   "money.update": { admin: true, editor: true },

@@ -45,6 +45,7 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-selection: var(--selection);
+  --color-warning: var(--warning);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -89,6 +90,8 @@
   --sidebar-ring: oklch(0.708 0 0);
   /* Selection (DESIGN.md): selected table rows and the selected item of a list. */
   --selection: oklch(0.95 0.03 150);
+  /* Warning (DESIGN.md): a problem that is not an error yet. Text and icon only, never a fill. */
+  --warning: oklch(0.55 0.13 70);
 }
 
 .dark {
@@ -124,6 +127,7 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --selection: oklch(0.27 0.04 150);
+  --warning: oklch(0.8 0.13 75);
 }
 
 @layer base {

@@ -91,6 +91,7 @@ export const errorCodes = [
   "sheep.tooManyToChangeStatus",
   "sheep.noStatusChangeToUndo",
   "sheep.movedAfterFound",
+  "sheep.undoBeforeLambing",
   // Locations.
   "location.notFound",
   "location.nameRequired",
@@ -117,6 +118,15 @@ export const errorCodes = [
   "flock.assignmentDatesInvalid",
   "flock.assignmentOverlaps",
   "flock.endDateInvalid",
+  // Lambings.
+  "lambing.dateInvalid",
+  "lambing.motherExternal",
+  "lambing.motherNotActive",
+  "lambing.lambsRequired",
+  "lambing.tooManyLambs",
+  "lambing.stillbornInvalid",
+  "lambing.tagRepeated",
+  "lambing.flockArchived",
   // Expenses and Incomes.
   "money.notFound",
   "money.dateInvalid",

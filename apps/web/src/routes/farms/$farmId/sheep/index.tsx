@@ -4,6 +4,7 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 
+import { LambsRecorded, RecordLambingSheet } from "@/components/sheep/lambing-form";
 import { SellSheepDialog } from "@/components/deals/sell-dialog";
 import { type MoveResult, MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { statusLabels } from "@/components/sheep/labels";
@@ -41,8 +42,8 @@ export const Route = createFileRoute("/farms/$farmId/sheep/")({
 
 /**
  * The table «Бараны»: the Sheep of the Farm with one Status (Active by default) or all of them, and
- * the side panel that registers new ones. With Sheep selected, the actions of the header give way to
- * the bulk actions on them.
+ * the side panels that register new ones and record a Lambing. With Sheep selected, the actions of
+ * the header give way to the bulk actions on them.
  */
 function SheepPage() {
   const farmId = Route.useParams().farmId as FarmId;
@@ -58,6 +59,8 @@ function SheepPage() {
   const [moving, setMoving] = useState(false);
   const [movingIds, setMovingIds] = useState<readonly SheepId[]>([]);
   const [moveResult, setMoveResult] = useState<MoveResult | null>(null);
+  const [lambing, setLambing] = useState(false);
+  const [lambsRecorded, setLambsRecorded] = useState<number | null>(null);
   // The Sheep of the dialog of the Status, as for the move.
   const [changingStatus, setChangingStatus] = useState(false);
   const [statusIds, setStatusIds] = useState<readonly SheepId[]>([]);
@@ -72,13 +75,15 @@ function SheepPage() {
     [all, filter],
   );
   useKeyShortcut("KeyN", () => setRegistering(true));
+  useKeyShortcut("KeyL", () => setLambing(true));
   useKeyShortcut("Escape", () => setSelection(noSelection));
 
-  // A new selection starts a new bulk action: the result of the last one goes.
+  // A new selection starts a new bulk action: the result of the last action goes.
   const changeSelection = useCallback((next: ReadonlySet<SheepId>) => {
     setSelection(next);
     if (next.size > 0) {
       setMoveResult(null);
+      setLambsRecorded(null);
       setStatusResult(null);
     }
   }, []);
@@ -112,6 +117,14 @@ function SheepPage() {
       </Kbd>
     </Button>
   );
+  const lambingButton = (
+    <Button variant="outline" aria-keyshortcuts="L" onClick={() => setLambing(true)}>
+      <Trans>Записать окот</Trans>
+      <Kbd aria-hidden className="ml-1">
+        L
+      </Kbd>
+    </Button>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,6 +139,7 @@ function SheepPage() {
         </h1>
         <p role="status" className="text-sm text-muted-foreground">
           {moveResult !== null && <MoveResultText result={moveResult} />}
+          {lambsRecorded !== null && <LambsRecorded count={lambsRecorded} />}
           {statusResult !== null && <StatusResultText result={statusResult} />}
         </p>
         {selection.size > 0 ? (
@@ -174,6 +188,7 @@ function SheepPage() {
           hasSheep && (
             <div className="ml-auto flex items-center gap-2">
               <ColumnSettings visibility={columnVisibility} onChange={setColumnVisibility} />
+              {lambingButton}
               {addButton}
             </div>
           )
@@ -217,6 +232,16 @@ function SheepPage() {
         </>
       )}
       <RegisterSheepSheet farm={farm} open={registering} onOpenChange={setRegistering} />
+      <RecordLambingSheet
+        farm={farm}
+        open={lambing}
+        onOpenChange={setLambing}
+        onRecorded={(count) => {
+          setMoveResult(null);
+          setStatusResult(null);
+          setLambsRecorded(count);
+        }}
+      />
       <MoveSheepDialog
         farm={farm}
         sheepIds={movingIds}
@@ -224,6 +249,7 @@ function SheepPage() {
         onOpenChange={setMoving}
         onMoved={(result) => {
           setSelection(noSelection);
+          setLambsRecorded(null);
           setStatusResult(null);
           setMoveResult(result);
         }}
@@ -236,6 +262,7 @@ function SheepPage() {
         onChanged={(result) => {
           setSelection(noSelection);
           setMoveResult(null);
+          setLambsRecorded(null);
           setStatusResult(result);
         }}
       />

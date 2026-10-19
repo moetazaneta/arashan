@@ -20,6 +20,7 @@ import {
   type SheepLookup,
 } from "../pedigree/pedigree";
 import { arashanBreedId } from "../breeds/breed";
+import { lastLambingDate } from "../lambings/lambing";
 import {
   type Grading,
   maxPassportNumberLength,
@@ -228,13 +229,16 @@ export async function changeSheepOwner(
   const date = validDate(input.date);
   const lastChange = (await ctx.repos.sheep.ownerChanges(sheep.id)).at(-1);
   const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
+  // The Lambs of an Ewe got her Owner of the date of her Lambing.
+  const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
   const bought = await purchaseDate(ctx, sheep);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
     (bought !== null && date < bought) ||
     (lastChange !== undefined && date < lastChange.date) ||
-    (lastStatusChange !== undefined && date < lastStatusChange.date)
+    (lastStatusChange !== undefined && date < lastStatusChange.date) ||
+    (lastLambing !== null && date < lastLambing)
   ) {
     throw new DomainError("sheep.ownerChangeDateInvalid");
   }
@@ -564,9 +568,10 @@ function validGrade(
 
 /**
  * Throws `sheep.tagTaken` if another Sheep of the Farm has the same Tag. A Sold or a Dead Sheep keeps
- * its Tag; a Deleted Sheep and an External Sheep do not count.
+ * its Tag; a Deleted Sheep and an External Sheep do not count. A command that registers Sheep, such
+ * as a Lambing, checks each Tag with this rule too.
  */
-async function requireFreeTag(
+export async function requireFreeTag(
   ctx: FarmCommandContext,
   tag: string | null,
   self: SheepId | null,

@@ -82,6 +82,7 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "shepherd.update": msg({ context: "history", message: "Чабан изменён" }),
   "shepherd.archive": msg({ context: "history", message: "Чабан в архиве" }),
   "shepherd.unarchive": msg({ context: "history", message: "Чабан возвращён из архива" }),
+  "lambing.record": msg({ context: "history", message: "Записан при окоте" }),
   "money.create": msg({ context: "history", message: "Запись добавлена" }),
   "money.update": msg({ context: "history", message: "Запись изменена" }),
   "money.delete": msg({ context: "history", message: "Запись удалена" }),

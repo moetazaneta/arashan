@@ -14,6 +14,7 @@ import type * as deals from "../deals.js";
 import type * as farms from "../farms.js";
 import type * as flocks from "../flocks.js";
 import type * as invites from "../invites.js";
+import type * as lambings from "../lambings.js";
 import type * as lib_clerk from "../lib/clerk.js";
 import type * as lib_functions from "../lib/functions.js";
 import type * as lib_records from "../lib/records.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   farms: typeof farms;
   flocks: typeof flocks;
   invites: typeof invites;
+  lambings: typeof lambings;
   "lib/clerk": typeof lib_clerk;
   "lib/functions": typeof lib_functions;
   "lib/records": typeof lib_records;

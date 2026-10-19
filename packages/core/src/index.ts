@@ -153,6 +153,27 @@ export {
   type ShepherdRef,
   type ShepherdRow,
 } from "./flocks/queries";
+export {
+  recordLambing,
+  type LambInput,
+  type LambingInput,
+  type RecordedLambing,
+} from "./lambings/commands";
+export {
+  maxLambs,
+  maxStillborn,
+  ownerAt,
+  type FarmLambingReader,
+  type FarmLambingRepository,
+  type Lambing,
+  type LambingFields,
+} from "./lambings/lambing";
+export {
+  getLambingDefaults,
+  listLambings,
+  type LambingDefaults,
+  type LambingRow,
+} from "./lambings/queries";
 export type {
   BreedId,
   DealId,
@@ -162,6 +183,7 @@ export type {
   FlockMoveId,
   Id,
   InviteId,
+  LambingId,
   LocationId,
   MembershipId,
   MoneyCategoryId,
@@ -363,6 +385,7 @@ export {
   registerExternalSheep,
   registerSheep,
   requestPassportScanUpload,
+  requireFreeTag,
   purchaseDate,
   requireNotParent,
   requireOwner,

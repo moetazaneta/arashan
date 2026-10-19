@@ -18,6 +18,8 @@ import {
   type FarmFlockReader,
   type FarmFlockRepository,
   type FarmId,
+  type FarmLambingReader,
+  type FarmLambingRepository,
   type FarmLocationReader,
   type FarmLocationRepository,
   type FarmMoneyCategoryReader,
@@ -46,6 +48,8 @@ import {
   type InviteId,
   type InviteReader,
   type InviteRepository,
+  type Lambing,
+  type LambingId,
   type Location,
   type LocationFields,
   type LocationId,
@@ -338,6 +342,19 @@ function toFlockMove(doc: Doc<"sheepFlockMoves">): FlockMove {
     flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     date: doc.date,
     at: doc.at,
+  };
+}
+
+function toLambing(doc: Doc<"lambings">): Lambing {
+  return {
+    id: doc._id as string as LambingId,
+    farmId: doc.farmId as string as FarmId,
+    motherId: doc.motherId as string as SheepId,
+    fatherId: doc.fatherId === undefined ? null : (doc.fatherId as string as SheepId),
+    date: doc.date,
+    lambIds: doc.lambIds.map((id) => id as string as SheepId),
+    stillborn: doc.stillborn,
+    recordedAt: doc.recordedAt,
   };
 }
 
@@ -993,6 +1010,27 @@ function farmFlockReader(db: DatabaseReader, farmId: FarmId): FarmFlockReader {
   };
 }
 
+function farmLambingReader(db: DatabaseReader, farmId: FarmId): FarmLambingReader {
+  return {
+    async get(id) {
+      const doc = await getActive(db, "lambings", id);
+      return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : toLambing(doc);
+    },
+    async listOfMother(motherId) {
+      const motherDocId = db.normalizeId("sheep", motherId);
+      if (motherDocId === null) return [];
+      // The order of creation, as in `ownerChanges`.
+      const docs = await db
+        .query("lambings")
+        .withIndex("by_farmId_deletedAt_motherId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("motherId", motherDocId),
+        )
+        .collect();
+      return docs.map(toLambing);
+    },
+  };
+}
+
 function farmMoneyCategoryReader(db: DatabaseReader, farmId: FarmId): FarmMoneyCategoryReader {
   return {
     async get(id) {
@@ -1257,6 +1295,7 @@ export function farmReaders(
     flocks: farmFlockReader(db, farmId),
     locations: farmLocationReader(db, farmId),
     shepherds: farmShepherdReader(db, farmId),
+    lambings: farmLambingReader(db, farmId),
     moneyCategories: farmMoneyCategoryReader(db, farmId),
     moneyRecords: farmMoneyRecordReader(db, farmId),
     deals: farmDealReader(db, farmId),
@@ -1434,6 +1473,20 @@ export function farmRepositories(
       if (doc !== null) await db.patch("flockAssignments", doc._id, { deletedAt });
     },
   };
+  const lambings: FarmLambingRepository = {
+    ...readers.lambings,
+    async insert(lambing) {
+      return (await db.insert("lambings", {
+        farmId: idOf(farmId),
+        motherId: idOf(lambing.motherId),
+        fatherId: lambing.fatherId === null ? undefined : idOf(lambing.fatherId),
+        date: lambing.date,
+        lambIds: lambing.lambIds.map((id) => idOf<"sheep">(id)),
+        stillborn: lambing.stillborn,
+        recordedAt: lambing.recordedAt,
+      })) as string as LambingId;
+    },
+  };
   const moneyCategories: FarmMoneyCategoryRepository = {
     ...readers.moneyCategories,
     keysWithDeleted: () => categoryKeysWithDeleted(db, farmId),
@@ -1538,6 +1591,7 @@ export function farmRepositories(
     flocks,
     locations,
     shepherds,
+    lambings,
     moneyCategories,
     moneyRecords,
     deals,

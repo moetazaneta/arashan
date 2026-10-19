@@ -38,6 +38,7 @@ import type {
 } from "./money/money";
 import type { FarmResourceReader, FarmResourceRepository } from "./resources/resource";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
+import type { FarmLambingReader, FarmLambingRepository } from "./lambings/lambing";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
 /** The repositories that a query gets: they only read. */
@@ -95,6 +96,7 @@ export interface FarmReaders {
   flocks: FarmFlockReader;
   locations: FarmLocationReader;
   shepherds: FarmShepherdReader;
+  lambings: FarmLambingReader;
   moneyCategories: FarmMoneyCategoryReader;
   moneyRecords: FarmMoneyRecordReader;
   /** The Sales and the Purchases. */
@@ -120,6 +122,7 @@ export interface FarmRepositories {
   flocks: FarmFlockRepository;
   locations: FarmLocationRepository;
   shepherds: FarmShepherdRepository;
+  lambings: FarmLambingRepository;
   moneyCategories: FarmMoneyCategoryRepository;
   moneyRecords: FarmMoneyRecordRepository;
   deals: FarmDealRepository;

@@ -31,6 +31,7 @@ import type {
   FlockId,
   FlockMoveId,
   InviteId,
+  LambingId,
   LocationId,
   MembershipId,
   MoneyCategoryId,
@@ -45,6 +46,7 @@ import type {
   ShepherdId,
   UserId,
 } from "../ids";
+import type { FarmLambingRepository, Lambing } from "../lambings/lambing";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type {
   FarmMoneyCategoryRepository,
@@ -88,6 +90,7 @@ export class InMemoryStore {
   readonly shepherds: Stored<Shepherd>[] = [];
   readonly flocks: Stored<Flock>[] = [];
   readonly assignments: Stored<ShepherdAssignment & { farmId: FarmId }>[] = [];
+  readonly lambings: Stored<Lambing>[] = [];
   readonly moneyCategories: Stored<MoneyCategory>[] = [];
   readonly moneyRecords: Stored<MoneyRecord>[] = [];
   readonly deals: Stored<Deal>[] = [];
@@ -284,6 +287,7 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      lambings: this.farmLambings(farmId),
       moneyCategories: this.farmMoneyCategories(farmId),
       moneyRecords: this.farmMoneyRecords(farmId),
       deals: this.farmDeals(farmId),
@@ -370,6 +374,27 @@ export class InMemoryStore {
       markDeleted: async (id, deletedAt) => {
         const found = ofFarm().find((s) => s.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
+  /** The Lambings of one Farm, as the backend binds them to it. */
+  private farmLambings(farmId: FarmId): FarmLambingRepository {
+    const ofFarm = () =>
+      this.lambings.filter((l) => l.farmId === farmId && l.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((l) => l.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      listOfMother: async (motherId) =>
+        ofFarm()
+          .filter((l) => l.motherId === motherId)
+          .map(withoutDeletedAt),
+      insert: async (fields) => {
+        const id = this.id("Lambing") as LambingId;
+        this.lambings.push({ id, farmId, ...fields, lambIds: [...fields.lambIds] });
+        return id;
       },
     };
   }
@@ -727,6 +752,7 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      lambings: this.farmLambings(farmId),
       moneyCategories: this.farmMoneyCategories(farmId),
       moneyRecords: this.farmMoneyRecords(farmId),
       deals: this.farmDeals(farmId),

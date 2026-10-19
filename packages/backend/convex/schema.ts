@@ -224,6 +224,23 @@ export default defineSchema({
     .index("by_farmId_deletedAt_flockId", ["farmId", "deletedAt", "flockId"])
     .index("by_farmId_deletedAt_shepherdId", ["farmId", "deletedAt", "shepherdId"]),
 
+  // The Lambings of the Ewes of a Farm. Each live Lamb is a row of `sheep`; a stillborn Lamb is only
+  // the number `stillborn`.
+  lambings: defineTable({
+    farmId: v.id("farms"),
+    motherId: v.id("sheep"),
+    /** The Father, if he is known. */
+    fatherId: v.optional(v.id("sheep")),
+    /** The date of the Lambing, the birth date of its Lambs, "YYYY-MM-DD". */
+    date: v.string(),
+    /** The live Lambs, in the order of the form. */
+    lambIds: v.array(v.id("sheep")),
+    stillborn: v.number(),
+    /** When a Member recorded the Lambing. */
+    recordedAt: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_motherId", ["farmId", "deletedAt", "motherId"]),
+
   // The categories of the Expenses and of the Incomes of a Farm: one list of each kind.
   moneyCategories: defineTable({
     farmId: v.id("farms"),
