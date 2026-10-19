@@ -71,6 +71,7 @@ import type {
   ResourceEventId,
   ResourceId,
   ResourceInput,
+  Period,
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
@@ -114,6 +115,8 @@ import {
   ensureFarmMoneyCategories,
   getFlock,
   getSheep,
+  getHeadCountReport,
+  getMoneyReport,
   getSheepHistory,
   getSheepPedigree,
   getSheepResponsible,
@@ -1640,6 +1643,21 @@ export const useMoneyCategories = (farmId: FarmId, kind: MoneyKind) => {
 export const useMoneyRecords = (farmId: FarmId, filter: MoneyRecordFilter) =>
   useCoreQuery(`money records ${farmId} ${JSON.stringify(filter)}`, (backend) =>
     listMoneyRecords(queryContext(backend, farmId), filter),
+  );
+
+/** Today in the time zone. The tests do not cross midnight, so it does not change. */
+export const useToday = (timeZone: string | undefined) =>
+  timeZone === undefined ? undefined : dateAt(Date.now(), timeZone);
+
+export const useHeadCountReport = (farmId: FarmId) =>
+  useCoreQuery(`head count ${farmId}`, (backend) => {
+    const ctx = queryContext(backend, farmId);
+    return getHeadCountReport(ctx, { date: dateAt(Date.now(), ctx.farm.timeZone) });
+  });
+
+export const useMoneyReport = (farmId: FarmId, period: Period) =>
+  useCoreQuery(`money report ${farmId} ${JSON.stringify(period)}`, (backend) =>
+    getMoneyReport(queryContext(backend, farmId), period),
   );
 
 export const useCreateMoneyRecord = (farmId: FarmId) =>

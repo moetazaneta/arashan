@@ -160,6 +160,8 @@ export const errorCodes = [
   "resource.reasonTooLong",
   "resource.adjustmentNoChange",
   "resource.eventNotFound",
+  // Reports.
+  "report.dateInvalid",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

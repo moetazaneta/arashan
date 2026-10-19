@@ -14,6 +14,7 @@ import {
   type MoneyRecord,
   type MoneyScope,
   type MoneySource,
+  type Period,
   sameScope,
 } from "./money";
 
@@ -115,13 +116,7 @@ export async function listMoneyRecords(
   filter: MoneyRecordFilter,
 ): Promise<MoneyRecordList> {
   authorize(ctx.member, "money.view", { farmId: ctx.farm.id });
-  if (
-    (filter.from !== null && !isCalendarDate(filter.from)) ||
-    (filter.to !== null && !isCalendarDate(filter.to)) ||
-    (filter.from !== null && filter.to !== null && filter.from > filter.to)
-  ) {
-    throw new DomainError("money.periodInvalid");
-  }
+  requirePeriod(filter);
   const records = (
     await ctx.repos.moneyRecords.list(filter.kind, { from: filter.from, to: filter.to })
   ).filter(
@@ -163,6 +158,20 @@ export async function listMoneyRecords(
   return { records: rows, total: rows.reduce((sum, row) => sum + row.amount, 0) };
 }
 
+/**
+ * Checks a period of money records: its dates are real, and its first day is not after its last day
+ * (`money.periodInvalid`).
+ */
+export function requirePeriod(period: Period): void {
+  if (
+    (period.from !== null && !isCalendarDate(period.from)) ||
+    (period.to !== null && !isCalendarDate(period.to)) ||
+    (period.from !== null && period.to !== null && period.from > period.to)
+  ) {
+    throw new DomainError("money.periodInvalid");
+  }
+}
+
 /** The Sheep of the records, each read one time. */
 async function sheepOf(
   ctx: FarmQueryContext,
@@ -179,7 +188,8 @@ async function sheepOf(
   return refs;
 }
 
-function categoryRef(category: MoneyCategory): MoneyCategoryRef {
+/** The category as a record shows it. */
+export function categoryRef(category: MoneyCategory): MoneyCategoryRef {
   return {
     id: category.id,
     key: category.key,
@@ -221,7 +231,7 @@ const collator = new Intl.Collator("ru", { numeric: true });
  * The default categories in the order of their keys, then the categories that the Members made, by
  * name, then the System categories.
  */
-function inListOrder(a: MoneyCategory, b: MoneyCategory): number {
+export function inListOrder(a: MoneyCategory, b: MoneyCategory): number {
   const rank = (category: MoneyCategory) =>
     isSystemCategory(category) ? 2 : category.key === null ? 1 : 0;
   if (rank(a) !== rank(b)) return rank(a) - rank(b);
