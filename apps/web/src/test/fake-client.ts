@@ -160,6 +160,7 @@ export {
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  nameKey,
   pedigreeDepth,
   scanContentTypes,
   sexes,
@@ -303,6 +304,7 @@ export function updateFake(change: (backend: FakeBackend) => void) {
 export function resetFake() {
   backend = emptyBackend();
   uploadGate = null;
+  seededFarms.clear();
   version += 1;
 }
 
@@ -1546,6 +1548,9 @@ export function addMoneyRecord(
   return id;
 }
 
+/** The Farms whose lazy seed ran: as the client, the fake runs it one time for each Farm. */
+const seededFarms = new Set<FarmId>();
+
 /**
  * The categories of the kind. As the hook of the client, it calls the command of the lazy seed when
  * the list is empty, and it is pending until the categories come.
@@ -1560,8 +1565,10 @@ export const useMoneyCategories = (farmId: FarmId, kind: MoneyKind) => {
   const empty = list.data?.length === 0;
   const { isIdle, mutate } = seed;
   useEffect(() => {
-    if (empty && isIdle) mutate();
-  }, [empty, isIdle, mutate]);
+    if (!empty || !isIdle || seededFarms.has(farmId)) return;
+    seededFarms.add(farmId);
+    mutate();
+  }, [empty, isIdle, mutate, farmId]);
   const data = empty ? undefined : list.data;
   const error = list.error ?? seed.error;
   return { data, error, isPending: data === undefined && error === null };
