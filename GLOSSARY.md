@@ -79,7 +79,7 @@ The percent of each Breed in one Sheep. The sum of the percents is 100. If a par
 _Avoid_: Bloodline, purity
 
 **Status** (рус. статус):
-The state of a Sheep in its life on the Farm: Active, Sold, Slaughtered, Dead, or Lost. Only an Active Sheep is on the Farm now.
+The state of a Sheep in its life on the Farm: Active, Sold, Slaughtered, Dead, or Lost. Only an Active Sheep is on the Farm now. A change of the Status has a date. Slaughtered and Dead are final; a Lost Sheep can become Active again when it is found.
 
 **Origin** (рус. происхождение):
 How the Farm knows a Sheep: Born on the Farm, Bought, or External.

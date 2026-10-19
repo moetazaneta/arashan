@@ -11,6 +11,10 @@ msgstr ""
 msgid "«{name}» в архиве, и ягнят нельзя записать в это стадо. Верните стадо из архива или исправьте дату окота."
 msgstr "“{name}” is archived, so the lambs cannot go into this flock. Restore the flock from the archive or correct the lambing date."
 
+#: src/components/sheep/status-dialogs.tsx
+msgid "(необязательно)"
+msgstr "(optional)"
+
 #. placeholder {0}: shepherds.length
 #: src/components/sheep/sheep-flocks.tsx
 msgid "{0, plural, =1 {чабан: {names}} other {чабаны: {names}}}"
@@ -24,9 +28,17 @@ msgstr "{count, plural, one {# sheep} other {# sheep}}"
 msgid "{count, plural, one {# ягнёнок} few {# ягнёнка} many {# ягнят} other {# ягнёнка}}"
 msgstr "{count, plural, one {# lamb} other {# lambs}}"
 
+#: src/components/sheep/status-dialogs.tsx
+msgid "{count, plural, one {В этот день баран выйдет из стада. Статусы «Забит» и «Пал» окончательные.} other {В этот день бараны выйдут из стада. Статусы «Забит» и «Пал» окончательные.}}"
+msgstr "{count, plural, one {The Sheep will leave its Flock on this date. Slaughtered and Dead are final Statuses.} other {The Sheep will leave their Flocks on this date. Slaughtered and Dead are final Statuses.}}"
+
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "{count, plural, one {Перевести в стадо # барана} few {Перевести в стадо # барана} many {Перевести в стадо # баранов} other {Перевести в стадо # барана}}"
 msgstr "{count, plural, one {Move # sheep to a flock} other {Move # sheep to a flock}}"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "{count, plural, one {Сменить статус # барана} few {Сменить статус # баранов} many {Сменить статус # баранов} other {Сменить статус # барана}}"
+msgstr "{count, plural, one {Change Status of # Sheep} other {Change Status of # Sheep}}"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "{kg} кг, взвешен {weighed}"
@@ -89,6 +101,11 @@ msgstr "The Admin of the farm can change these settings later."
 msgid "Активен"
 msgstr "Active"
 
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Активные"
+msgstr "Active"
+
 #: src/components/sheep/composition.tsx
 msgid "Арашан"
 msgstr "Arashan"
@@ -126,6 +143,10 @@ msgstr "The sheep has not been in a flock yet."
 msgid "Баран младше этого возраста — ягнёнок."
 msgstr "A sheep younger than this is a lamb."
 
+#: src/components/sheep/status-dialogs.tsx
+msgid "Баран нашёлся"
+msgstr "Sheep found"
+
 #: src/errors.ts
 msgid "Баран не может быть своим предком."
 msgstr "A sheep cannot be its own ancestor."
@@ -133,6 +154,10 @@ msgstr "A sheep cannot be its own ancestor."
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "Баран пропадёт из списков. Его можно будет восстановить."
 msgstr "The sheep will disappear from the lists. It can be restored later."
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Баран снова станет активным. Потом его можно перевести в стадо."
+msgstr "The Sheep will become Active again. You can then move it to a Flock."
 
 #: src/errors.ts
 msgid "Баран уже у этого владельца. Выберите другого."
@@ -381,6 +406,11 @@ msgstr "Log in to open the records of your farm."
 msgid "Войдите, чтобы продолжить."
 msgstr "Log in to continue."
 
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Все"
+msgstr "All"
+
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Всё неизвестное — арашан"
 msgstr "All unknown is Arashan"
@@ -511,6 +541,7 @@ msgstr "Yes"
 
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-flocks.tsx
+#: src/components/sheep/status-dialogs.tsx
 msgid "Дата"
 msgstr "Date"
 
@@ -533,6 +564,10 @@ msgstr "The weighing date cannot be in the future or before the birth."
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Дата выдачи"
 msgstr "Issue date"
+
+#: src/errors.ts
+msgid "Дата не может быть в будущем и раньше прошлых событий барана: рождения, перевода, смены владельца или статуса."
+msgstr "The date cannot be in the future or before the Sheep's birth, last move, Owner change or Status change."
 
 #: src/errors.ts
 msgid "Дата не может быть в будущем или раньше начала работы чабана в стаде."
@@ -572,6 +607,10 @@ msgstr "The birth date is after a move of the sheep into or out of a flock. Chec
 #: src/errors.ts
 msgid "Дата рождения позже смены владельца. Проверьте дату рождения или историю владельцев."
 msgstr "The birth date is after a change of the Owner. Check the birth date or the history of the Owners."
+
+#: src/errors.ts
+msgid "Дата рождения позже смены статуса барана. Проверьте дату рождения или смены статуса."
+msgstr "The birth date is after a Status change. Check the birth date or Status change date."
 
 #: src/errors.ts
 msgid "Даты не могут быть в будущем, и дата «по» не может быть раньше даты «с»."
@@ -658,11 +697,25 @@ msgid "Ждёт администратора"
 msgstr "Waits for an Admin"
 
 #: src/errors.ts
+msgid "За один раз можно изменить статус не больше чем у {maxSheepPerStatusChange} баранов."
+msgstr "Change the Status of up to {maxSheepPerStatusChange} Sheep at a time."
+
+#: src/errors.ts
 msgid "За один раз можно перевести не больше {maxSheepPerMove} баранов."
 msgstr "You can move at most {maxSheepPerMove} sheep at a time."
 
 #: src/components/sheep/labels.ts
 msgid "Забит"
+msgstr "Slaughtered"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Забит"
+msgstr "Slaughtered"
+
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Забитые"
 msgstr "Slaughtered"
 
 #: src/components/loading.tsx
@@ -721,6 +774,10 @@ msgstr "Lambs recorded: {count}"
 #: src/routes/farms/$farmId/sheep/index.tsx
 msgid "Записать окот"
 msgstr "Record a lambing"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Запись удалится, и у барана снова будет статус «{back}». Отменяйте только ошибочную запись."
+msgstr "The record will be deleted and the Sheep's Status will return to {back}. Only undo a record made by mistake."
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -872,6 +929,10 @@ msgstr "A name can have at most {maxSheepNameLength} characters."
 msgid "Когда"
 msgstr "When"
 
+#: src/components/sheep/status-dialogs.tsx
+msgid "Когда нашёлся"
+msgstr "Date found"
+
 #: src/components/flocks/flock-shepherds.tsx
 msgid "Когда чабан {name} работал в этом стаде."
 msgstr "When the shepherd {name} worked in this flock."
@@ -1013,9 +1074,18 @@ msgstr "The shepherd assignments of the flock will end on this date."
 msgid "Назначить чабана"
 msgstr "Assign a shepherd"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Найден"
+msgstr "Found"
+
 #: src/components/farm-settings-fields.tsx
 msgid "Например, Asia/Bishkek"
 msgstr "For example, Asia/Bishkek"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Например, болезнь или на мясо"
+msgstr "For example, illness or for meat"
 
 #: src/components/app-shell.tsx
 msgid "Настройки"
@@ -1042,6 +1112,14 @@ msgstr "initial entry"
 #: src/components/sheep/sheep-form.tsx
 msgid "Начальный ввод"
 msgstr "Initial entry"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Нашёлся"
+msgstr "Found"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Не отменять"
+msgstr "Keep change"
 
 #: src/routes/__root.tsx
 msgid "Не удалось войти"
@@ -1080,6 +1158,10 @@ msgctxt "grade"
 msgid "Нет"
 msgstr "None"
 
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Нет баранов с этим статусом."
+msgstr "No Sheep with this Status."
+
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Новая порода"
 msgstr "New breed"
@@ -1117,6 +1199,14 @@ msgstr "New password for {username}"
 msgctxt "history"
 msgid "Новый пароль не задан"
 msgstr "New password not set"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Новый статус"
+msgstr "New Status"
+
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Новый статус «{status}» у баранов: {count}"
+msgstr "Sheep with new Status {status}: {count}"
 
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Номер ветпаспорта"
@@ -1183,10 +1273,16 @@ msgstr "Open the scan"
 #: src/components/flocks/shepherds-tab.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-dialogs.tsx
+#: src/components/sheep/status-dialogs.tsx
 #: src/routes/farms/$farmId/breeds.tsx
 #: src/routes/farms/$farmId/members.tsx
 msgid "Отмена"
 msgstr "Cancel"
+
+#: src/components/sheep/status-dialogs.tsx
+msgctxt "status change"
+msgid "Отменить"
+msgstr "Undo"
 
 #: src/components/sheep/sheep-flocks.tsx
 msgid "Отменить перевод"
@@ -1199,6 +1295,10 @@ msgstr "Undo the last move"
 #: src/components/sheep/sheep-flocks.tsx
 msgid "Отменить последний перевод?"
 msgstr "Undo the last move?"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Отменить смену статуса?"
+msgstr "Undo Status change?"
 
 #: src/components/flocks/flock-card.tsx
 msgid "Отправить стадо {name} в архив?"
@@ -1216,9 +1316,19 @@ msgstr "Send it to the person who will keep the farm's records. They log in with
 msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
 msgstr "Send it to the person who will manage the farm. That person opens the link, logs in, and becomes its Admin."
 
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Павшие"
+msgstr "Dead"
+
 #: src/components/sheep/labels.ts
 msgid "Пал"
 msgstr "Dead"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Пал"
+msgstr "Died"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Пароль"
@@ -1366,6 +1476,10 @@ msgstr "Sheep have this breed: it can only be archived."
 msgid "Породы"
 msgstr "Breeds"
 
+#: src/errors.ts
+msgid "После находки барана переводили между стадами. Сначала отмените эти переводы."
+msgstr "The Sheep was moved between Flocks after it was found. Undo those moves first."
+
 #: src/components/flocks/shepherds-tab.tsx
 msgid "Последний день работы"
 msgstr "Last day of work"
@@ -1376,6 +1490,16 @@ msgstr "Last day of work of the shepherds"
 
 #: src/components/sheep/labels.ts
 msgid "Потерян"
+msgstr "Lost"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Потерян"
+msgstr "Lost"
+
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Потерянные"
 msgstr "Lost"
 
 #: src/components/sheep/pedigree-tree.tsx
@@ -1399,6 +1523,14 @@ msgctxt "history"
 msgid "Приглашение принято"
 msgstr "Invite accepted"
 
+#: src/components/sheep/status-dialogs.tsx
+msgid "Причина"
+msgstr "Reason"
+
+#: src/errors.ts
+msgid "Причина длиннее {maxStatusReasonLength} символов."
+msgstr "The reason is longer than {maxStatusReasonLength} characters."
+
 #: src/routes/__root.tsx
 msgid "Проверьте адрес или вернитесь на главную."
 msgstr "Check the address, or go back to the home page."
@@ -1409,6 +1541,11 @@ msgstr "Check the breed composition: each breed has a part above zero, and no br
 
 #: src/components/sheep/labels.ts
 msgid "Продан"
+msgstr "Sold"
+
+#: src/components/sheep/status-filter.tsx
+msgctxt "filter"
+msgid "Проданные"
 msgstr "Sold"
 
 #: src/components/sheep/sheep-details.tsx
@@ -1483,6 +1620,10 @@ msgstr "from {from} to {to}"
 msgid "с {since}"
 msgstr "since {since}"
 
+#: src/components/sheep/sheep-details.tsx
+msgid "с {statusSince}"
+msgstr "since {statusSince}"
+
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "С какого дня"
 msgstr "Starting on"
@@ -1530,12 +1671,27 @@ msgstr "Copied"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
+msgid "Смена статуса отменена"
+msgstr "Status change undone"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
 msgid "Сменён владелец"
 msgstr "Owner changed"
 
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "Сменить владельца"
 msgstr "Change the owner"
+
+#: src/components/sheep/status-dialogs.tsx
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Сменить статус"
+msgstr "Change Status"
+
+#: src/components/sheep/status-dialogs.tsx
+msgid "Смены статуса"
+msgstr "Status changes"
 
 #: src/routes/farms/$farmId/sheep/index.tsx
 msgid "Снять выбор"
@@ -1583,6 +1739,7 @@ msgstr "The composition comes from the parents."
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
 #: src/components/sheep/sheep-form.tsx
+#: src/components/sheep/status-dialogs.tsx
 #: src/routes/farms/$farmId/breeds.tsx
 #: src/routes/farms/$farmId/settings.tsx
 msgid "Сохранить"
@@ -1655,6 +1812,7 @@ msgstr "Flock created"
 
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-table.tsx
+#: src/components/sheep/status-filter.tsx
 msgid "Статус"
 msgstr "Status"
 
@@ -1778,6 +1936,10 @@ msgstr "This sheep has offspring, so its sex cannot be changed."
 #: src/errors.ts
 msgid "У этого барана нет перевода, который можно отменить."
 msgstr "This sheep has no move to undo."
+
+#: src/errors.ts
+msgid "У этого барана нет смены статуса, которую можно отменить."
+msgstr "This Sheep has no Status change to undo."
 
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Убрать ветпаспорт"
@@ -1998,6 +2160,10 @@ msgid "Этот баран — родитель других баранов, е�
 msgstr "This sheep is the parent of other sheep, so it cannot be deleted."
 
 #: src/errors.ts
+msgid "Этот баран не потерян."
+msgstr "This Sheep is not Lost."
+
+#: src/errors.ts
 msgid "Этот пароль слишком простой или есть в утёкших базах. Придумайте другой."
 msgstr "This password is too simple or is in a known data breach. Choose another one."
 
@@ -2008,6 +2174,10 @@ msgstr "This section is for the operator only"
 #: src/errors.ts
 msgid "Этот участник — владелец активных баранов. Сначала передайте их другому участнику."
 msgstr "This member owns active sheep. First give them to another member."
+
+#: src/errors.ts
+msgid "Этот участник — владелец потерянных баранов: они могут найтись. Сначала передайте их другому участнику."
+msgstr "This Member owns Lost Sheep, which can still be found. Give them to another Member first."
 
 #: src/errors.ts
 msgid "Этот чабан в архиве. Сначала верните его из архива."

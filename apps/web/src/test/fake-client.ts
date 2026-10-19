@@ -5,6 +5,7 @@ import type {
   Breed,
   BreedId,
   CalendarDate,
+  ExitInput,
   ExternalSheepRegistration,
   Farm,
   FarmCommandContext,
@@ -49,6 +50,8 @@ import type {
   ShepherdAssignmentId,
   ShepherdId,
   ShepherdInput,
+  StatusChange,
+  StatusChangeId,
   UserId,
   Viewer,
 } from "@arashan/core";
@@ -60,6 +63,7 @@ import {
   archiveShepherd,
   assignShepherd,
   changeSheepOwner,
+  changeSheepStatus,
   createFlock,
   createLocation,
   createShepherd,
@@ -83,6 +87,7 @@ import {
   listSheepOwners,
   registerExternalSheep,
   listShepherds,
+  markSheepFound,
   moveSheep,
   nameKey,
   recordLambing,
@@ -95,6 +100,7 @@ import {
   unarchiveLocation,
   unarchiveShepherd,
   undoFlockMove,
+  undoSheepStatusChange,
   updateFlock,
   updateLocation,
   updateSheep,
@@ -114,6 +120,7 @@ export {
   compositionOf,
   dateAt,
   defaultLambAgeMonths,
+  exitStatuses,
   grades,
   inviteLifetimeMs,
   isPureArashan,
@@ -132,6 +139,8 @@ export {
   maxSheepNotesLength,
   maxSheepPerMove,
   maxStillborn,
+  maxSheepPerStatusChange,
+  maxStatusReasonLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
@@ -165,6 +174,9 @@ type CommandName =
   | "updateSheep"
   | "changeSheepOwner"
   | "deleteSheep"
+  | "changeSheepStatus"
+  | "markSheepFound"
+  | "undoSheepStatusChange"
   | "registerExternalSheep"
   | "uploadPassportScan"
   | "addBreed"
@@ -210,6 +222,8 @@ interface FakeBackend {
   files: Map<FileId, StoredFile>;
   /** The moves of Sheep between Flocks, also the undone ones. */
   flockMoves: (FlockMove & { deleted?: boolean })[];
+  /** The changes of the Status of Sheep, also the undone ones. */
+  statusChanges: (StatusChange & { deleted?: boolean })[];
   flocks: Flock[];
   locations: Location[];
   shepherds: Shepherd[];
@@ -236,6 +250,7 @@ const emptyBackend = (): FakeBackend => ({
   deletedBreeds: new Set(),
   files: new Map(),
   flockMoves: [],
+  statusChanges: [],
   flocks: [],
   locations: [],
   shepherds: [],
@@ -768,6 +783,8 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
         .filter((s) => s.motherId === parentId || s.fatherId === parentId)
         .map((s) => ({ ...s })),
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
+    ownsLostSheep: async (ownerId) =>
+      ofFarm().some((s) => s.ownerId === ownerId && s.status === "lost"),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
     listInFlock: async (flockId) => ofFarm().filter((s) => s.flockId === flockId),
@@ -796,6 +813,28 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     },
     markFlockMoveDeleted: async (id) => {
       const found = backend.flockMoves.find((m) => m.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
+    statusChanges: async (sheepId) =>
+      backend.statusChanges
+        .filter((c) => c.sheepId === sheepId && c.deleted !== true)
+        .map(({ id, from, to, date, reason, flockMoveId, at }) => ({
+          id,
+          sheepId,
+          from,
+          to,
+          date,
+          reason,
+          flockMoveId,
+          at,
+        })),
+    insertStatusChange: async (change) => {
+      const id = nextId(backend, "status-change") as StatusChangeId;
+      backend.statusChanges.push({ id, ...change });
+      return id;
+    },
+    markStatusChangeDeleted: async (id) => {
+      const found = backend.statusChanges.find((c) => c.id === id);
       if (found !== undefined) found.deleted = true;
     },
     markDeleted: async (id) => {
@@ -1059,6 +1098,23 @@ export const useDeleteSheep = (farmId: FarmId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
   );
 
+export const useChangeSheepStatus = (farmId: FarmId) =>
+  useMutation("changeSheepStatus", (backend, input: ExitInput & { sheepIds: readonly SheepId[] }) =>
+    changeSheepStatus(commandContext(backend, farmId), input),
+  );
+
+export const useMarkSheepFound = (farmId: FarmId) =>
+  useMutation(
+    "markSheepFound",
+    (backend, input: { sheepId: SheepId; date: CalendarDate; reason: string | null }) =>
+      markSheepFound(commandContext(backend, farmId), input),
+  );
+
+export const useUndoSheepStatusChange = (farmId: FarmId) =>
+  useMutation("undoSheepStatusChange", (backend, sheepId: SheepId) =>
+    undoSheepStatusChange(commandContext(backend, farmId), { sheepId }),
+  );
+
 export const useParentOptions = (farmId: FarmId) =>
   useCoreQuery(`parents ${farmId}`, (backend) => listParentOptions(queryContext(backend, farmId)));
 
@@ -1263,6 +1319,11 @@ export const useRecordLambing = (farmId: FarmId) =>
   useMutation("recordLambing", (backend, input: LambingInput) =>
     recordLambing(commandContext(backend, farmId), input),
   );
+
+/** The current record of a Sheep, for a test that checks the result of a command. */
+export function sheepState(sheepId: SheepId): Readonly<Sheep> | null {
+  return backend.sheep.find((sheep) => sheep.id === sheepId) ?? null;
+}
 
 export const useFlocks = (farmId: FarmId) =>
   useCoreQuery(`flocks ${farmId}`, (backend) => listFlocks(queryContext(backend, farmId)));

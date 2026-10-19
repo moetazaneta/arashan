@@ -92,7 +92,8 @@ test("«select all» selects only the Active Sheep, and a Sheep in the Flock alr
   addFlockMove(inUpper, upper, "2026-05-01");
   const other = addSheep(farm, { tag: "2" });
   addSheep(farm, { tag: "3", status: "sold" });
-  renderApp(`/farms/${farm.id}/sheep`);
+  // The filter «Все» shows the Sold Sheep too.
+  renderApp(`/farms/${farm.id}/sheep?status=all`);
 
   const sold = await screen.findByRole("checkbox", { name: "Выбрать барана 3" });
   await user.click(screen.getByRole("checkbox", { name: "Выбрать всех баранов" }));

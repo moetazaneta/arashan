@@ -664,7 +664,7 @@ function LambRow({
         maxLength={maxTagLength}
         autoComplete="off"
         spellCheck={false}
-        className="tabular-nums"
+        className="w-full tabular-nums"
         aria-invalid={tagInvalid}
         onChange={(event) => onChange({ tag: event.target.value })}
       />

@@ -20,3 +20,4 @@ export type FlockId = Id<"Flock">;
 export type ShepherdAssignmentId = Id<"ShepherdAssignment">;
 export type FlockMoveId = Id<"FlockMove">;
 export type LambingId = Id<"Lambing">;
+export type StatusChangeId = Id<"StatusChange">;
