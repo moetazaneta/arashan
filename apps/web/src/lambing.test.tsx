@@ -286,7 +286,11 @@ test("the card of an Ewe lists her Lambings, and records a new one with her as t
     ),
   );
   await user.click(within(lambRow(panel, 1)).getByRole("button", { name: "Самка" }));
+  // Enter in the Tag of a Lamb goes on to its Owner, and saves nothing: more Lambs can follow.
   await user.type(within(lambRow(panel, 1)).getByRole("textbox", { name: "Бирка" }), "12{Enter}");
+  expect(focused()).toBe(within(lambRow(panel, 1)).getByRole("combobox", { name: "Владелец" }));
+  expect(lambingsOf(farm)).toHaveLength(1);
+  await user.keyboard("{Control>}{Enter}{/Control}");
 
   expect(await screen.findByText("Записано ягнят: 1")).toBeTruthy();
   const today = formatCalendarDate(dateAt(Date.now(), farm.timeZone), "ru");

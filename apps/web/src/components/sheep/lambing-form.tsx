@@ -69,8 +69,10 @@ import { useSheepTag } from "./sheep-ref";
 
 // The side panel «Окот» (DESIGN.md, "Event Entry"): one form registers all live Lambs of an Ewe at
 // once. The keyboard alone fills it: each field is one Tab from the last, «Добавить ягнёнка» moves
-// the focus into the new row, and Enter in a one-line field or ⌘↵ saves. The core checks each rule
-// again; the form checks what it can first, so that the error shows at the field.
+// the focus into the new row, and Enter in a one-line field or ⌘↵ saves. Enter in the Tag of a Lamb
+// only goes on to its Owner: a Lambing has no undo yet, and the Member can have more Lambs to add.
+// The core checks each rule again; the form checks what it can first, so that the error shows at
+// the field.
 
 /** One live Lamb in the form, before the core checks it. */
 interface LambDraft {
@@ -365,6 +367,8 @@ function LambingForm({
               changed();
             }}
           />
+          {/* A vertical Field makes each child full width (`*:w-full`), so the narrow inputs of this
+              form (the date, the stillborn Lambs) use `!`. */}
           <Field data-invalid={dateError !== null}>
             <FieldLabel htmlFor={fieldId("date")}>
               <Trans>Дата окота</Trans>
@@ -374,7 +378,7 @@ function LambingForm({
               id={fieldId("date")}
               type="date"
               max={today}
-              className="w-44 tabular-nums"
+              className="w-44! tabular-nums"
               value={date}
               aria-invalid={dateError !== null}
               onChange={(event) => {
@@ -483,7 +487,7 @@ function LambingForm({
               id={fieldId("stillborn")}
               inputMode="numeric"
               autoComplete="off"
-              className="w-20 tabular-nums"
+              className="w-20! tabular-nums"
               value={stillborn}
               aria-invalid={stillbornError !== null}
               onChange={(event) => {
@@ -667,6 +671,12 @@ function LambRow({
         className="w-full tabular-nums"
         aria-invalid={tagInvalid}
         onChange={(event) => onChange({ tag: event.target.value })}
+        onKeyDown={(event) => {
+          // Enter goes on to the Owner and does not save (see the top of the file). ⌘↵ saves.
+          if (event.key !== "Enter" || event.metaKey || event.ctrlKey) return;
+          event.preventDefault();
+          document.getElementById(fieldId("owner"))?.focus();
+        }}
       />
       <Select
         items={ownerItems}

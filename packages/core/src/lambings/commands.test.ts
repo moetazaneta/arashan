@@ -14,6 +14,7 @@ import {
   registerSheep,
   type SheepRegistration,
 } from "../sheep/commands";
+import { changeSheepStatus, markSheepFound } from "../sheep/lifecycle";
 import { getSheep, getSheepHistory } from "../sheep/queries";
 import { InMemoryStore } from "../testing/in-memory";
 import { type LambingInput, recordLambing } from "./commands";
@@ -286,6 +287,23 @@ describe("recordLambing", () => {
       expect(sheepOf(store, lambIds[0]!).flockId).toBe(south);
     });
 
+    test("is no Flock for Lambs born while the Mother was Lost", async () => {
+      const { store, ctx, motherId, lambing } = await setup();
+      const flockId = await createFlock(ctx, { name: "Северное", locationId: null });
+      await moveSheep(ctx, { sheepIds: [motherId], flockId, date: "2026-09-01" });
+      await changeSheepStatus(ctx, {
+        sheepIds: [motherId],
+        status: "lost",
+        date: "2026-10-01",
+        reason: null,
+      });
+      await markSheepFound(ctx, { sheepId: motherId, date: "2026-10-12", reason: null });
+
+      const { lambIds } = await lambing({ date: "2026-10-05" });
+
+      expect(sheepOf(store, lambIds[0]!).flockId).toBeNull();
+    });
+
     test("is no Flock if the Mother was in no Flock on the date", async () => {
       const { store, ctx, motherId, lambing } = await setup();
       const flockId = await createFlock(ctx, { name: "Северное", locationId: null });
@@ -361,6 +379,23 @@ describe("recordLambing", () => {
   });
 
   describe("the Mother", () => {
+    test("can die on the day of the Lambing, after the Lambing is recorded", async () => {
+      const { store, ctx, motherId, lambing } = await setup();
+      const flockId = await createFlock(ctx, { name: "Северное", locationId: null });
+      await moveSheep(ctx, { sheepIds: [motherId], flockId, date: "2026-09-01" });
+
+      const { lambIds } = await lambing({ date: "2026-10-10" });
+      await changeSheepStatus(ctx, {
+        sheepIds: [motherId],
+        status: "dead",
+        date: "2026-10-10",
+        reason: null,
+      });
+
+      expect(sheepOf(store, lambIds[0]!)).toMatchObject({ status: "active", flockId });
+      await expect(lambing({ date: "2026-10-10" })).rejects.toThrow("lambing.motherNotActive");
+    });
+
     test("is not an External Sheep", async () => {
       const { ctx, lambing } = await setup();
       const external = await registerExternalSheep(ctx, {

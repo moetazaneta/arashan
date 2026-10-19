@@ -354,8 +354,8 @@ once (`recordLambing`, `lambings.record`). The panel «Окот» opens from the
 the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
 
 - **A Lambing is a record** (`lambings`): the Mother, the Father or none, the date, the ids of the
-  live Lambs and the number of stillborn Lambs. A stillborn Lamb is only that number, not a Sheep.
-  A Lambing has 1 to `maxLambs` (8) live Lambs and 0 to `maxStillborn` (8) stillborn ones.
+  live Lambs and the number of stillborn Lambs. A stillborn Lamb is only that number, not a Sheep. A
+  Lambing has 1 to `maxLambs` (8) live Lambs and 0 to `maxStillborn` (8) stillborn ones.
 - **Each live Lamb is a new Sheep:** Origin Born, Active, not an Initial entry, born on the date of
   the Lambing, with the Mother and the Father as its parents. Its Breed composition comes from them
   (ADR 0007): the Lamb stores no parts by hand, so an unknown Father gives his half as Unknown. Its
@@ -364,8 +364,9 @@ the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
 - **The Mother** is an Ewe of the Farm, not an External Sheep (`lambing.motherExternal`), and is
   Active now (`lambing.motherNotActive`): the Lambs join the Farm now, with an Owner who is a Member
   now and a Flock in use now. Thus a Member records a Lambing before the Sale or the death of the
-  Mother. **The Father** is optional: a Ram of the Farm or an External one, of any Status, as for
-  the pedigree. Each parent was born before the date (`pedigree.parentBornAfterChild`).
+  Mother; the death can have the same date. **The Father** is optional: a Ram of the Farm or an
+  External one, of any Status, as for the pedigree. Each parent was born before the date
+  (`pedigree.parentBornAfterChild`).
 - **The date** is a real date, not in the future (`lambing.dateInvalid`).
 - **The Owner** of each Lamb is the Owner of the Mother at the end of the date (`ownerAt`, from the
   changes of her Owner), unless the form gives another Member for that Lamb. Each Owner is a Member
@@ -373,12 +374,13 @@ the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
   form, or null if that Member left the Farm.
 - **The Flock** of each Lamb is the Flock that had the Mother at the end of the date (`flockAt`),
   and `recordFlockMove` writes the move of the Lamb on that date. A Mother in no Flock on that date
-  gives Lambs in no Flock. Later moves of the Mother do not move the Lambs: a Member moves them with
-  «Перевести в стадо». An Archived Flock has no Sheep, so if the Flock of the Mother on the date is
-  Archived now, the command fails (`lambing.flockArchived`); the form shows it before the Member
-  saves. `lambings.defaults` gives this Flock too.
-- **No partial Lambing.** The command checks all rules (the counts, the parents, the Flock, each
-  Tag and each Owner) before the first write, so a wrong last Lamb writes nothing, also in the core
+  gives Lambs in no Flock, for example a Mother that was Lost then (a Lost Sheep leaves its Flock).
+  Later moves of the Mother do not move the Lambs: a Member moves them with «Перевести в стадо». An
+  Archived Flock has no Sheep, so if the Flock of the Mother on the date is Archived now, the
+  command fails (`lambing.flockArchived`); the form shows it before the Member saves.
+  `lambings.defaults` gives this Flock too.
+- **No partial Lambing.** The command checks all rules (the counts, the parents, the Flock, each Tag
+  and each Owner) before the first write, so a wrong last Lamb writes nothing, also in the core
   tests with the repositories in memory. A Convex mutation is a transaction too.
 - **The audit log** gets one entry `lambing.record` for each Lamb (kind `Sheep`), so the tab
   «История» of a Lamb shows its Lambing, and one for the Lambing (kind `Lambing`). The permission is
