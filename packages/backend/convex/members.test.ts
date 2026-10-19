@@ -32,7 +32,9 @@ describe("members", () => {
     ]);
     const invite = (await t.run((ctx) => ctx.db.query("invites").collect())).at(-1)!;
     expect(invite).toMatchObject({ farmId, role: "editor" });
-    const farmEntries = (await auditLog(t)).filter((entry) => entry.farmId === (farmId as string));
+    const farmEntries = (await auditLog(t)).filter(
+      (entry) => entry.farmId === (farmId as string) && entry.command !== "moneyCategory.create",
+    );
     expect(
       farmEntries.map(({ command, targetKind, targetId }) => [command, targetKind, targetId]),
     ).toEqual([

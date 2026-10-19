@@ -20,8 +20,8 @@ import { Toggle } from "@/components/ui/toggle";
 import { type ErrorInfo, formError } from "@/errors";
 import { cn } from "@/lib/utils";
 
-// The parts that the pages of Flocks, Locations and Shepherds share: the dense tables, the archive
-// toggle, the empty states and the error messages of the forms.
+// The parts that the pages of Flocks, Locations and Shepherds share, and the pages of Expenses and
+// Incomes too: the dense tables, the archive toggle, the empty states and the errors of the forms.
 
 /** An empty value: a muted dash. */
 export function NoValue() {
@@ -279,6 +279,7 @@ export function DateField({
   label,
   value,
   max,
+  disabled = false,
   error,
   description,
   onChange,
@@ -287,6 +288,7 @@ export function DateField({
   label: ReactNode;
   value: string;
   max: string;
+  disabled?: boolean;
   /** The message under the field, or null. `true` marks the field red with no message of its own. */
   error: string | boolean | null;
   description?: ReactNode;
@@ -300,6 +302,7 @@ export function DateField({
         id={id}
         type="date"
         max={max}
+        disabled={disabled}
         className="w-44 tabular-nums"
         value={value}
         aria-invalid={invalid}

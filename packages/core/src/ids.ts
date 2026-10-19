@@ -19,4 +19,6 @@ export type ShepherdId = Id<"Shepherd">;
 export type FlockId = Id<"Flock">;
 export type ShepherdAssignmentId = Id<"ShepherdAssignment">;
 export type FlockMoveId = Id<"FlockMove">;
+export type MoneyCategoryId = Id<"MoneyCategory">;
+export type MoneyRecordId = Id<"MoneyRecord">;
 export type StatusChangeId = Id<"StatusChange">;

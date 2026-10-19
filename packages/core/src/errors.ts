@@ -18,6 +18,7 @@ export const errorCodes = [
   "farm.hasMembers",
   "farm.nameRequired",
   "farm.currencyInvalid",
+  "farm.currencyLocked",
   "farm.timeZoneInvalid",
   "farm.lambAgeInvalid",
   // Invites.
@@ -115,6 +116,24 @@ export const errorCodes = [
   "flock.assignmentDatesInvalid",
   "flock.assignmentOverlaps",
   "flock.endDateInvalid",
+  // Expenses and Incomes.
+  "money.notFound",
+  "money.dateInvalid",
+  "money.dateInFuture",
+  "money.periodInvalid",
+  "money.amountInvalid",
+  "money.notesTooLong",
+  "money.shepherdRequired",
+  "money.shepherdNotAllowed",
+  "money.automatic",
+  // The categories of Expenses and Incomes.
+  "moneyCategory.notFound",
+  "moneyCategory.nameRequired",
+  "moneyCategory.nameTooLong",
+  "moneyCategory.nameTaken",
+  "moneyCategory.system",
+  "moneyCategory.archived",
+  "moneyCategory.inUse",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

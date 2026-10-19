@@ -3,6 +3,7 @@ import { describe, expect, test } from "vite-plus/test";
 import type { FarmId } from "../ids";
 import { acceptInvite } from "../members/commands";
 import { inviteLifetimeMs } from "../members/invite";
+import { createMoneyRecord, deleteMoneyRecord } from "../money/commands";
 import { InMemoryStore } from "../testing/in-memory";
 import { createFarm, getFarm, inviteFarmAdmin, listFarms, updateFarmSettings } from "./commands";
 
@@ -34,15 +35,18 @@ describe("createFarm", () => {
     expect(store.invites).toMatchObject([
       { farmId, role: "admin", tokenHash: "hash(token-1)", createdBy: store.users[0]?.id },
     ]);
-    expect(store.audit).toEqual([
-      {
-        at: store.time,
-        actorId: store.users[0]?.id,
-        farmId,
-        command: "farm.create",
-        target: { kind: "Farm", id: farmId },
-      },
-    ]);
+    expect(store.audit[0]).toEqual({
+      at: store.time,
+      actorId: store.users[0]?.id,
+      farmId,
+      command: "farm.create",
+      target: { kind: "Farm", id: farmId },
+    });
+    // The default lists of Expense categories and Income categories, one entry for each category.
+    expect(store.moneyCategories.filter((c) => c.farmId === farmId)).toHaveLength(11);
+    expect(store.audit.slice(1).map((entry) => entry.command)).toEqual(
+      Array(11).fill("moneyCategory.create"),
+    );
   });
 
   test("only the Operator can make a Farm", async () => {
@@ -122,11 +126,11 @@ describe("inviteFarmAdmin", () => {
       code: "invite.expired",
     });
     await expect(acceptInvite(admin, { token: second.token })).resolves.toEqual({ farmId });
-    expect(store.audit.map((entry) => entry.command)).toEqual([
-      "farm.create",
-      "farm.inviteAdmin",
-      "invite.accept",
-    ]);
+    expect(
+      store.audit
+        .map((entry) => entry.command)
+        .filter((command) => command !== "moneyCategory.create"),
+    ).toEqual(["farm.create", "farm.inviteAdmin", "invite.accept"]);
   });
 
   test("rejects a Farm that already has a Member", async () => {
@@ -208,6 +212,28 @@ describe("the settings of a Farm", () => {
       }),
     ).rejects.toMatchObject({ code: "access.denied" });
     expect(store.farms[0]?.lambAgeMonths).toBe(4);
+  });
+
+  test("the currency stays once the Farm has an Expense or an Income, also a Deleted one", async () => {
+    const { store, farmId, admin } = await setup();
+    const ctx = await store.farmContext(admin, farmId);
+    const recordId = await createMoneyRecord(ctx, {
+      kind: "expense",
+      date: "2026-10-01",
+      amount: 100,
+      categoryId: store.moneyCategories.find((c) => c.key === "shearing")!.id,
+      scope: { kind: "farm" },
+      shepherdId: null,
+      notes: null,
+    });
+    await deleteMoneyRecord(ctx, { recordId });
+
+    await expect(updateFarmSettings(ctx, { ...settings, currency: "USD" })).rejects.toMatchObject({
+      code: "farm.currencyLocked",
+    });
+    // The other settings still change.
+    await updateFarmSettings(ctx, { ...settings, currency: "kgs", lambAgeMonths: 6 });
+    expect(store.farms[0]).toMatchObject({ currency: "KGS", lambAgeMonths: 6 });
   });
 
   test("invalid settings change nothing", async () => {

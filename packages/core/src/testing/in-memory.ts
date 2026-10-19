@@ -31,6 +31,8 @@ import type {
   InviteId,
   LocationId,
   MembershipId,
+  MoneyCategoryId,
+  MoneyRecordId,
   OwnerChangeId,
   PasswordResetId,
   SheepId,
@@ -40,6 +42,14 @@ import type {
   UserId,
 } from "../ids";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
+import type {
+  FarmMoneyCategoryRepository,
+  FarmMoneyRecordRepository,
+  MoneyCategory,
+  MoneyCategorySeedRepository,
+  MoneyRecord,
+  MoneySource,
+} from "../money/money";
 import type { Membership, MembershipRepository } from "../members/membership";
 import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
 import {
@@ -73,6 +83,8 @@ export class InMemoryStore {
   readonly shepherds: Stored<Shepherd>[] = [];
   readonly flocks: Stored<Flock>[] = [];
   readonly assignments: Stored<ShepherdAssignment & { farmId: FarmId }>[] = [];
+  readonly moneyCategories: Stored<MoneyCategory>[] = [];
+  readonly moneyRecords: Stored<MoneyRecord>[] = [];
   readonly audit: AuditEntry[] = [];
   private nextId = 1;
 
@@ -197,12 +209,25 @@ export class InMemoryStore {
       },
     };
 
+    const moneyCategories: MoneyCategorySeedRepository = {
+      keysWithDeleted: async (farmId) =>
+        this.moneyCategories.flatMap((c) =>
+          c.farmId === farmId && c.key !== null ? [{ kind: c.kind, key: c.key }] : [],
+        ),
+      insert: async (category) => {
+        const id = this.id("MoneyCategory") as MoneyCategoryId;
+        this.moneyCategories.push({ id, ...category });
+        return id;
+      },
+    };
+
     return {
       users,
       farms,
       memberships,
       invites,
       passwordResets,
+      moneyCategories,
       audit: { append: async (entry) => void this.audit.push(entry) },
     };
   }
@@ -251,6 +276,8 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      moneyCategories: this.farmMoneyCategories(farmId),
+      moneyRecords: this.farmMoneyRecords(farmId),
       history: {
         listForTarget: async (target) =>
           this.audit.filter(
@@ -492,6 +519,90 @@ export class InMemoryStore {
     };
   }
 
+  /** The categories of Expenses and Incomes of one Farm, as the backend binds them to it. */
+  private farmMoneyCategories(farmId: FarmId): FarmMoneyCategoryRepository {
+    const ofFarm = () =>
+      this.moneyCategories.filter((c) => c.farmId === farmId && c.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((c) => c.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async (kind) =>
+        ofFarm()
+          .filter((c) => c.kind === kind)
+          .map(withoutDeletedAt),
+      findByName: async (kind, name) =>
+        ofFarm()
+          .filter((c) => c.kind === kind && c.name !== null && nameKey(c.name) === nameKey(name))
+          .map(withoutDeletedAt),
+      findByKey: async (kind, key) => {
+        const found = ofFarm().find((c) => c.kind === kind && c.key === key);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      keysWithDeleted: async () =>
+        this.moneyCategories.flatMap((c) =>
+          c.farmId === farmId && c.key !== null ? [{ kind: c.kind, key: c.key }] : [],
+        ),
+      insert: async (fields) => {
+        const id = this.id("MoneyCategory") as MoneyCategoryId;
+        this.moneyCategories.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((c) => c.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+      markDeleted: async (id, deletedAt) => {
+        const found = ofFarm().find((c) => c.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
+  /** The Expenses and the Incomes of one Farm, as the backend binds them to it. */
+  private farmMoneyRecords(farmId: FarmId): FarmMoneyRecordRepository {
+    const ofFarm = () =>
+      this.moneyRecords.filter((r) => r.farmId === farmId && r.deletedAt === undefined);
+    const sameSource = (a: MoneySource | null, b: MoneySource) =>
+      a !== null && a.kind === b.kind && a.id === b.id;
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((r) => r.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      list: async (kind, period) =>
+        ofFarm()
+          .filter(
+            (r) =>
+              r.kind === kind &&
+              (period.from === null || r.date >= period.from) &&
+              (period.to === null || r.date <= period.to),
+          )
+          .map(withoutDeletedAt),
+      usesCategoryWithDeleted: async (categoryId) =>
+        this.moneyRecords.some((r) => r.farmId === farmId && r.categoryId === categoryId),
+      findBySource: async (source) => {
+        const found = ofFarm().find((r) => sameSource(r.source, source));
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      anyWithDeleted: async () => this.moneyRecords.some((r) => r.farmId === farmId),
+      insert: async (fields) => {
+        const id = this.id("MoneyRecord") as MoneyRecordId;
+        this.moneyRecords.push({ id, farmId, ...fields });
+        return id;
+      },
+      update: async (id, fields) => {
+        const found = ofFarm().find((r) => r.id === id);
+        if (found !== undefined) Object.assign(found, fields);
+      },
+      markDeleted: async (id, deletedAt) => {
+        const found = ofFarm().find((r) => r.id === id);
+        if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
   /** The repositories of one Farm, as the backend binds them to it. */
   farmRepositories(farmId: FarmId): FarmRepositories {
     const readers = this.farmReaders(farmId);
@@ -531,6 +642,8 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      moneyCategories: this.farmMoneyCategories(farmId),
+      moneyRecords: this.farmMoneyRecords(farmId),
       audit: repos.audit,
     };
   }
