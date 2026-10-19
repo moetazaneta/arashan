@@ -10,6 +10,7 @@ import { deletable } from "./lib/records";
 const role = v.union(v.literal("admin"), v.literal("editor"));
 const sex = v.union(v.literal("ram"), v.literal("ewe"));
 const origin = v.union(v.literal("born"), v.literal("bought"), v.literal("external"));
+const moneyKind = v.union(v.literal("expense"), v.literal("income"));
 const sheepStatus = v.union(
   v.literal("active"),
   v.literal("sold"),
@@ -235,6 +236,93 @@ export default defineSchema({
     recordedAt: v.number(),
     ...deletable,
   }).index("by_farmId_deletedAt_motherId", ["farmId", "deletedAt", "motherId"]),
+
+  // The categories of the Expenses and of the Incomes of a Farm: one list of each kind.
+  moneyCategories: defineTable({
+    farmId: v.id("farms"),
+    kind: moneyKind,
+    /**
+     * The key of a category that the app made (`defaultCategoryKeys` of the core), such as
+     * "shepherdPay". Absent for a category that a Member made.
+     */
+    key: v.optional(v.string()),
+    /** The name that a Member gave. Absent for a category of the app with the name of its key. */
+    name: v.optional(v.string()),
+    /** The key of the name (`nameKey` of the core), to find a name that is taken. */
+    nameKey: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  })
+    // Also the index of the list of the categories of one kind.
+    .index("by_farmId_deletedAt_kind_nameKey", ["farmId", "deletedAt", "kind", "nameKey"])
+    // The keys of the Farm, also of the Deleted categories, so that a deleted one does not come back.
+    .index("by_farmId_key", ["farmId", "key"]),
+
+  // The Expenses and the Incomes of a Farm.
+  moneyRecords: defineTable({
+    farmId: v.id("farms"),
+    kind: moneyKind,
+    /** "YYYY-MM-DD". */
+    date: v.string(),
+    /** In hundredths of the currency unit of the Farm: an integer. */
+    amount: v.number(),
+    categoryId: v.id("moneyCategories"),
+    /** The scope: a Flock or a Sheep. Both are absent for a record of the Farm as a whole. */
+    flockId: v.optional(v.id("flocks")),
+    sheepId: v.optional(v.id("sheep")),
+    /** The Shepherd of an Expense of «Оплата чабану». */
+    shepherdId: v.optional(v.id("shepherds")),
+    notes: v.optional(v.string()),
+    /** The event of an Automatic record: its kind and its id, both or none. */
+    sourceKind: v.optional(v.union(v.literal("sale"), v.literal("purchase"), v.literal("restock"))),
+    sourceId: v.optional(v.string()),
+    createdAt: v.number(),
+    ...deletable,
+  })
+    // The records of one kind in a period.
+    .index("by_farmId_deletedAt_kind_date", ["farmId", "deletedAt", "kind", "date"])
+    // The records of a category, also the Deleted ones: a category in use cannot become Deleted.
+    // It has no `deletedAt` after `farmId`, unlike the other indexes.
+    .index("by_farmId_categoryId", ["farmId", "categoryId"])
+    // The Automatic record of an event.
+    .index("by_farmId_deletedAt_sourceKind_sourceId", [
+      "farmId",
+      "deletedAt",
+      "sourceKind",
+      "sourceId",
+    ]),
+
+  // The Resources of a Farm: hay, grain…
+  resources: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    /** The key of the name (`nameKey` of the core), to find a name that is taken. */
+    nameKey: v.string(),
+    unit: v.string(),
+    /** The Stock now, in thousandths of the unit: the sum of the events, which each command writes. */
+    stock: v.number(),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  })
+    // Also the index of the list of all Resources of the Farm.
+    .index("by_farmId_deletedAt_nameKey", ["farmId", "deletedAt", "nameKey"]),
+
+  // The Restocks, the Usages and the Adjustments of the Resources.
+  resourceEvents: defineTable({
+    farmId: v.id("farms"),
+    resourceId: v.id("resources"),
+    kind: v.union(v.literal("restock"), v.literal("usage"), v.literal("adjustment")),
+    /** "YYYY-MM-DD". */
+    date: v.string(),
+    /** In thousandths of the unit: an integer. The counted quantity for an Adjustment. */
+    quantity: v.number(),
+    /** The Flock of a Usage. */
+    flockId: v.optional(v.id("flocks")),
+    /** The reason of an Adjustment. */
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_resourceId", ["farmId", "deletedAt", "resourceId"]),
 
   // The changes of the Owner of a Sheep, for the history of the Owners on its card.
   sheepOwnerChanges: defineTable({

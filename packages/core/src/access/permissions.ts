@@ -79,6 +79,32 @@ export const permissions = {
   "shepherd.archive": ["admin", "editor"],
   /** Record a Lambing: it registers its live Lambs as new Sheep. */
   "lambing.record": ["admin", "editor"],
+  /** See the Expenses and the Incomes, and their categories. */
+  "money.view": ["admin", "editor"],
+  /** Record an Expense or an Income. */
+  "money.create": ["admin", "editor"],
+  /** Change an Expense or an Income. */
+  "money.update": ["admin", "editor"],
+  /** Make an Expense or an Income Deleted, for a record made by mistake. */
+  "money.delete": ["admin", "editor"],
+  /** Add a category of Expenses or of Incomes. */
+  "moneyCategory.create": ["admin", "editor"],
+  /** Rename a category. */
+  "moneyCategory.update": ["admin", "editor"],
+  /** Archive a category, or take it out of the archive. */
+  "moneyCategory.archive": ["admin", "editor"],
+  /** Make a category that no record uses Deleted. */
+  "moneyCategory.delete": ["admin", "editor"],
+  /** See the Resources, their Stock and their events. */
+  "resource.view": ["admin", "editor"],
+  /** Add a Resource. */
+  "resource.create": ["admin", "editor"],
+  /** Change the name or the unit of a Resource. */
+  "resource.update": ["admin", "editor"],
+  /** Archive a Resource, or take it out of the archive. */
+  "resource.archive": ["admin", "editor"],
+  /** Record a Restock, a Usage or an Adjustment of a Resource, or cancel one. */
+  "resource.record": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

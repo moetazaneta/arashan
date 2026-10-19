@@ -52,6 +52,22 @@ export type CommandName =
   | "shepherd.update"
   | "shepherd.archive"
   | "shepherd.unarchive"
+  | "money.create"
+  | "money.update"
+  | "money.delete"
+  | "moneyCategory.create"
+  | "moneyCategory.update"
+  | "moneyCategory.archive"
+  | "moneyCategory.unarchive"
+  | "moneyCategory.delete"
+  | "resource.create"
+  | "resource.update"
+  | "resource.archive"
+  | "resource.unarchive"
+  | "resource.restock"
+  | "resource.use"
+  | "resource.adjust"
+  | "resource.cancelEvent"
   | "lambing.record";
 
 /** The kind of record that a command changed. */
@@ -65,13 +81,22 @@ export type TargetKind =
   | "Flock"
   | "Location"
   | "Shepherd"
+  | "Expense"
+  | "Income"
+  | "ExpenseCategory"
+  | "IncomeCategory"
+  | "Resource"
+  | "ResourceEvent"
   | "Lambing";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {
   /** When the command ran, in milliseconds since the Unix epoch. */
   at: number;
-  /** The User who ran the command, or null for the CLI (an internal function). */
+  /**
+   * The User who ran the command, or null for the CLI (an internal function) and for the app itself,
+   * for example when it gives a Farm its default lists of categories.
+   */
   actorId: UserId | null;
   /** The Farm of the target, or null if the target belongs to no Farm, such as a User. */
   farmId: FarmId | null;

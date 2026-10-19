@@ -5,6 +5,7 @@ import {
   type Breed,
   type BreedId,
   breedNameKey,
+  type CategoryKey,
   type CommandName,
   type Farm,
   type FarmAuditReader,
@@ -17,7 +18,13 @@ import {
   type FarmLambingRepository,
   type FarmLocationReader,
   type FarmLocationRepository,
+  type FarmMoneyCategoryReader,
+  type FarmMoneyCategoryRepository,
+  type FarmMoneyRecordReader,
+  type FarmMoneyRecordRepository,
   type FarmReader,
+  type FarmResourceReader,
+  type FarmResourceRepository,
   type FarmReaders,
   type FarmRepositories,
   type FarmRepository,
@@ -47,6 +54,14 @@ import {
   type MembershipReader,
   type MembershipRepository,
   type MemberUserReader,
+  type MoneyCategory,
+  type MoneyCategoryFields,
+  type MoneyCategoryId,
+  type MoneyCategorySeedRepository,
+  type MoneyKind,
+  type MoneyRecord,
+  type MoneyRecordFields,
+  type MoneyRecordId,
   nameKey,
   type OwnerChange,
   type OwnerChangeId,
@@ -55,6 +70,11 @@ import {
   type PasswordResetRepository,
   type Readers,
   type Repositories,
+  type Resource,
+  type ResourceEvent,
+  type ResourceEventId,
+  type ResourceFields,
+  type ResourceId,
   type Sheep,
   type SheepFields,
   type SheepId,
@@ -261,6 +281,40 @@ function flockColumns(flock: FlockFields) {
   };
 }
 
+function resourceColumns(resource: ResourceFields) {
+  return {
+    name: resource.name,
+    nameKey: nameKey(resource.name),
+    unit: resource.unit,
+    stock: resource.stock,
+    archivedAt: resource.archivedAt ?? undefined,
+  };
+}
+
+function toResource(doc: Doc<"resources">): Resource {
+  return {
+    id: doc._id as string as ResourceId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    unit: doc.unit,
+    stock: doc.stock,
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function toResourceEvent(doc: Doc<"resourceEvents">): ResourceEvent {
+  return {
+    id: doc._id as string as ResourceEventId,
+    resourceId: doc.resourceId as string as ResourceId,
+    kind: doc.kind,
+    date: doc.date,
+    quantity: doc.quantity,
+    flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
+    reason: doc.reason ?? null,
+    createdAt: doc.createdAt,
+  };
+}
+
 function toOwnerChange(doc: Doc<"sheepOwnerChanges">): OwnerChange {
   return {
     id: doc._id as string as OwnerChangeId,
@@ -370,6 +424,83 @@ function toPasswordReset(doc: Doc<"passwordResets">): PasswordReset {
     createdAt: doc.createdAt,
     status: doc.status,
   };
+}
+
+function toMoneyCategory(doc: Doc<"moneyCategories">): MoneyCategory {
+  return {
+    id: doc._id as string as MoneyCategoryId,
+    farmId: doc.farmId as string as FarmId,
+    kind: doc.kind,
+    // Only the core writes the keys, so each one is a key of the core.
+    key: (doc.key ?? null) as CategoryKey | null,
+    name: doc.name ?? null,
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function moneyCategoryColumns(category: MoneyCategoryFields) {
+  return {
+    kind: category.kind,
+    key: category.key ?? undefined,
+    name: category.name ?? undefined,
+    nameKey: category.name === null ? undefined : nameKey(category.name),
+    archivedAt: category.archivedAt ?? undefined,
+  };
+}
+
+function toMoneyRecord(doc: Doc<"moneyRecords">): MoneyRecord {
+  return {
+    id: doc._id as string as MoneyRecordId,
+    farmId: doc.farmId as string as FarmId,
+    kind: doc.kind,
+    date: doc.date,
+    amount: doc.amount,
+    categoryId: doc.categoryId as string as MoneyCategoryId,
+    scope:
+      doc.flockId !== undefined
+        ? { kind: "flock", flockId: doc.flockId as string as FlockId }
+        : doc.sheepId !== undefined
+          ? { kind: "sheep", sheepId: doc.sheepId as string as SheepId }
+          : { kind: "farm" },
+    shepherdId: doc.shepherdId === undefined ? null : (doc.shepherdId as string as ShepherdId),
+    notes: doc.notes ?? null,
+    source:
+      doc.sourceKind === undefined || doc.sourceId === undefined
+        ? null
+        : { kind: doc.sourceKind, id: doc.sourceId },
+    createdAt: doc.createdAt,
+  };
+}
+
+/** The columns of a row of `moneyRecords`: the scope is a Flock, a Sheep, or neither. */
+function moneyRecordColumns(record: MoneyRecordFields) {
+  return {
+    kind: record.kind,
+    date: record.date,
+    amount: record.amount,
+    categoryId: idOf<"moneyCategories">(record.categoryId),
+    flockId: record.scope.kind === "flock" ? idOf<"flocks">(record.scope.flockId) : undefined,
+    sheepId: record.scope.kind === "sheep" ? idOf<"sheep">(record.scope.sheepId) : undefined,
+    shepherdId: record.shepherdId === null ? undefined : idOf<"shepherds">(record.shepherdId),
+    notes: record.notes ?? undefined,
+    sourceKind: record.source?.kind,
+    sourceId: record.source?.id,
+    createdAt: record.createdAt,
+  };
+}
+
+/** The kinds and keys of the categories of the Farm that have a key, also of the Deleted ones. */
+async function categoryKeysWithDeleted(
+  db: DatabaseReader,
+  farmId: FarmId,
+): Promise<{ kind: MoneyKind; key: CategoryKey }[]> {
+  const docs = await db
+    .query("moneyCategories")
+    .withIndex("by_farmId_key", (q) => q.eq("farmId", idOf(farmId)))
+    .collect();
+  return docs.flatMap((doc) =>
+    doc.key === undefined ? [] : [{ kind: doc.kind, key: doc.key as CategoryKey }],
+  );
 }
 
 function userReader(db: DatabaseReader): UserReader {
@@ -563,7 +694,24 @@ export function repositories(db: DatabaseWriter, auditDb: DatabaseWriter): Repos
       await db.patch("passwordResets", idOf<"passwordResets">(id), { status: outcome });
     },
   };
-  return { users, farms, memberships, invites, passwordResets, audit: auditLog(auditDb) };
+  const moneyCategories: MoneyCategorySeedRepository = {
+    keysWithDeleted: (farmId) => categoryKeysWithDeleted(db, farmId),
+    async insert(category) {
+      return (await db.insert("moneyCategories", {
+        farmId: idOf(category.farmId),
+        ...moneyCategoryColumns(category),
+      })) as string as MoneyCategoryId;
+    },
+  };
+  return {
+    users,
+    farms,
+    memberships,
+    invites,
+    passwordResets,
+    moneyCategories,
+    audit: auditLog(auditDb),
+  };
 }
 
 /** The Membership of the Farm with the id, Archived or not, or null. */
@@ -715,12 +863,17 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
 }
 
 /** The record of the Farm with the id in the table, or null. */
-async function ofFarm<Table extends "locations" | "shepherds" | "flocks" | "flockAssignments">(
-  db: DatabaseReader,
-  table: Table,
-  farmId: FarmId,
-  id: string,
-): Promise<Doc<Table> | null> {
+async function ofFarm<
+  Table extends
+    | "locations"
+    | "shepherds"
+    | "flocks"
+    | "flockAssignments"
+    | "moneyCategories"
+    | "moneyRecords"
+    | "resources"
+    | "resourceEvents",
+>(db: DatabaseReader, table: Table, farmId: FarmId, id: string): Promise<Doc<Table> | null> {
   const doc = await getActive(db, table, id);
   return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
 }
@@ -855,6 +1008,145 @@ function farmLambingReader(db: DatabaseReader, farmId: FarmId): FarmLambingReade
   };
 }
 
+function farmMoneyCategoryReader(db: DatabaseReader, farmId: FarmId): FarmMoneyCategoryReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "moneyCategories", farmId, id);
+      return doc === null ? null : toMoneyCategory(doc);
+    },
+    async list(kind) {
+      const docs = await db
+        .query("moneyCategories")
+        .withIndex("by_farmId_deletedAt_kind_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("kind", kind),
+        )
+        .collect();
+      return docs.map(toMoneyCategory);
+    },
+    async findByName(kind, name) {
+      // Only the rows of this key, as in `findByTag`: two categories with one name at one time
+      // conflict, and Convex runs the second again.
+      const docs = await db
+        .query("moneyCategories")
+        .withIndex("by_farmId_deletedAt_kind_nameKey", (q) =>
+          q
+            .eq("farmId", idOf(farmId))
+            .eq("deletedAt", undefined)
+            .eq("kind", kind)
+            .eq("nameKey", nameKey(name)),
+        )
+        .collect();
+      return docs.map(toMoneyCategory);
+    },
+    async findByKey(kind, key) {
+      const docs = await db
+        .query("moneyCategories")
+        .withIndex("by_farmId_key", (q) => q.eq("farmId", idOf(farmId)).eq("key", key))
+        .collect();
+      const doc = docs.find((d) => d.deletedAt === undefined && d.kind === kind);
+      return doc === undefined ? null : toMoneyCategory(doc);
+    },
+  };
+}
+
+function farmMoneyRecordReader(db: DatabaseReader, farmId: FarmId): FarmMoneyRecordReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "moneyRecords", farmId, id);
+      return doc === null ? null : toMoneyRecord(doc);
+    },
+    async list(kind, period) {
+      const docs = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_deletedAt_kind_date", (q) => {
+          const ofKind = q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("kind", kind);
+          if (period.from !== null && period.to !== null) {
+            return ofKind.gte("date", period.from).lte("date", period.to);
+          }
+          if (period.from !== null) return ofKind.gte("date", period.from);
+          if (period.to !== null) return ofKind.lte("date", period.to);
+          return ofKind;
+        })
+        .collect();
+      return docs.map(toMoneyRecord);
+    },
+    async usesCategoryWithDeleted(categoryId) {
+      const categoryDocId = db.normalizeId("moneyCategories", categoryId);
+      if (categoryDocId === null) return false;
+      const doc = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_categoryId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("categoryId", categoryDocId),
+        )
+        .first();
+      return doc !== null;
+    },
+    async findBySource(source) {
+      const doc = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_deletedAt_sourceKind_sourceId", (q) =>
+          q
+            .eq("farmId", idOf(farmId))
+            .eq("deletedAt", undefined)
+            .eq("sourceKind", source.kind)
+            .eq("sourceId", source.id),
+        )
+        .first();
+      return doc === null ? null : toMoneyRecord(doc);
+    },
+    async anyWithDeleted() {
+      const doc = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_categoryId", (q) => q.eq("farmId", idOf(farmId)))
+        .first();
+      return doc !== null;
+    },
+  };
+}
+
+function farmResourceReader(db: DatabaseReader, farmId: FarmId): FarmResourceReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "resources", farmId, id);
+      return doc === null ? null : toResource(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("resources")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toResource);
+    },
+    async findByName(name) {
+      // Only the rows of this key, as in `findByTag`.
+      const docs = await db
+        .query("resources")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("nameKey", nameKey(name)),
+        )
+        .collect();
+      return docs.map(toResource);
+    },
+    async getEvent(id) {
+      const doc = await ofFarm(db, "resourceEvents", farmId, id);
+      return doc === null ? null : toResourceEvent(doc);
+    },
+    async events(resourceId) {
+      const resourceDocId = db.normalizeId("resources", resourceId);
+      if (resourceDocId === null) return [];
+      const docs = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("resourceId", resourceDocId),
+        )
+        .collect();
+      return docs.map(toResourceEvent);
+    },
+  };
+}
+
 /** The Breed of the Farm with the id, or null. Arashan has no row, so its id finds nothing. */
 async function breedOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
   if (id === arashanBreedId) return null;
@@ -963,6 +1255,9 @@ export function farmReaders(
     locations: farmLocationReader(db, farmId),
     shepherds: farmShepherdReader(db, farmId),
     lambings: farmLambingReader(db, farmId),
+    moneyCategories: farmMoneyCategoryReader(db, farmId),
+    moneyRecords: farmMoneyRecordReader(db, farmId),
+    resources: farmResourceReader(db, farmId),
     history: farmAuditReader(db, farmId),
   };
 }
@@ -1149,12 +1444,91 @@ export function farmRepositories(
       })) as string as LambingId;
     },
   };
+  const moneyCategories: FarmMoneyCategoryRepository = {
+    ...readers.moneyCategories,
+    keysWithDeleted: () => categoryKeysWithDeleted(db, farmId),
+    async insert(fields) {
+      return (await db.insert("moneyCategories", {
+        farmId: idOf(farmId),
+        ...moneyCategoryColumns(fields),
+      })) as string as MoneyCategoryId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "moneyCategories", farmId, id);
+      if (doc === null) return;
+      await db.patch(
+        "moneyCategories",
+        doc._id,
+        moneyCategoryColumns({ ...toMoneyCategory(doc), ...fields }),
+      );
+    },
+    async markDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "moneyCategories", farmId, id);
+      if (doc !== null) await db.patch("moneyCategories", doc._id, { deletedAt });
+    },
+  };
+  const moneyRecords: FarmMoneyRecordRepository = {
+    ...readers.moneyRecords,
+    async insert(fields) {
+      return (await db.insert("moneyRecords", {
+        farmId: idOf(farmId),
+        ...moneyRecordColumns(fields),
+      })) as string as MoneyRecordId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "moneyRecords", farmId, id);
+      if (doc === null) return;
+      // The patch writes all the columns again: a field that became null goes away.
+      await db.patch(
+        "moneyRecords",
+        doc._id,
+        moneyRecordColumns({ ...toMoneyRecord(doc), ...fields }),
+      );
+    },
+    async markDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "moneyRecords", farmId, id);
+      if (doc !== null) await db.patch("moneyRecords", doc._id, { deletedAt });
+    },
+  };
+  const resources: FarmResourceRepository = {
+    ...readers.resources,
+    async insert(fields) {
+      return (await db.insert("resources", {
+        farmId: idOf(farmId),
+        ...resourceColumns(fields),
+      })) as string as ResourceId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "resources", farmId, id);
+      if (doc === null) return;
+      await db.patch("resources", doc._id, resourceColumns({ ...toResource(doc), ...fields }));
+    },
+    async insertEvent(event) {
+      return (await db.insert("resourceEvents", {
+        farmId: idOf(farmId),
+        resourceId: idOf(event.resourceId),
+        kind: event.kind,
+        date: event.date,
+        quantity: event.quantity,
+        flockId: event.flockId === null ? undefined : idOf(event.flockId),
+        reason: event.reason ?? undefined,
+        createdAt: event.createdAt,
+      })) as string as ResourceEventId;
+    },
+    async markEventDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "resourceEvents", farmId, id);
+      if (doc !== null) await db.patch("resourceEvents", doc._id, { deletedAt });
+    },
+  };
   return {
     ...readers,
     flocks,
     locations,
     shepherds,
     lambings,
+    moneyCategories,
+    moneyRecords,
+    resources,
     farm: {
       async updateSettings(settings) {
         await db.patch("farms", idOf<"farms">(farmId), settings);

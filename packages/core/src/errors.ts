@@ -18,6 +18,7 @@ export const errorCodes = [
   "farm.hasMembers",
   "farm.nameRequired",
   "farm.currencyInvalid",
+  "farm.currencyLocked",
   "farm.timeZoneInvalid",
   "farm.lambAgeInvalid",
   // Invites.
@@ -124,6 +125,40 @@ export const errorCodes = [
   "lambing.stillbornInvalid",
   "lambing.tagRepeated",
   "lambing.flockArchived",
+  // Expenses and Incomes.
+  "money.notFound",
+  "money.dateInvalid",
+  "money.dateInFuture",
+  "money.periodInvalid",
+  "money.amountInvalid",
+  "money.notesTooLong",
+  "money.shepherdRequired",
+  "money.shepherdNotAllowed",
+  "money.automatic",
+  // The categories of Expenses and Incomes.
+  "moneyCategory.notFound",
+  "moneyCategory.nameRequired",
+  "moneyCategory.nameTooLong",
+  "moneyCategory.nameTaken",
+  "moneyCategory.system",
+  "moneyCategory.archived",
+  "moneyCategory.inUse",
+  // Resources and their events.
+  "resource.notFound",
+  "resource.nameRequired",
+  "resource.nameTooLong",
+  "resource.nameTaken",
+  "resource.unitRequired",
+  "resource.unitTooLong",
+  "resource.unitLocked",
+  "resource.archived",
+  "resource.dateInvalid",
+  "resource.dateInFuture",
+  "resource.quantityInvalid",
+  "resource.reasonRequired",
+  "resource.reasonTooLong",
+  "resource.adjustmentNoChange",
+  "resource.eventNotFound",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

@@ -141,17 +141,24 @@ Money that the Farm paid. An Expense has a date, an amount, and an Expense categ
 _Avoid_: Cost, spending, затрата
 
 **Expense category** (рус. категория расхода):
-A type of Expense, for example shearing or cameras. Each Farm has its own list.
+A type of Expense, for example shearing or cameras. Each Farm has its own list. A treatment is an Expense of the category «Лечение»: the app has no separate record for it.
 
 **Income** (рус. доход):
 Money that the Farm got. An Income has a date, an amount, and an Income category.
 _Avoid_: Revenue, earnings, выручка
 
 **Income category** (рус. категория дохода):
-A type of Income, for example wool or meat. Each Farm has its own list.
+A type of Income, for example wool or meat. Each Farm has its own list. The sale of wool is an Income of the category «Шерсть», without the weight.
+
+**Money record** (рус. запись):
+An Expense or an Income. A rule that is the same for both kinds talks about money records.
+_Avoid_: Transaction, operation, операция
+
+**Scope** (рус. к чему относится):
+What a money record is about: the Farm as a whole, one Flock, or one Sheep. The Farm is the default.
 
 **System category** (рус. системная категория):
-An Expense category or an Income category that the app uses for automatic records, for example the category of a Sale. A Member cannot archive or delete it.
+An Expense category or an Income category that the app uses for automatic records, for example the category of a Sale. A Member cannot rename, archive or delete it, and cannot select it for a manual record.
 
 **Automatic record** (рус. авто-запись):
 An Expense or an Income that a Sale, a Purchase, or a Restock with a price makes. It shows the same amount as its source event, and it goes away only when someone cancels that event.

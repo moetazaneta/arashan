@@ -28,6 +28,14 @@ import type {
   FarmShepherdReader,
   FarmShepherdRepository,
 } from "./flocks/flock";
+import type {
+  FarmMoneyCategoryReader,
+  FarmMoneyCategoryRepository,
+  FarmMoneyRecordReader,
+  FarmMoneyRecordRepository,
+  MoneyCategorySeedRepository,
+} from "./money/money";
+import type { FarmResourceReader, FarmResourceRepository } from "./resources/resource";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
 import type { FarmLambingReader, FarmLambingRepository } from "./lambings/lambing";
 import type { Identity, UserReader, UserRepository } from "./users/user";
@@ -47,6 +55,8 @@ export interface Repositories {
   memberships: MembershipRepository;
   invites: InviteRepository;
   passwordResets: PasswordResetRepository;
+  /** The categories of any Farm: a new Farm gets the default lists. */
+  moneyCategories: MoneyCategorySeedRepository;
   audit: AuditLog;
 }
 
@@ -86,6 +96,9 @@ export interface FarmReaders {
   locations: FarmLocationReader;
   shepherds: FarmShepherdReader;
   lambings: FarmLambingReader;
+  moneyCategories: FarmMoneyCategoryReader;
+  moneyRecords: FarmMoneyRecordReader;
+  resources: FarmResourceReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -107,6 +120,9 @@ export interface FarmRepositories {
   locations: FarmLocationRepository;
   shepherds: FarmShepherdRepository;
   lambings: FarmLambingRepository;
+  moneyCategories: FarmMoneyCategoryRepository;
+  moneyRecords: FarmMoneyRecordRepository;
+  resources: FarmResourceRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

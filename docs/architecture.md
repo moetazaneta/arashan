@@ -150,38 +150,51 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
   that can do each action. It is false when the target belongs to another Farm. `authorize` throws
   `access.denied`. Each command of a Farm calls `authorize` first.
 
-| Action                 | Admin | Editor |
-| ---------------------- | ----- | ------ |
-| `farm.view`            | yes   | yes    |
-| `farm.updateSettings`  | yes   | no     |
-| `member.list`          | yes   | no     |
-| `member.invite`        | yes   | no     |
-| `member.changeRole`    | yes   | no     |
-| `member.remove`        | yes   | no     |
-| `member.setPassword`   | yes   | no     |
-| `sheep.view`           | yes   | yes    |
-| `sheep.register`       | yes   | yes    |
-| `sheep.update`         | yes   | yes    |
-| `sheep.changeOwner`    | yes   | yes    |
-| `sheep.delete`         | yes   | yes    |
-| `breed.view`           | yes   | yes    |
-| `breed.add`            | yes   | yes    |
-| `breed.update`         | yes   | yes    |
-| `breed.delete`         | yes   | yes    |
-| `sheep.move`           | yes   | yes    |
-| `sheep.changeStatus`   | yes   | yes    |
-| `flock.view`           | yes   | yes    |
-| `flock.create`         | yes   | yes    |
-| `flock.update`         | yes   | yes    |
-| `flock.archive`        | yes   | yes    |
-| `flock.assignShepherd` | yes   | yes    |
-| `location.create`      | yes   | yes    |
-| `location.update`      | yes   | yes    |
-| `location.archive`     | yes   | yes    |
-| `shepherd.create`      | yes   | yes    |
-| `shepherd.update`      | yes   | yes    |
-| `shepherd.archive`     | yes   | yes    |
-| `lambing.record`       | yes   | yes    |
+| Action                  | Admin | Editor |
+| ----------------------- | ----- | ------ |
+| `farm.view`             | yes   | yes    |
+| `farm.updateSettings`   | yes   | no     |
+| `member.list`           | yes   | no     |
+| `member.invite`         | yes   | no     |
+| `member.changeRole`     | yes   | no     |
+| `member.remove`         | yes   | no     |
+| `member.setPassword`    | yes   | no     |
+| `sheep.view`            | yes   | yes    |
+| `sheep.register`        | yes   | yes    |
+| `sheep.update`          | yes   | yes    |
+| `sheep.changeOwner`     | yes   | yes    |
+| `sheep.delete`          | yes   | yes    |
+| `breed.view`            | yes   | yes    |
+| `breed.add`             | yes   | yes    |
+| `breed.update`          | yes   | yes    |
+| `breed.delete`          | yes   | yes    |
+| `sheep.move`            | yes   | yes    |
+| `sheep.changeStatus`    | yes   | yes    |
+| `flock.view`            | yes   | yes    |
+| `flock.create`          | yes   | yes    |
+| `flock.update`          | yes   | yes    |
+| `flock.archive`         | yes   | yes    |
+| `flock.assignShepherd`  | yes   | yes    |
+| `location.create`       | yes   | yes    |
+| `location.update`       | yes   | yes    |
+| `location.archive`      | yes   | yes    |
+| `shepherd.create`       | yes   | yes    |
+| `shepherd.update`       | yes   | yes    |
+| `shepherd.archive`      | yes   | yes    |
+| `money.view`            | yes   | yes    |
+| `money.create`          | yes   | yes    |
+| `money.update`          | yes   | yes    |
+| `money.delete`          | yes   | yes    |
+| `moneyCategory.create`  | yes   | yes    |
+| `moneyCategory.update`  | yes   | yes    |
+| `moneyCategory.archive` | yes   | yes    |
+| `moneyCategory.delete`  | yes   | yes    |
+| `resource.view`         | yes   | yes    |
+| `resource.create`       | yes   | yes    |
+| `resource.update`       | yes   | yes    |
+| `resource.archive`      | yes   | yes    |
+| `resource.record`       | yes   | yes    |
+| `lambing.record`        | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -426,10 +439,116 @@ when it is Slaughtered, Dead or Lost, and a Lost Sheep can come back. Sold comes
   checks the rules and writes the change and the move out of the Flock, without a permission check
   and without an audit entry, as `recordFlockMove` does. A Sale uses it to make its Sheep Sold.
 
+## Expenses and Incomes
+
+The module `core/src/money/` keeps the Expenses and the Incomes of a Farm and their categories: the
+pages «Расходы» and «Доходы», each with the tabs «Записи» and «Категории». An Expense and an Income
+have the same fields, so one module keeps both: a money record is an Expense or an Income, and its
+`kind` tells which. The table `moneyRecords` keeps both kinds, and `moneyCategories` both lists.
+
+- **An amount is an integer of hundredths** of the unit of the currency of the Farm (for the som, in
+  tyiyn): 150050 is 1 500,50. A sum is then exact. It is at most `maxAmount` (1 000 000 000,00), so
+  the sum of many records stays a safe integer. The amounts have no currency of their own, so the
+  currency of a Farm stays when the Farm has a record, also a Deleted one (`farm.currencyLocked`).
+- **A record** has a date (not in the future), an amount, a category of its kind, a scope and
+  optional notes. The scope is the Farm as a whole, one Flock or one Sheep: the columns `flockId`
+  and `sheepId`, or neither. An Expense of «Оплата чабану» has a Shepherd, and no other record has
+  one. A category, a Flock or a Shepherd that a record has already can become Archived; a form
+  offers only the ones that are not. A record made by mistake becomes Deleted.
+- **A category** has a `key` if the app made it, and a `name` if a Member made it or renamed it. A
+  rule finds a category by its key, never by its name: «Оплата чабану» is the key `shepherdPay`,
+  also after a rename. The core keeps no names (ADR 0004), so the web app has the name of each key
+  (`components/money/category-names.ts`), and a new key fails its type check until it has one. The
+  names of a list are unique (`nameKey`), also among the Archived categories. The core sees only the
+  names that Members gave, so the view refuses the shown name of a category of the app
+  (`isNameOfKey`): else a Member could make a second «Оплата чабану» without its rule. A category in use (by
+  a record, also a Deleted one, which a Member can restore) can only become Archived; one that no
+  record uses can become Deleted.
+- **The default lists.** Each Farm has these categories:
+
+  | Kind    | Keys                                                                   | System                        |
+  | ------- | ---------------------------------------------------------------------- | ----------------------------- |
+  | Expense | `shearing`, `treatment`, `shepherdPay`, `equipment`, `other`           | `sheepPurchase`, `restock`    |
+  | Income  | `wool`, `meat`, `other`                                                | `sheepSale`                   |
+
+  A new Farm gets them in `createFarm`. A Farm that existed before this slice gets them lazily: when
+  `money.categories` gives an empty list (a Farm always has its System categories after the
+  seed), the hook `useMoneyCategories` calls `money.ensureCategories` one time. A Convex query
+  cannot write, so the lazy seed is a command. The command of an event that needs a System
+  category (`createAutomaticRecord`) makes the lists first too. All three call one function, which
+  adds each default key that the Farm does not have; a Deleted category counts as one that the Farm
+  has, so it does not come back. The entries of the lazy seed have no actor: the app made the
+  categories, not the Member who opened the page.
+- **System categories** are the categories of the Automatic records: «Покупка баранов»
+  (`sheepPurchase`), «Пополнение ресурса» (`restock`) and «Продажа баранов» (`sheepSale`). A Member
+  cannot rename, archive or delete them, nor select one for a manual record
+  (`moneyCategory.system`). The filters of the tables show them.
+- **The tables** show the records of a period (the index `by_farmId_deletedAt_kind_date` gives the
+  range), of a category and of a scope, the newest first, with the total (`listMoneyRecords`). A
+  scope filter is exact: the records of a Flock do not include the records of its Sheep. The page
+  opens on this year, because one Convex query reads at most a few thousand rows well.
+
+**For the commands of other slices** (#12 Sale and Purchase, #13 Restock): an event with a price
+makes an Automatic record with the functions of `core/src/money/commands.ts`. They check no
+permission (the command of the event checks its own), and they append an audit entry for the record
+with the name of the command of the event.
+
+- `createAutomaticRecord(ctx, command, { key, source, date, amount, scope })` makes the record in
+  the System category of the key, with `source: { kind: "sale" | "purchase" | "restock", id }`.
+  An event has one record: a second call for the same source throws.
+- `updateAutomaticRecord(ctx, command, source, { date, amount, scope })` changes it when the event
+  changes. `deleteAutomaticRecord(ctx, command, source)` makes it Deleted when someone cancels the
+  event. The repository finds the record of an event with `findBySource`.
+- **The record keeps the price.** The event reads it with `findBySource` and stores no copy, so
+  the two never differ. A Member changes the amount (and the notes) of an Automatic record in the
+  table, as of any record; its event owns the date, the category and the scope, and a Member cannot
+  delete it (`money.automatic`).
+
+## Resources
+
+The module `core/src/resources/` keeps the feed of a Farm: the Resources (hay, grain…), their Stock,
+and the events that change it. The page «Ресурсы» lists the Resources with their Stock, and the card
+of a Resource shows its Stock and its events, the newest first, each with the Stock after it.
+
+- **A quantity is an integer of thousandths** of the unit of its Resource (`quantityScale`): 1500 is
+  1,5 kg. A sum is then exact, and a quantity has at most three decimals. One event has at most
+  `maxQuantity` (1 000 000 units). The web app reads and shows quantities with `parseQuantity` and
+  `formatQuantity` of `format.ts`. With three decimals «1,500» is ambiguous, so `parseQuantity` reads
+  it in the language of the UI: 1,5 in Russian, 1500 in English.
+- **A Resource** has a name (unique in the Farm, also among the Archived ones, by `nameKey`) and one
+  unit of measure, a text that the Member writes, such as «кг», «тюк» or «мешок». The unit changes
+  only while the Resource has no events (`resource.unitLocked`). An Archived Resource stays in the
+  list and keeps its card, but it gets no new events (`resource.archived`).
+- **The events** (`resourceEvents`) are a Restock, a Usage and an Adjustment. Each one has a date
+  (not in the future) and a quantity. A Usage has a Flock that is not Archived; an Adjustment has a
+  reason. An event never changes: a Member cancels one made by mistake (`cancelResourceEvent`), and
+  it becomes Deleted.
+- **The Stock** is the sum of the Restocks, minus the Usages, plus or minus the Adjustments
+  (`stockOf`). `stockSteps` computes it event by event, in the order of `inEventOrder`: by date, and
+  in one date the Restocks and the Usages in the order of recording, then the Adjustments. The Stock
+  can be less than 0, for example when a Member records a Usage before the Restock; the UI shows it
+  red. The row of a Resource keeps its Stock (`Resource.stock`), so that the list reads no events:
+  each command that adds or cancels an event computes it again from all the events of the Resource.
+  The card computes it from the events itself.
+- **An Adjustment is a count.** It keeps the quantity that the count found (its `quantity`), and the
+  Stock at the end of its date becomes that quantity: its change is the difference from the Stock
+  before it. Thus a Usage that a Member records later with a date before the count, or a wrong
+  Restock that a Member cancels and records again, does not move the Stock after the count: the
+  count already saw the real quantity. A count equal to the Stock on its date is refused
+  (`resource.adjustmentNoChange`).
+- **A Restock with a price** makes an Automatic Expense of the System category «Пополнение ресурса»
+  (`restock`), of the Farm as a whole, with `createAutomaticRecord` and the source
+  `{ kind: "restock", id }` (`restockSource`). The Expense keeps the price: the card reads it with
+  `findBySource`, and a Member changes it in the table of Expenses. Cancelling the Restock makes the
+  Expense Deleted. The Farm's own harvest is a Restock with no price.
+- **Audit.** A command of an event appends an entry for the event (`ResourceEvent`), one for its
+  Resource and, for a Usage, one for its Flock. A Restock with a price also appends the entry of its
+  Expense.
+
 ## The audit log
 
 Each command that writes a record appends at least one audit entry: the actor (the User, or null
-for the CLI), the time, the command, the Farm, and the target (the kind and the id of the record).
+for the CLI and for the app itself), the time, the command, the Farm, and the target (the kind and the id of the record).
 
 - In a command of no Farm, call `recordAudit(ctx, entry)`. In a command of a Farm, call
   `recordFarmAudit(ctx, { command, target })`: it takes the actor and the Farm from the Member.

@@ -1,14 +1,18 @@
 import type { ErrorCode } from "@arashan/core";
 import {
   maxBreedNameLength,
+  maxCategoryNameLength,
   maxLambAgeMonths,
   maxLambs,
+  maxMoneyNotesLength,
   maxPassportNumberLength,
   maxNameLength,
   maxNotesLength,
   maxPasswordLength,
   maxScanBytes,
   maxPhoneLength,
+  maxReasonLength,
+  maxResourceNameLength,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
@@ -16,6 +20,7 @@ import {
   maxSheepPerStatusChange,
   maxStatusReasonLength,
   maxTagLength,
+  maxUnitLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
@@ -41,6 +46,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "farm.hasMembers": msg`В ферме уже есть участник: новая ссылка не нужна.`,
   "farm.nameRequired": msg`Введите название фермы.`,
   "farm.currencyInvalid": msg`Выберите валюту из списка.`,
+  "farm.currencyLocked": msg`У фермы уже есть расходы или доходы, поэтому валюту изменить нельзя.`,
   "farm.timeZoneInvalid": msg`Выберите часовой пояс из списка.`,
   "farm.lambAgeInvalid": msg`Введите целое число месяцев от ${minLambAgeMonths} до ${maxLambAgeMonths}.`,
   "invite.notFound": msg`Такой ссылки-приглашения нет. Проверьте, что ссылка скопирована целиком.`,
@@ -137,6 +143,38 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "lambing.stillbornInvalid": msg`Мертворождённых — целое число от 0 до ${maxStillborn}.`,
   "lambing.tagRepeated": msg`У двух ягнят одна и та же бирка. Проверьте номера.`,
   "lambing.flockArchived": msg`На дату окота мать была в стаде, которое теперь в архиве. Верните стадо из архива или исправьте дату.`,
+  "money.notFound": msg`Такой записи нет. Возможно, её уже удалили.`,
+  "money.dateInvalid": msg`Введите дату полностью: день, месяц и год.`,
+  "money.dateInFuture": msg`Дата не может быть в будущем.`,
+  "money.periodInvalid": msg`Проверьте период: дата «по» не может быть раньше даты «с».`,
+  // The largest amount is `maxAmount`: 1 000 000 000,00.
+  "money.amountInvalid": msg`Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50.`,
+  "money.notesTooLong": msg`Примечание не длиннее ${maxMoneyNotesLength} символов. Сократите текст.`,
+  "money.shepherdRequired": msg`Выберите чабана, которому заплатили.`,
+  "money.shepherdNotAllowed": msg`Чабана указывают только в расходе «Оплата чабану».`,
+  "money.automatic": msg`Эту запись сделало приложение: в ней можно изменить только сумму и примечание, а удалить её нельзя.`,
+  "moneyCategory.notFound": msg`Такой категории нет. Возможно, её уже удалили.`,
+  "moneyCategory.nameRequired": msg`Введите название категории.`,
+  "moneyCategory.nameTooLong": msg`Название не длиннее ${maxCategoryNameLength} символов.`,
+  "moneyCategory.nameTaken": msg`Категория с таким названием уже есть, может быть, в архиве.`,
+  "moneyCategory.system": msg`Это системная категория: её записи делает само приложение. Её нельзя выбрать, изменить или удалить.`,
+  "moneyCategory.archived": msg`Эта категория в архиве. Выберите другую или верните эту категорию из архива.`,
+  "moneyCategory.inUse": msg`В этой категории есть записи, поэтому её нельзя удалить. Отправьте её в архив.`,
+  "resource.notFound": msg`Такого ресурса нет.`,
+  "resource.nameRequired": msg`Введите название ресурса.`,
+  "resource.nameTooLong": msg`Название не длиннее ${maxResourceNameLength} символов.`,
+  "resource.nameTaken": msg`Ресурс с таким названием уже есть, возможно в архиве.`,
+  "resource.unitRequired": msg`Введите единицу измерения, например «кг».`,
+  "resource.unitTooLong": msg`Единица измерения не длиннее ${maxUnitLength} символов.`,
+  "resource.unitLocked": msg`У ресурса уже есть записи, поэтому единицу измерения изменить нельзя.`,
+  "resource.archived": msg`Ресурс в архиве. Верните его из архива, чтобы добавить запись.`,
+  "resource.dateInvalid": msg`Введите дату.`,
+  "resource.dateInFuture": msg`Дата не может быть в будущем.`,
+  "resource.quantityInvalid": msg`Введите количество больше нуля, не больше трёх знаков после запятой.`,
+  "resource.reasonRequired": msg`Укажите причину корректировки.`,
+  "resource.reasonTooLong": msg`Причина не длиннее ${maxReasonLength} символов.`,
+  "resource.adjustmentNoChange": msg`Запас на эту дату уже такой. Корректировка не нужна.`,
+  "resource.eventNotFound": msg`Такой записи нет. Возможно, её уже отменили.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;
@@ -162,6 +200,15 @@ export function useError(error: unknown): ErrorInfo | null {
 export function useCodeMessage(): (code: ErrorCode) => string {
   const { i18n } = useLingui();
   return (code) => i18n._(errorMessages[code]);
+}
+
+/**
+ * The error of a rule that the view checks before it calls a hook, such as an amount that does not
+ * parse, or null. It has the message of the code, as if the core gave it.
+ */
+export function useCodeError(code: ErrorCode | null): ErrorInfo | null {
+  const message = useCodeMessage();
+  return code === null ? null : { code, message: message(code) };
 }
 
 /** The message for an error from a hook, in the language of the UI, or null if there is no error. */
