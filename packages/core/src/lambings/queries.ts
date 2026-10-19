@@ -82,7 +82,13 @@ export async function listLambings(
       id: lambing.id,
       date: lambing.date,
       father: await ref(lambing.fatherId),
-      lambs: (await Promise.all(lambing.lambIds.map(ref))).filter((lamb) => lamb !== null),
+      // A Lamb that got another Mother or birth date later (`updateSheep`) is no longer of this Lambing.
+      lambs: (await Promise.all(lambing.lambIds.map(lookup)))
+        .filter(
+          (lamb): lamb is Sheep =>
+            lamb !== null && lamb.motherId === lambing.motherId && lamb.birthDate === lambing.date,
+        )
+        .map(toRef),
       stillborn: lambing.stillborn,
       recordedAt: lambing.recordedAt,
     })),

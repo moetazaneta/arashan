@@ -174,6 +174,25 @@ describe("listLambings", () => {
     ]);
   });
 
+  test("skips a Lamb that got another Mother or birth date later", async () => {
+    const { store, ctx, register, motherId, lambing } = await setup();
+    const otherMother = await register({ tag: "M-2" });
+    const { lambIds } = await lambing({
+      date: "2026-04-01",
+      lambs: [
+        { sex: "ram", tag: "L-1", ownerId: null },
+        { sex: "ewe", tag: "L-2", ownerId: null },
+        { sex: "ewe", tag: "L-3", ownerId: null },
+      ],
+    });
+    // A Member corrects the Lambs on their cards (`updateSheep`).
+    store.sheep.find((s) => s.id === lambIds[1])!.motherId = otherMother;
+    store.sheep.find((s) => s.id === lambIds[2])!.birthDate = "2026-04-02";
+
+    const [row] = await listLambings(ctx, { motherId });
+    expect(row?.lambs.map((lamb) => lamb.tag)).toEqual(["L-1"]);
+  });
+
   test("is empty for a Sheep with no Lambing", async () => {
     const { ctx, register } = await setup();
     const ram = await register({ sex: "ram" });

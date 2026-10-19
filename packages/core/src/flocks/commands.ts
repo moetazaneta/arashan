@@ -4,6 +4,7 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError, type ErrorCode } from "../errors";
 import type { FlockId, LocationId, SheepId, ShepherdAssignmentId, ShepherdId } from "../ids";
+import { lastLambingDate } from "../lambings/lambing";
 import type { Sheep } from "../sheep/sheep";
 import {
   type Flock,
@@ -421,11 +422,14 @@ async function requireMove(
   const lastMove = (await ctx.repos.sheep.flockMoves(sheep.id)).at(-1);
   // A Sheep that was Lost and came back was in no Flock while it was Lost.
   const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
+  // The Lambs of an Ewe went into her Flock of the date of her Lambing.
+  const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
     (lastMove !== undefined && date < lastMove.date) ||
-    (lastStatusChange !== undefined && date < lastStatusChange.date)
+    (lastStatusChange !== undefined && date < lastStatusChange.date) ||
+    (lastLambing !== null && date < lastLambing)
   ) {
     throw new DomainError("sheep.moveDateInvalid");
   }

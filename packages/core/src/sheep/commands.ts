@@ -20,6 +20,7 @@ import {
   type SheepLookup,
 } from "../pedigree/pedigree";
 import { arashanBreedId } from "../breeds/breed";
+import { lastLambingDate } from "../lambings/lambing";
 import {
   type Grading,
   maxPassportNumberLength,
@@ -223,11 +224,14 @@ export async function changeSheepOwner(
   const date = validDate(input.date);
   const lastChange = (await ctx.repos.sheep.ownerChanges(sheep.id)).at(-1);
   const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
+  // The Lambs of an Ewe got her Owner of the date of her Lambing.
+  const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
     (lastChange !== undefined && date < lastChange.date) ||
-    (lastStatusChange !== undefined && date < lastStatusChange.date)
+    (lastStatusChange !== undefined && date < lastStatusChange.date) ||
+    (lastLambing !== null && date < lastLambing)
   ) {
     throw new DomainError("sheep.ownerChangeDateInvalid");
   }

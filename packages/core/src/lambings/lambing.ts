@@ -43,6 +43,22 @@ export function ownerAt(
 }
 
 /**
+ * The date of the last Lambing of the Ewe, or null if she has none. A later event of the Mother, such
+ * as a move, a change of the Owner or a change of the Status, is not dated before it: her Lambs got
+ * her Owner and her Flock of that date, and she was Active then.
+ */
+export async function lastLambingDate(
+  lambings: FarmLambingReader,
+  motherId: SheepId,
+): Promise<CalendarDate | null> {
+  let last: CalendarDate | null = null;
+  for (const lambing of await lambings.listOfMother(motherId)) {
+    if (last === null || lambing.date > last) last = lambing.date;
+  }
+  return last;
+}
+
+/**
  * Reads the Lambings of one Farm. The backend binds it to the Farm (`FarmReaders` in context.ts).
  * Each method hides Deleted Lambings (ADR 0005).
  */

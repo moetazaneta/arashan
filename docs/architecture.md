@@ -392,6 +392,11 @@ the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
   Archived Flock has no Sheep, so if the Flock of the Mother on the date is Archived now, the
   command fails (`lambing.flockArchived`); the form shows it before the Member saves.
   `lambings.defaults` gives this Flock too.
+- **The Mother keeps her later events after the Lambing.** A move, a change of the Owner or a change
+  of the Status of the Mother is not dated before her last Lambing (`lastLambingDate`): her Lambs
+  got her Owner and her Flock of that date, and she was Active then. The same date is good.
+- **The list of the Lambings** skips a Lamb that is Deleted, or that got another Mother or birth date
+  later on its card.
 - **No partial Lambing.** The command checks all rules (the counts, the parents, the Flock, each Tag
   and each Owner) before the first write, so a wrong last Lamb writes nothing, also in the core
   tests with the repositories in memory. A Convex mutation is a transaction too.

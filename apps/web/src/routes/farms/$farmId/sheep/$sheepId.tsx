@@ -57,7 +57,8 @@ function SheepCardPage() {
       ) : sheep.data === null ? (
         <Gone farmId={farmId} />
       ) : (
-        <SheepCard farm={farm} sheep={sheep.data} />
+        // A new key for each Sheep: the result of a Lambing stays on the card of its Mother.
+        <SheepCard key={sheep.data.id} farm={farm} sheep={sheep.data} />
       )}
     </div>
   );

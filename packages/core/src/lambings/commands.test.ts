@@ -396,6 +396,35 @@ describe("recordLambing", () => {
       await expect(lambing({ date: "2026-10-10" })).rejects.toThrow("lambing.motherNotActive");
     });
 
+    test("gets no later event dated before her Lambing", async () => {
+      const { store, ctx, motherId, adminId, lambing } = await setup();
+      const flockId = await createFlock(ctx, { name: "Северное", locationId: null });
+      await lambing({ date: "2026-10-10" });
+      const before = snapshot(store);
+
+      // The Lambs got her Owner and her Flock of 2026-10-10, and she was Active then.
+      await expect(
+        changeSheepStatus(ctx, {
+          sheepIds: [motherId],
+          status: "dead",
+          date: "2026-10-05",
+          reason: null,
+        }),
+      ).rejects.toThrow("sheep.statusDateInvalid");
+      await expect(
+        moveSheep(ctx, { sheepIds: [motherId], flockId, date: "2026-10-05" }),
+      ).rejects.toThrow("sheep.moveDateInvalid");
+      await expect(
+        changeSheepOwner(ctx, { sheepId: motherId, ownerId: adminId, date: "2026-10-05" }),
+      ).rejects.toThrow("sheep.ownerChangeDateInvalid");
+      expect(snapshot(store)).toEqual(before);
+
+      // On the day of the Lambing, they are good.
+      await moveSheep(ctx, { sheepIds: [motherId], flockId, date: "2026-10-10" });
+      await changeSheepOwner(ctx, { sheepId: motherId, ownerId: adminId, date: "2026-10-10" });
+      expect(sheepOf(store, motherId)).toMatchObject({ flockId, ownerId: adminId });
+    });
+
     test("is not an External Sheep", async () => {
       const { ctx, lambing } = await setup();
       const external = await registerExternalSheep(ctx, {

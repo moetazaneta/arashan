@@ -4,6 +4,7 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import { recordFlockMove } from "../flocks/commands";
+import { lastLambingDate } from "../lambings/lambing";
 import type { SheepId } from "../ids";
 import { requireOwner } from "./commands";
 import {
@@ -181,12 +182,19 @@ function undoable(change: StatusChange): boolean {
 async function requireExit(ctx: FarmCommandContext, sheep: Sheep, date: CalendarDate) {
   if (sheep.status !== "active") throw new DomainError("sheep.notActive");
   validDate(date);
-  const [moves, owners, changes] = await Promise.all([
+  const [moves, owners, changes, lambing] = await Promise.all([
     ctx.repos.sheep.flockMoves(sheep.id),
     ctx.repos.sheep.ownerChanges(sheep.id),
     ctx.repos.sheep.statusChanges(sheep.id),
+    lastLambingDate(ctx.repos.lambings, sheep.id),
   ]);
-  const before = [sheep.birthDate, moves.at(-1)?.date, owners.at(-1)?.date, changes.at(-1)?.date];
+  const before = [
+    sheep.birthDate,
+    moves.at(-1)?.date,
+    owners.at(-1)?.date,
+    changes.at(-1)?.date,
+    lambing,
+  ];
   if (date > today(ctx) || before.some((other) => other != null && date < other)) {
     throw new DomainError("sheep.statusDateInvalid");
   }

@@ -225,6 +225,7 @@ function SheepPage() {
         onOpenChange={setLambing}
         onRecorded={(count) => {
           setMoveResult(null);
+          setStatusResult(null);
           setLambsRecorded(count);
         }}
       />
@@ -248,6 +249,7 @@ function SheepPage() {
         onChanged={(result) => {
           setSelection(noSelection);
           setMoveResult(null);
+          setLambsRecorded(null);
           setStatusResult(result);
         }}
       />
