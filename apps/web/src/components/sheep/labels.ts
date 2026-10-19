@@ -95,6 +95,7 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "moneyCategory.delete": msg({ context: "history", message: "Категория удалена" }),
   "resource.create": msg({ context: "history", message: "Ресурс добавлен" }),
   "resource.update": msg({ context: "history", message: "Ресурс изменён" }),
+  "resource.setNorms": msg({ context: "history", message: "Нормы ресурса изменены" }),
   "resource.archive": msg({ context: "history", message: "Ресурс отправлен в архив" }),
   "resource.unarchive": msg({ context: "history", message: "Ресурс возвращён из архива" }),
   "resource.restock": msg({ context: "history", message: "Пополнение" }),

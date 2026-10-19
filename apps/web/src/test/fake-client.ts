@@ -65,6 +65,7 @@ import type {
   ResourceEventId,
   ResourceId,
   ResourceInput,
+  Norms,
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
@@ -72,6 +73,9 @@ import {
   cancelResourceEvent,
   createResource,
   getResource,
+  getStockForecast,
+  suggestUsage,
+  setResourceNorms,
   listResources,
   recordAdjustment,
   recordRestock,
@@ -180,6 +184,9 @@ export {
   nameKey,
   pedigreeDepth,
   quantityScale,
+  isCalendarDate,
+  noNorms,
+  normGroups,
   maxQuantity,
   maxReasonLength,
   maxResourceNameLength,
@@ -249,6 +256,7 @@ type CommandName =
   | "deleteMoneyCategory"
   | "createResource"
   | "updateResource"
+  | "setResourceNorms"
   | "archiveResource"
   | "unarchiveResource"
   | "recordRestock"
@@ -1723,6 +1731,7 @@ export function addResource(
       name: "Сено",
       unit: "кг",
       stock: 0,
+      norms: { ram: 0, ewe: 0, lamb: 0 },
       archivedAt: null,
       ...change,
     };
@@ -1826,4 +1835,44 @@ export const useRecordAdjustment = (farmId: FarmId) =>
 export const useCancelResourceEvent = (farmId: FarmId) =>
   useMutation("cancelResourceEvent", (backend, eventId: ResourceEventId) =>
     cancelResourceEvent(commandContext(backend, farmId), { eventId }),
+  );
+
+/** Today in the Farm time zone, also on a page that stays open overnight. */
+export function useToday(timeZone: string | undefined): CalendarDate | undefined {
+  const [today, setToday] = useState(() =>
+    timeZone === undefined ? undefined : dateAt(Date.now(), timeZone),
+  );
+  useEffect(() => {
+    const check = () => setToday(timeZone === undefined ? undefined : dateAt(Date.now(), timeZone));
+    check();
+    const timer = setInterval(check, 60_000);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [timeZone]);
+  return today;
+}
+
+export const useUsageSuggestion = (
+  farmId: FarmId,
+  input: { resourceId: ResourceId; flockId: FlockId; date: CalendarDate } | null,
+) =>
+  useCoreQuery(`suggest usage ${farmId} ${JSON.stringify(input)}`, (backend) =>
+    input === null ? Promise.resolve(null) : suggestUsage(queryContext(backend, farmId), input),
+  );
+
+export const useStockForecast = (farmId: FarmId, date: CalendarDate | undefined) =>
+  useCoreQuery(`stock forecast ${farmId} ${date}`, (backend) =>
+    date === undefined
+      ? Promise.resolve(undefined)
+      : getStockForecast(queryContext(backend, farmId), { date }),
+  );
+
+export const useSetResourceNorms = (farmId: FarmId) =>
+  useMutation("setResourceNorms", (backend, input: { resourceId: ResourceId; norms: Norms }) =>
+    setResourceNorms(commandContext(backend, farmId), input),
   );

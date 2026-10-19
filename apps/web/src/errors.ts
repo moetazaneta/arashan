@@ -160,6 +160,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "resource.archived": msg`Ресурс в архиве. Верните его из архива, чтобы добавить запись.`,
   "resource.dateInvalid": msg`Введите дату.`,
   "resource.dateInFuture": msg`Дата не может быть в будущем.`,
+  "resource.normInvalid": msg`Введите норму от нуля, не больше трёх знаков после запятой.`,
   "resource.quantityInvalid": msg`Введите количество больше нуля, не больше трёх знаков после запятой.`,
   "resource.reasonRequired": msg`Укажите причину корректировки.`,
   "resource.reasonTooLong": msg`Причина не длиннее ${maxReasonLength} символов.`,
