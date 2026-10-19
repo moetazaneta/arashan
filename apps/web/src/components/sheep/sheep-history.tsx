@@ -28,8 +28,12 @@ export function SheepHistory({ farm, sheep }: { farm: Farm; sheep: SheepCardData
 
   return (
     <div className="flex flex-col gap-8">
-      <SheepFlockStays farm={farm} sheep={sheep} />
-      <SheepResponsible farm={farm} sheep={sheep} />
+      {sheep.origin !== "external" && (
+        <>
+          <SheepFlockStays farm={farm} sheep={sheep} />
+          <SheepResponsible farm={farm} sheep={sheep} />
+        </>
+      )}
       <section aria-labelledby={changesId} className="flex flex-col gap-3">
         <h2 id={changesId} className="text-base font-semibold">
           <Trans>Изменения</Trans>

@@ -2,7 +2,11 @@ import type * as Client from "@arashan/client";
 import type {
   AssignmentDates,
   AuditEntry,
+  Breed,
+  BreedId,
   CalendarDate,
+  ExitInput,
+  ExternalSheepRegistration,
   Farm,
   FarmCommandContext,
   FarmFlockRepository,
@@ -11,9 +15,12 @@ import type {
   FarmQueryContext,
   FarmRepositories,
   FarmSettings,
+  FarmBreedRepository,
   FarmSheepRepository,
   FarmShepherdRepository,
   FarmSummary,
+  FileId,
+  FileStorage,
   Flock,
   FlockId,
   FlockInput,
@@ -33,45 +40,60 @@ import type {
   SheepId,
   SheepRegistration,
   SheepUpdate,
+  StoredFile,
   Shepherd,
   ShepherdAssignment,
   ShepherdAssignmentId,
   ShepherdId,
   ShepherdInput,
+  StatusChange,
+  StatusChangeId,
   UserId,
   Viewer,
 } from "@arashan/core";
 import {
+  addBreed as addCoreBreed,
+  breedNameKey,
   archiveFlock,
   archiveLocation,
   archiveShepherd,
   assignShepherd,
   changeSheepOwner,
+  changeSheepStatus,
   createFlock,
   createLocation,
   createShepherd,
   dateAt,
+  deleteBreed,
   deleteSheep,
   DomainError,
   getFlock,
   getSheep,
   getSheepHistory,
+  getSheepPedigree,
   getSheepResponsible,
   inviteLifetimeMs,
+  listBreeds,
+  listParentOptions,
   listFlocks,
   listLocations,
   listSheep,
   listSheepOwners,
+  registerExternalSheep,
   listShepherds,
+  markSheepFound,
   moveSheep,
   nameKey,
   registerSheep,
+  renameBreed,
+  setBreedArchived,
   removeShepherdAssignment,
   tagKey,
   unarchiveFlock,
   unarchiveLocation,
   unarchiveShepherd,
   undoFlockMove,
+  undoSheepStatusChange,
   updateFlock,
   updateLocation,
   updateSheep,
@@ -86,22 +108,38 @@ import { createElement, useEffect, useState, useSyncExternalStore } from "react"
 // it after each test.
 
 export {
+  arashanBreedId,
+  arashanShare,
+  compositionOf,
   dateAt,
   defaultLambAgeMonths,
+  exitStatuses,
+  grades,
   inviteLifetimeMs,
+  isPureArashan,
+  knownParents,
+  manualLimit,
+  maxBreedNameLength,
   maxLambAgeMonths,
+  maxPassportNumberLength,
   maxNameLength,
   maxNotesLength,
   maxPasswordLength,
+  maxScanBytes,
   maxPhoneLength,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxSheepPerStatusChange,
+  maxStatusReasonLength,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  pedigreeDepth,
+  scanContentTypes,
   sexes,
+  wholeShare,
 } from "@arashan/core";
 
 export const fakeAppVersion = "1.2.3";
@@ -127,6 +165,15 @@ type CommandName =
   | "updateSheep"
   | "changeSheepOwner"
   | "deleteSheep"
+  | "changeSheepStatus"
+  | "markSheepFound"
+  | "undoSheepStatusChange"
+  | "registerExternalSheep"
+  | "uploadPassportScan"
+  | "addBreed"
+  | "renameBreed"
+  | "setBreedArchived"
+  | "deleteBreed"
   | "createFlock"
   | "updateFlock"
   | "archiveFlock"
@@ -158,8 +205,15 @@ interface FakeBackend {
   sheep: Sheep[];
   deletedSheep: Set<SheepId>;
   ownerChanges: OwnerChange[];
+  /** The Breeds of all Farms that the Members added, also the Deleted ones. */
+  breeds: Breed[];
+  deletedBreeds: Set<BreedId>;
+  /** The uploaded files, such as the scans of Passports. */
+  files: Map<FileId, StoredFile>;
   /** The moves of Sheep between Flocks, also the undone ones. */
   flockMoves: (FlockMove & { deleted?: boolean })[];
+  /** The changes of the Status of Sheep, also the undone ones. */
+  statusChanges: (StatusChange & { deleted?: boolean })[];
   flocks: Flock[];
   locations: Location[];
   shepherds: Shepherd[];
@@ -181,7 +235,11 @@ const emptyBackend = (): FakeBackend => ({
   sheep: [],
   deletedSheep: new Set(),
   ownerChanges: [],
+  breeds: [],
+  deletedBreeds: new Set(),
+  files: new Map(),
   flockMoves: [],
+  statusChanges: [],
   flocks: [],
   locations: [],
   shepherds: [],
@@ -205,6 +263,7 @@ export function updateFake(change: (backend: FakeBackend) => void) {
 
 export function resetFake() {
   backend = emptyBackend();
+  uploadGate = null;
   version += 1;
 }
 
@@ -548,14 +607,21 @@ export function passwordOf(membershipId: MembershipId): string | undefined {
 // rules of the core apply, such as a Tag that another Sheep has. The Members of a Farm come from
 // `addMembers`; the User of `signIn` is always a Member of the User's Farms.
 
-/** A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram. */
+/**
+ * A Sheep of the Farm, as if a Member registered it now. The defaults make an adult Ram with no
+ * parents. An External Sheep (`origin: "external"`) has no Owner. The fake does not check the rules
+ * of the core here, such as the sex of a parent.
+ */
 export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "farmId">> = {}) {
   let id!: SheepId;
   updateFake((backend) => {
     const viewer = viewerOf(backend);
+    const external = change.origin === "external";
     const ownerId =
       change.ownerId === undefined
-        ? (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
+        ? external
+          ? null
+          : (membershipsOf(backend, farm.id).find((m) => m.userId === viewer?.user.id)?.id ?? null)
         : change.ownerId;
     id = nextId(backend, "sheep") as SheepId;
     backend.sheep.push({
@@ -566,10 +632,15 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       sex: "ram",
       birthDate: null,
       origin: "born",
-      initialEntry: true,
+      initialEntry: !external,
       status: "active",
       notes: null,
       weight: null,
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
       flockId: null,
       registeredAt: Date.now(),
       ...change,
@@ -579,11 +650,47 @@ export function addSheep(farm: FakeFarm, change: Partial<Omit<Sheep, "id" | "far
       at: Date.now(),
       actorId: viewer?.user.id ?? null,
       farmId: farm.id,
-      command: "sheep.register",
+      command: external ? "sheep.registerExternal" : "sheep.register",
       target: { kind: "Sheep", id },
     });
   });
   return id;
+}
+
+/** A Breed that a Member added to the list of the Farm. */
+export function addBreed(
+  farm: FakeFarm,
+  name: string,
+  change: Partial<Pick<Breed, "archivedAt">> = {},
+) {
+  let id!: BreedId;
+  updateFake((backend) => {
+    id = nextId(backend, "breed") as BreedId;
+    backend.breeds.push({
+      id,
+      farmId: farm.id,
+      name,
+      archivedAt: null,
+      createdAt: Date.now(),
+      ...change,
+    });
+  });
+  return id;
+}
+
+/** A file in the fake storage, such as the scan of a Passport, and its id. */
+export function addFile(file: StoredFile = { size: 1024, contentType: "application/pdf" }) {
+  let id!: FileId;
+  updateFake((backend) => {
+    id = nextId(backend, "file") as FileId;
+    backend.files.set(id, file);
+  });
+  return id;
+}
+
+/** The Sheep in the fake backend, also a Deleted one, for a test that checks what a command wrote. */
+export function sheepOf(id: SheepId): Sheep | undefined {
+  return backend.sheep.find((sheep) => sheep.id === id);
 }
 
 function nextId(backend: FakeBackend, kind: string): string {
@@ -656,8 +763,16 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
     },
     list: async () => ofFarm().map((s) => ({ ...s })),
     findByTag: async (tag) =>
-      ofFarm().filter((s) => s.tag !== null && tagKey(s.tag) === tagKey(tag)),
+      ofFarm().filter(
+        (s) => s.origin !== "external" && s.tag !== null && tagKey(s.tag) === tagKey(tag),
+      ),
+    children: async (parentId) =>
+      ofFarm()
+        .filter((s) => s.motherId === parentId || s.fatherId === parentId)
+        .map((s) => ({ ...s })),
     ownerChanges: async (sheepId) => backend.ownerChanges.filter((c) => c.sheepId === sheepId),
+    ownsLostSheep: async (ownerId) =>
+      ofFarm().some((s) => s.ownerId === ownerId && s.status === "lost"),
     ownsActiveSheep: async (ownerId) =>
       ofFarm().some((s) => s.ownerId === ownerId && s.status === "active"),
     listInFlock: async (flockId) => ofFarm().filter((s) => s.flockId === flockId),
@@ -688,9 +803,66 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
       const found = backend.flockMoves.find((m) => m.id === id);
       if (found !== undefined) found.deleted = true;
     },
+    statusChanges: async (sheepId) =>
+      backend.statusChanges
+        .filter((c) => c.sheepId === sheepId && c.deleted !== true)
+        .map(({ id, from, to, date, reason, flockMoveId, at }) => ({
+          id,
+          sheepId,
+          from,
+          to,
+          date,
+          reason,
+          flockMoveId,
+          at,
+        })),
+    insertStatusChange: async (change) => {
+      const id = nextId(backend, "status-change") as StatusChangeId;
+      backend.statusChanges.push({ id, ...change });
+      return id;
+    },
+    markStatusChangeDeleted: async (id) => {
+      const found = backend.statusChanges.find((c) => c.id === id);
+      if (found !== undefined) found.deleted = true;
+    },
     markDeleted: async (id) => {
       backend.deletedSheep.add(id);
     },
+  };
+}
+
+function breedRepository(backend: FakeBackend, farmId: FarmId): FarmBreedRepository {
+  const ofFarm = () =>
+    backend.breeds.filter((b) => b.farmId === farmId && !backend.deletedBreeds.has(b.id));
+  const find = (id: BreedId) => ofFarm().find((b) => b.id === id);
+  return {
+    get: async (id) => {
+      const found = find(id);
+      return found === undefined ? null : { ...found };
+    },
+    list: async () => ofFarm().map((b) => ({ ...b })),
+    findByName: async (name) => ofFarm().filter((b) => breedNameKey(b.name) === breedNameKey(name)),
+    insert: async (fields) => {
+      const id = nextId(backend, "breed") as BreedId;
+      backend.breeds.push({ id, farmId, ...fields });
+      return id;
+    },
+    update: async (id, fields) => {
+      const found = find(id);
+      if (found !== undefined) Object.assign(found, fields);
+    },
+    markDeleted: async (id) => {
+      backend.deletedBreeds.add(id);
+    },
+  };
+}
+
+/** The file storage of the fake. A browser would get a file from its URL. */
+function fileStorage(backend: FakeBackend): FileStorage {
+  return {
+    url: async (id) => (backend.files.has(id) ? `https://files.test/${id}` : null),
+    uploadUrl: async () => "https://upload.test",
+    get: async (id) => backend.files.get(id) ?? null,
   };
 }
 
@@ -798,6 +970,8 @@ function farmReaders(backend: FakeBackend, farmId: FarmId): FarmQueryContext["re
       countFarms: async () => 1,
     },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
@@ -824,6 +998,8 @@ function commandContext(backend: FakeBackend, farmId: FarmId): FarmCommandContex
     invites: { insert: notInFake },
     passwordResets: { insert: notInFake },
     sheep: sheepRepository(backend, farmId),
+    breeds: breedRepository(backend, farmId),
+    files: fileStorage(backend),
     flocks: flockRepository(backend, farmId),
     locations: locationRepository(backend, farmId),
     shepherds: shepherdRepository(backend, farmId),
@@ -886,6 +1062,86 @@ export const useChangeSheepOwner = (farmId: FarmId) =>
 export const useDeleteSheep = (farmId: FarmId) =>
   useMutation("deleteSheep", (backend, sheepId: SheepId) =>
     deleteSheep(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useChangeSheepStatus = (farmId: FarmId) =>
+  useMutation("changeSheepStatus", (backend, input: ExitInput & { sheepIds: readonly SheepId[] }) =>
+    changeSheepStatus(commandContext(backend, farmId), input),
+  );
+
+export const useMarkSheepFound = (farmId: FarmId) =>
+  useMutation(
+    "markSheepFound",
+    (backend, input: { sheepId: SheepId; date: CalendarDate; reason: string | null }) =>
+      markSheepFound(commandContext(backend, farmId), input),
+  );
+
+export const useUndoSheepStatusChange = (farmId: FarmId) =>
+  useMutation("undoSheepStatusChange", (backend, sheepId: SheepId) =>
+    undoSheepStatusChange(commandContext(backend, farmId), { sheepId }),
+  );
+
+export const useParentOptions = (farmId: FarmId) =>
+  useCoreQuery(`parents ${farmId}`, (backend) => listParentOptions(queryContext(backend, farmId)));
+
+export const useSheepPedigree = (farmId: FarmId, sheepId: SheepId) =>
+  useCoreQuery(`pedigree ${farmId} ${sheepId}`, (backend) =>
+    getSheepPedigree(queryContext(backend, farmId), { sheepId }),
+  );
+
+export const useRegisterExternalSheep = (farmId: FarmId) =>
+  useMutation("registerExternalSheep", (backend, input: ExternalSheepRegistration) =>
+    registerExternalSheep(commandContext(backend, farmId), input),
+  );
+
+/** The upload of a scan: the fake storage keeps its size and type, and gives its id. */
+// An upload of a scan waits for this, if a test holds the uploads (`holdUploads`).
+let uploadGate: Promise<void> | null = null;
+
+/** Holds each upload of a scan until the test calls the function that this gives. */
+export function holdUploads(): () => void {
+  let release = () => {};
+  uploadGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  return () => {
+    uploadGate = null;
+    release();
+  };
+}
+
+export const useUploadPassportScan = (farmId: FarmId) =>
+  useMutation("uploadPassportScan", async (backend, file: File): Promise<FileId> => {
+    if (uploadGate !== null) await uploadGate;
+    enterFakeFarm(backend, farmId);
+    const id = nextId(backend, "file") as FileId;
+    backend.files.set(id, { size: file.size, contentType: file.type === "" ? null : file.type });
+    return id;
+  });
+
+// The Breeds of a Farm, with the commands and queries of the core.
+
+export const useBreeds = (farmId: FarmId) =>
+  useCoreQuery(`breeds ${farmId}`, (backend) => listBreeds(queryContext(backend, farmId)));
+
+export const useAddBreed = (farmId: FarmId) =>
+  useMutation("addBreed", (backend, input: { name: string }) =>
+    addCoreBreed(commandContext(backend, farmId), input),
+  );
+
+export const useRenameBreed = (farmId: FarmId) =>
+  useMutation("renameBreed", (backend, input: { breedId: BreedId; name: string }) =>
+    renameBreed(commandContext(backend, farmId), input),
+  );
+
+export const useSetBreedArchived = (farmId: FarmId) =>
+  useMutation("setBreedArchived", (backend, input: { breedId: BreedId; archived: boolean }) =>
+    setBreedArchived(commandContext(backend, farmId), input),
+  );
+
+export const useDeleteBreed = (farmId: FarmId) =>
+  useMutation("deleteBreed", (backend, breedId: BreedId) =>
+    deleteBreed(commandContext(backend, farmId), { breedId }),
   );
 
 // Flocks, Locations and Shepherds. The fake runs the commands and queries of the core, as for the
@@ -975,6 +1231,11 @@ export function addFlockMove(sheepId: SheepId, flockId: FlockId | null, date: Ca
 /** The audit entries of the fake backend, for a test that checks one. */
 export function auditEntries(): readonly AuditEntry[] {
   return backend.audit;
+}
+
+/** The current record of a Sheep, for a test that checks the result of a command. */
+export function sheepState(sheepId: SheepId): Readonly<Sheep> | null {
+  return backend.sheep.find((sheep) => sheep.id === sheepId) ?? null;
 }
 
 export const useFlocks = (farmId: FarmId) =>

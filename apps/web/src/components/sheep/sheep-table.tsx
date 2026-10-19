@@ -1,5 +1,5 @@
-import type { SheepListItem } from "@arashan/client";
-import type { SheepId, SheepStatus } from "@arashan/core";
+import { arashanShare, type SheepListItem } from "@arashan/client";
+import type { Grade, SheepId, SheepStatus } from "@arashan/core";
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -44,10 +44,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
-import { formatCalendarDate, formatKg } from "@/format";
+import { formatCalendarDate, formatKg, formatShareNumber } from "@/format";
 import { cn } from "@/lib/utils";
 
-import { originLabels, sexLabels, statusLabels } from "./labels";
+import { gradeLabels, originLabels, sexLabels, statusLabels } from "./labels";
 
 // The table «Бараны»: dense rows, sorting by a click on a header, the columns that a Member chose,
 // the selection for the bulk actions, and the keyboard. It must show a few hundred Sheep at once
@@ -84,6 +84,9 @@ const statusOrder: Record<SheepStatus, number> = {
   dead: 3,
   lost: 4,
 };
+
+// The best Grade first.
+const gradeOrder: Record<Grade, number> = { elite: 0, first: 1, second: 2 };
 
 const helper = createColumnHelper<typeof features, SheepListItem>();
 
@@ -150,6 +153,19 @@ const columns = helper.columns([
     sortUndefined: "last",
     cell: ({ row }) => <WeightCell kg={row.original.weight?.kg ?? null} />,
   }),
+  helper.accessor((sheep) => arashanShare(sheep.composition), {
+    id: "arashan",
+    meta: { label: msg`Арашан, %`, numeric: true },
+    sortFn: byNumber,
+    cell: ({ row }) => <ShareCell share={arashanShare(row.original.composition)} />,
+  }),
+  helper.accessor((sheep) => (sheep.grade === null ? undefined : gradeOrder[sheep.grade.grade]), {
+    id: "grade",
+    meta: { label: msg`Класс` },
+    sortFn: byNumber,
+    sortUndefined: "last",
+    cell: ({ row }) => <GradeCell grade={row.original.grade?.grade ?? null} />,
+  }),
   helper.accessor((sheep) => sheep.notes ?? undefined, {
     id: "notes",
     meta: { label: msg`Заметки` },
@@ -173,7 +189,13 @@ export function canSelectSheep(sheep: SheepListItem): boolean {
 // The visible columns. The other columns are in the column settings. A Member's choice stays in this
 // browser.
 const columnsKey = "arashan.sheepColumns";
-const defaultVisibility: ColumnVisibilityState = { origin: false, weight: false, notes: false };
+const defaultVisibility: ColumnVisibilityState = {
+  origin: false,
+  weight: false,
+  arashan: false,
+  grade: false,
+  notes: false,
+};
 
 function savedVisibility(): ColumnVisibilityState {
   try {
@@ -581,4 +603,15 @@ function WeightCell({ kg }: { kg: number | null }) {
   const { i18n } = useLingui();
   if (kg === null) return <NoValue />;
   return <>{formatKg(kg, i18n.locale)}</>;
+}
+
+function ShareCell({ share }: { share: number }) {
+  const { i18n } = useLingui();
+  return <>{formatShareNumber(share, i18n.locale)}</>;
+}
+
+function GradeCell({ grade }: { grade: Grade | null }) {
+  const { i18n } = useLingui();
+  if (grade === null) return <NoValue />;
+  return <>{i18n._(gradeLabels[grade])}</>;
 }

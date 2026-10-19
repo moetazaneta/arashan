@@ -372,6 +372,7 @@ export async function recordFlockMove(
   flockId: FlockId | null,
   date: CalendarDate,
 ): Promise<boolean> {
+  if (sheep.origin === "external") throw new DomainError("sheep.notFound");
   if (sheep.flockId === flockId) return false;
   await requireTargetFlock(ctx, flockId);
   await requireMove(ctx, sheep, date);
@@ -418,10 +419,13 @@ async function requireMove(
   if (sheep.status !== "active") throw new DomainError("sheep.notActive");
   if (!isCalendarDate(date)) throw new DomainError("sheep.dateInvalid");
   const lastMove = (await ctx.repos.sheep.flockMoves(sheep.id)).at(-1);
+  // A Sheep that was Lost and came back was in no Flock while it was Lost.
+  const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
-    (lastMove !== undefined && date < lastMove.date)
+    (lastMove !== undefined && date < lastMove.date) ||
+    (lastStatusChange !== undefined && date < lastStatusChange.date)
   ) {
     throw new DomainError("sheep.moveDateInvalid");
   }

@@ -97,7 +97,8 @@ export async function changeMemberRole(
 /**
  * An Admin removes a Member: the Membership becomes Archived, and the User cannot open the Farm. The
  * Member stays in the history and in the old records. The last Admin of the Farm cannot be removed,
- * and a Member who owns an Active Sheep cannot be removed (`member.ownsActiveSheep`).
+ * and a Member who owns an Active Sheep or a Lost one cannot be removed (`member.ownsActiveSheep`,
+ * `member.ownsLostSheep`).
  */
 export async function removeMember(
   ctx: FarmCommandContext,
@@ -109,6 +110,10 @@ export async function removeMember(
   // The Owner of an Active Sheep is a Member: give the Sheep to another Member first.
   if (await ctx.repos.sheep.ownsActiveSheep(membership.id)) {
     throw new DomainError("member.ownsActiveSheep");
+  }
+  // A Lost Sheep can come back, and then its Owner must be a Member.
+  if (await ctx.repos.sheep.ownsLostSheep(membership.id)) {
+    throw new DomainError("member.ownsLostSheep");
   }
   await ctx.repos.memberships.archive(membership.id, ctx.now());
   await recordFarmAudit(ctx, {

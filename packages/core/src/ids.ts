@@ -11,6 +11,9 @@ export type InviteId = Id<"Invite">;
 export type SheepId = Id<"Sheep">;
 export type OwnerChangeId = Id<"OwnerChange">;
 export type PasswordResetId = Id<"PasswordReset">;
+export type BreedId = Id<"Breed">;
+/** A file in the file storage of the app, such as the scan of a Passport. */
+export type FileId = Id<"File">;
 export type LocationId = Id<"Location">;
 export type ShepherdId = Id<"Shepherd">;
 export type FlockId = Id<"Flock">;
@@ -18,3 +21,4 @@ export type ShepherdAssignmentId = Id<"ShepherdAssignment">;
 export type FlockMoveId = Id<"FlockMove">;
 export type MoneyCategoryId = Id<"MoneyCategory">;
 export type MoneyRecordId = Id<"MoneyRecord">;
+export type StatusChangeId = Id<"StatusChange">;
