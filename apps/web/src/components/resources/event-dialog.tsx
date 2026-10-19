@@ -131,7 +131,7 @@ function EventForm({
   const [reason, setReason] = useState("");
   // The rules that the form checks before it sends the event: they show after a try to save.
   const [checked, setChecked] = useState(false);
-  const quantityValue = parseQuantity(quantity);
+  const quantityValue = parseQuantity(quantity, i18n.locale);
   const priceValue = price.trim() === "" ? null : parseAmount(price);
   const priceInvalid = price.trim() !== "" && priceValue === null;
   const localError = useCodeError(

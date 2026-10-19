@@ -76,7 +76,7 @@ import {
   recordAdjustment,
   recordRestock,
   recordUsage,
-  stockChange,
+  stockOf,
   unarchiveResource,
   updateResource,
   breedNameKey,
@@ -1747,7 +1747,9 @@ export function addResourceEvent(
       ...event,
     });
     const stored = backend.resources.find((r) => r.id === resource.id)!;
-    stored.stock += stockChange(event);
+    stored.stock = stockOf(
+      backend.resourceEvents.filter((e) => e.resourceId === resource.id && e.deleted !== true),
+    );
   });
 }
 

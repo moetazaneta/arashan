@@ -158,10 +158,11 @@ export async function recordUsage(
 }
 
 /**
- * A Member records an Adjustment after a count: on the date, the Farm had the counted quantity
- * (0 or more). The Adjustment keeps the difference from the Stock at the end of that date, so the
- * Stock on the date becomes the counted quantity. A count that finds the Stock as it is changes
- * nothing (`resource.adjustmentNoChange`). The reason is required, for example «сено сгнило».
+ * A Member records an Adjustment after a count: at the end of the date, the Farm had the counted
+ * quantity (0 or more). The Adjustment keeps the counted quantity, and the Stock on the date becomes
+ * it (`stockSteps`); an event that a Member records later before that date does not move it. A
+ * count that finds the Stock as it is changes nothing (`resource.adjustmentNoChange`). The reason is
+ * required, for example «сено сгнило».
  */
 export async function recordAdjustment(
   ctx: FarmCommandContext,
@@ -175,12 +176,13 @@ export async function recordAdjustment(
   }
   const reason = validReason(input.reason);
   const events = await ctx.repos.resources.events(resource.id);
-  const quantity = input.counted - stockOn(events, date);
-  if (quantity === 0) throw new DomainError("resource.adjustmentNoChange");
+  if (input.counted === stockOn(events, date)) {
+    throw new DomainError("resource.adjustmentNoChange");
+  }
   const eventId = await addEvent(
     ctx,
     resource,
-    { kind: "adjustment", date, quantity, flockId: null, reason },
+    { kind: "adjustment", date, quantity: input.counted, flockId: null, reason },
     events,
   );
   await auditEvent(ctx, "resource.adjust", resource.id, eventId, null);

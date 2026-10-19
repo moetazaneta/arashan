@@ -18,7 +18,7 @@ import {
   recordUsage,
 } from "./commands";
 import { getResource, listResources } from "./queries";
-import { stockOf, stockOn } from "./resource";
+import { stockOf, stockOn, stockSteps } from "./resource";
 
 const settings = { currency: "KGS", timeZone: "Asia/Bishkek", lambAgeMonths: 4 };
 
@@ -55,27 +55,49 @@ async function errorOf(call: Promise<unknown>): Promise<unknown> {
 
 describe("the Stock", () => {
   test("is the sum of the Restocks, minus the Usages, plus or minus the Adjustments", () => {
-    expect(
-      stockOf([
-        { kind: "restock", quantity: 1_000_500 },
-        { kind: "usage", quantity: 250_250 },
-        { kind: "adjustment", quantity: -50_000 },
-        { kind: "restock", quantity: 300 },
-        { kind: "adjustment", quantity: 1_000 },
-      ]),
-    ).toBe(701_550);
+    // An event on a day, recorded at a time: the order of `createdAt` in one date.
+    let at = 0;
+    const on = (date: string, kind: "restock" | "usage" | "adjustment", quantity: number) => ({
+      kind,
+      quantity,
+      date,
+      createdAt: (at += 1),
+    });
+    const events = [
+      on("2026-10-01", "restock", 1_000_500),
+      on("2026-10-02", "usage", 250_250),
+      // The count found 700 kg: −50,25 kg.
+      on("2026-10-03", "adjustment", 700_000),
+      on("2026-10-04", "restock", 300),
+      // The count found 701,3 kg: +1 kg.
+      on("2026-10-05", "adjustment", 701_300),
+      on("2026-10-06", "usage", 1_250),
+    ];
+    expect(stockOf(events)).toBe(700_050);
+    expect(stockSteps(events).map((step) => step.change)).toEqual([
+      1_000_500, -250_250, -50_250, 300, 1_000, -1_250,
+    ]);
     expect(stockOf([])).toBe(0);
   });
 
   test("at the end of a date counts the events of that day and before it", () => {
     const events = [
-      { kind: "restock", quantity: 10_000, date: "2026-10-01" },
-      { kind: "usage", quantity: 3_000, date: "2026-10-05" },
-      { kind: "usage", quantity: 2_000, date: "2026-10-06" },
+      { kind: "restock", quantity: 10_000, date: "2026-10-01", createdAt: 1 },
+      { kind: "usage", quantity: 3_000, date: "2026-10-05", createdAt: 2 },
+      { kind: "usage", quantity: 2_000, date: "2026-10-06", createdAt: 3 },
     ] as const;
     expect(stockOn(events, "2026-09-30")).toBe(0);
     expect(stockOn(events, "2026-10-05")).toBe(7_000);
     expect(stockOn(events, "2026-10-31")).toBe(5_000);
+  });
+
+  test("of a count stays when an event of that day comes later: the count is the end of the day", () => {
+    const events = [
+      { kind: "restock", quantity: 10_000, date: "2026-10-01", createdAt: 1 },
+      { kind: "adjustment", quantity: 8_000, date: "2026-10-05", createdAt: 2 },
+      { kind: "usage", quantity: 500, date: "2026-10-05", createdAt: 3 },
+    ] as const;
+    expect(stockOf(events)).toBe(8_000);
   });
 
   test("follows each event, with decimals and no rounding error", async () => {
@@ -137,6 +159,40 @@ describe("an Adjustment", () => {
       stockAfter: 70_500,
       reason: "сено сгнило",
     });
+  });
+
+  test("holds when a Member records a forgotten Usage before the count", async () => {
+    const { ctx, hay, stock, restock, use } = await setup();
+    await restock(100_000, null, "2026-10-01");
+    await recordAdjustment(ctx, {
+      resourceId: hay,
+      date: "2026-10-10",
+      counted: 60_000,
+      reason: "пересчёт",
+    });
+
+    // The count already saw this Usage: the Stock stays 60 kg.
+    await use(30_000, "2026-10-05");
+    expect(await stock()).toBe(60_000);
+    const [count, usage] = (await getResource(ctx, { resourceId: hay }))!.events;
+    expect(count).toMatchObject({ kind: "adjustment", change: -10_000, stockAfter: 60_000 });
+    expect(usage).toMatchObject({ kind: "usage", stockAfter: 70_000 });
+  });
+
+  test("holds when a Member cancels a wrong Restock before it and records it again", async () => {
+    const { ctx, hay, stock, restock } = await setup();
+    const typo = await restock(1_000_000, null, "2026-10-01");
+    await recordAdjustment(ctx, {
+      resourceId: hay,
+      date: "2026-10-10",
+      counted: 100_000,
+      reason: "пересчёт",
+    });
+
+    await cancelResourceEvent(ctx, { eventId: typo });
+    await restock(100_000, null, "2026-10-01");
+    expect(await stock()).toBe(100_000);
+    expect((await getResource(ctx, { resourceId: hay }))!.events[0]).toMatchObject({ change: 0 });
   });
 
   test("can add to the Stock when the count finds more", async () => {

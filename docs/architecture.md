@@ -471,7 +471,8 @@ of a Resource shows its Stock and its events, the newest first, each with the St
 - **A quantity is an integer of thousandths** of the unit of its Resource (`quantityScale`): 1500 is
   1,5 kg. A sum is then exact, and a quantity has at most three decimals. One event has at most
   `maxQuantity` (1 000 000 units). The web app reads and shows quantities with `parseQuantity` and
-  `formatQuantity` of `format.ts`.
+  `formatQuantity` of `format.ts`. With three decimals «1,500» is ambiguous, so `parseQuantity` reads
+  it in the language of the UI: 1,5 in Russian, 1500 in English.
 - **A Resource** has a name (unique in the Farm, also among the Archived ones, by `nameKey`) and one
   unit of measure, a text that the Member writes, such as «кг», «тюк» or «мешок». The unit changes
   only while the Resource has no events (`resource.unitLocked`). An Archived Resource stays in the
@@ -481,13 +482,17 @@ of a Resource shows its Stock and its events, the newest first, each with the St
   reason. An event never changes: a Member cancels one made by mistake (`cancelResourceEvent`), and
   it becomes Deleted.
 - **The Stock** is the sum of the Restocks, minus the Usages, plus or minus the Adjustments
-  (`stockOf`). It can be less than 0, for example when a Member records a Usage before the Restock;
-  the UI shows it red. The row of a Resource keeps its Stock (`Resource.stock`), so that the list
-  reads no events: each command that adds or cancels an event computes it again from all the events
-  of the Resource. The card computes it from the events itself.
-- **An Adjustment after a count.** The Member gives the quantity that the count found on a date. The
-  core keeps the difference from the Stock at the end of that date (`stockOn`), so the Stock on the
-  date becomes the counted quantity. A count that changes nothing is refused
+  (`stockOf`). `stockSteps` computes it event by event, in the order of `inEventOrder`: by date, and
+  in one date the Restocks and the Usages in the order of recording, then the Adjustments. The Stock
+  can be less than 0, for example when a Member records a Usage before the Restock; the UI shows it
+  red. The row of a Resource keeps its Stock (`Resource.stock`), so that the list reads no events:
+  each command that adds or cancels an event computes it again from all the events of the Resource.
+  The card computes it from the events itself.
+- **An Adjustment is a count.** It keeps the quantity that the count found (its `quantity`), and the
+  Stock at the end of its date becomes that quantity: its change is the difference from the Stock
+  before it. Thus a Usage that a Member records later with a date before the count, or a wrong
+  Restock that a Member cancels and records again, does not move the Stock after the count: the
+  count already saw the real quantity. A count equal to the Stock on its date is refused
   (`resource.adjustmentNoChange`).
 - **A Restock with a price** makes an Automatic Expense of the System category «Пополнение ресурса»
   (`restock`), of the Farm as a whole, with `createAutomaticRecord` and the source

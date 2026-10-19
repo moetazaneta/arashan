@@ -3,7 +3,8 @@ import type { FarmId, FlockId, ResourceEventId, ResourceId } from "../ids";
 
 // The feed of a Farm: the Resources (hay, grain…), their Stock, and the events that change it. A
 // Restock adds a quantity, a Usage gives a quantity to a Flock, and an Adjustment corrects the Stock
-// after a count. The Stock is the sum of the events (`stockOf`).
+// after a count. The Stock is the sum of the Restocks, minus the Usages, plus or minus the
+// Adjustments (`stockOf`).
 
 /**
  * A quantity is an integer of thousandths of the unit of its Resource: 1500 is 1,5 kg. A sum of
@@ -29,7 +30,7 @@ export interface Resource {
   /** The one unit of measure of all the quantities of the Resource, as a Member wrote it. */
   unit: string;
   /**
-   * The Stock now, in thousandths of the unit: the sum of the events (`stockOf`). Each command that
+   * The Stock now, in thousandths of the unit (`stockOf` of the events). Each command that
    * adds or cancels an event computes it again from all the events, so that a list of Resources reads
    * no events.
    */
@@ -57,8 +58,8 @@ export interface ResourceEvent {
   kind: ResourceEventKind;
   date: CalendarDate;
   /**
-   * In thousandths of the unit. More than 0 for a Restock and a Usage. For an Adjustment, the change
-   * of the Stock: more than 0 if the count found more, less than 0 if it found less.
+   * In thousandths of the unit. More than 0 for a Restock and a Usage. For an Adjustment, the
+   * quantity that the count found (0 or more): the Stock at the end of its date.
    */
   quantity: number;
   /** The Flock that got the Resource: only for a Usage, which must have one. */
@@ -69,37 +70,62 @@ export interface ResourceEvent {
   createdAt: number;
 }
 
-/** How much the event changes the Stock: plus for a Restock, minus for a Usage. */
-export function stockChange(event: Pick<ResourceEvent, "kind" | "quantity">): number {
-  return event.kind === "usage" ? -event.quantity : event.quantity;
+/** One event in the order of the Stock, with its change of the Stock and the Stock after it. */
+export interface StockStep<T> {
+  event: T;
+  /** Plus for a Restock, minus for a Usage; for an Adjustment, the difference that the count found. */
+  change: number;
+  stock: number;
+}
+
+type StockEvent = Pick<ResourceEvent, "kind" | "quantity" | "date" | "createdAt">;
+
+/**
+ * The events in the order of the Stock: by date; in one date, the Restocks and the Usages in the
+ * order in which a Member recorded them, and then the Adjustments. A count gives the Stock at the end
+ * of its date, so it comes after all the other events of that day.
+ */
+export function inEventOrder<T extends StockEvent>(events: readonly T[]): T[] {
+  return events.toSorted((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    const countA = a.kind === "adjustment" ? 1 : 0;
+    const countB = b.kind === "adjustment" ? 1 : 0;
+    return countA !== countB ? countA - countB : a.createdAt - b.createdAt;
+  });
+}
+
+/**
+ * The Stock step by step. A Restock adds its quantity, a Usage removes it, and an Adjustment makes
+ * the Stock the counted quantity: its change is the difference from the Stock before it. Thus an
+ * event that a Member records or cancels later, on a date before a count, does not change the Stock
+ * after the count: the count already saw it.
+ */
+export function stockSteps<T extends StockEvent>(events: readonly T[]): StockStep<T>[] {
+  let stock = 0;
+  return inEventOrder(events).map((event) => {
+    const change =
+      event.kind === "restock"
+        ? event.quantity
+        : event.kind === "usage"
+          ? -event.quantity
+          : event.quantity - stock;
+    stock += change;
+    return { event, change, stock };
+  });
 }
 
 /**
  * The Stock after the events: the sum of the Restocks, minus the Usages, plus or minus the
- * Adjustments. It can be less than 0, for example when a Member records a Usage before the Restock.
+ * Adjustments, as `stockSteps` computes them. It can be less than 0, for example when a Member
+ * records a Usage before the Restock.
  */
-export function stockOf(events: readonly Pick<ResourceEvent, "kind" | "quantity">[]): number {
-  return events.reduce((stock, event) => stock + stockChange(event), 0);
+export function stockOf(events: readonly StockEvent[]): number {
+  return stockSteps(events).at(-1)?.stock ?? 0;
 }
 
 /** The Stock at the end of the date: after all the events of that day and before it. */
-export function stockOn(
-  events: readonly Pick<ResourceEvent, "kind" | "quantity" | "date">[],
-  date: CalendarDate,
-): number {
+export function stockOn(events: readonly StockEvent[], date: CalendarDate): number {
   return stockOf(events.filter((event) => event.date <= date));
-}
-
-/**
- * The events in the order in which they happened: by date, then by the time when a Member recorded
- * them.
- */
-export function inEventOrder<T extends Pick<ResourceEvent, "date" | "createdAt">>(
-  events: readonly T[],
-): T[] {
-  return events.toSorted((a, b) =>
-    a.date === b.date ? a.createdAt - b.createdAt : a.date < b.date ? -1 : 1,
-  );
 }
 
 /**

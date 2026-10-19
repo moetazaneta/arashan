@@ -72,8 +72,11 @@ describe("resources", () => {
     ]);
     expect(card!.events[1]!.flock).toEqual({ id: flockId, name: "Отара", archived: false });
 
+    // The count of 2026-01-12 already saw the Usage: cancelling it leaves the counted Stock.
     await editor.mutation(api.resources.cancelEvent, { farmId, eventId: usage });
-    expect((await editor.query(api.resources.list, { farmId }))[0]!.stock).toBe(990_250);
+    expect((await editor.query(api.resources.list, { farmId }))[0]!.stock).toBe(790_000);
+    const after = await editor.query(api.resources.get, { farmId, resourceId });
+    expect(after!.events[0]).toMatchObject({ kind: "adjustment", change: -210_500 });
     expect((await rowOf(t, "resourceEvents", usage))?.deletedAt).toBeTypeOf("number");
     expect(await auditOf(t, "resource.use")).toEqual(["ResourceEvent", "Resource", "Flock"]);
   });

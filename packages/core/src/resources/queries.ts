@@ -4,7 +4,7 @@ import type { CalendarDate } from "../dates";
 import { type FlockRef, flockRefOf, flocksById } from "../flocks/queries";
 import type { MoneyRecordId, ResourceEventId, ResourceId } from "../ids";
 import { restockSource } from "./commands";
-import { inEventOrder, type Resource, type ResourceEventKind, stockChange } from "./resource";
+import { type Resource, type ResourceEventKind, stockSteps } from "./resource";
 
 // The queries of the Resources. The list shows the Archived Resources too, with the flag
 // `archived`: the history shows them, and a form leaves them out.
@@ -26,7 +26,8 @@ export interface ResourceEventRow {
   date: CalendarDate;
   /**
    * How much the event changed the Stock, in thousandths of the unit: more than 0 for a Restock,
-   * less than 0 for a Usage, and either for an Adjustment.
+   * less than 0 for a Usage, and for an Adjustment the difference between the count and the Stock
+   * before it.
    */
   change: number;
   /** The Stock after the event, with all the events before it. */
@@ -66,11 +67,9 @@ export async function getResource(
     ctx.repos.resources.events(resource.id),
     flocksById(ctx),
   ]);
-  let stock = 0;
+  const steps = stockSteps(events);
   const rows: ResourceEventRow[] = [];
-  for (const event of inEventOrder(events)) {
-    const change = stockChange(event);
-    stock += change;
+  for (const { event, change, stock } of steps) {
     const expense =
       event.kind === "restock"
         ? await ctx.repos.moneyRecords.findBySource(restockSource(event.id))
@@ -88,6 +87,7 @@ export async function getResource(
   }
   // The card computes the Stock from the events, as `stockOf` does, so it shows the same sum as
   // the list of events.
+  const stock = steps.at(-1)?.stock ?? 0;
   return { ...resourceRow(resource), stock, events: rows.reverse() };
 }
 

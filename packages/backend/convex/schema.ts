@@ -297,7 +297,7 @@ export default defineSchema({
     kind: v.union(v.literal("restock"), v.literal("usage"), v.literal("adjustment")),
     /** "YYYY-MM-DD". */
     date: v.string(),
-    /** In thousandths of the unit: an integer. Signed for an Adjustment, more than 0 for the others. */
+    /** In thousandths of the unit: an integer. The counted quantity for an Adjustment. */
     quantity: v.number(),
     /** The Flock of a Usage. */
     flockId: v.optional(v.id("flocks")),

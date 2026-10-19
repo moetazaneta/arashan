@@ -270,15 +270,16 @@ export {
   maxUnitLength,
   quantityScale,
   resourceEventKinds,
-  stockChange,
   stockOf,
   stockOn,
+  stockSteps,
   type FarmResourceReader,
   type FarmResourceRepository,
   type Resource,
   type ResourceEvent,
   type ResourceEventKind,
   type ResourceFields,
+  type StockStep,
 } from "./resources/resource";
 export {
   arashanShare,

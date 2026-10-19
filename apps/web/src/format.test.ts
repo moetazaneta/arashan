@@ -59,13 +59,27 @@ describe("parseQuantity", () => {
     ["1 250,5", 1_250_500],
     ["0.125", 125],
     ["0,001", 1],
+    ["1,500", 1_500],
     ["0", 0],
-  ])("reads «%s» as %i thousandths", (text, expected) => {
-    expect(parseQuantity(text)).toBe(expected);
+  ])("reads «%s» in Russian as %i thousandths", (text, expected) => {
+    expect(parseQuantity(text, "ru")).toBe(expected);
+  });
+
+  it.each([
+    ["1,500", 1_500_000],
+    ["1,250.5", 1_250_500],
+    ["0.125", 125],
+    ["12", 12_000],
+  ])("reads «%s» in English as %i thousandths", (text, expected) => {
+    expect(parseQuantity(text, "en")).toBe(expected);
   });
 
   it.each(["", "-1", "1,2345", "1.", ",5", "1e3", "12 кг"])("rejects «%s»", (text) => {
-    expect(parseQuantity(text)).toBeNull();
+    expect(parseQuantity(text, "ru")).toBeNull();
+  });
+
+  it("rejects a comma as the decimal separator in English", () => {
+    expect(parseQuantity("1,5", "en")).toBeNull();
   });
 });
 
@@ -74,6 +88,7 @@ describe("formatQuantity", () => {
     expect(formatQuantity(1_250_500, "en")).toBe("1,250.5");
     expect(formatQuantity(-9_500, "en", true)).toBe("-9.5");
     expect(formatQuantity(9_500, "en", true)).toBe("+9.5");
-    expect(parseQuantity(quantityText(1_250_125, "ru"))).toBe(1_250_125);
+    expect(parseQuantity(quantityText(1_250_125, "ru"), "ru")).toBe(1_250_125);
+    expect(parseQuantity(quantityText(1_250_125, "en"), "en")).toBe(1_250_125);
   });
 });
