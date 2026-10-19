@@ -44,6 +44,18 @@ export {
 export { SignInForm, useSession, useSignOut } from "./session";
 export type { Session } from "./session-state";
 export {
+  useAdjustResource,
+  useArchiveResource,
+  useCancelResourceEvent,
+  useCreateResource,
+  useResource,
+  useResources,
+  useRestockResource,
+  useUnarchiveResource,
+  useUpdateResource,
+  useUseResource,
+} from "./resources";
+export {
   useChangeSheepOwner,
   useDeleteSheep,
   useRegisterSheep,
@@ -66,12 +78,17 @@ export {
   maxNotesLength,
   maxPasswordLength,
   maxPhoneLength,
+  maxQuantity,
+  maxReasonLength,
+  maxResourceNameLength,
   maxSheepNameLength,
   maxSheepNotesLength,
   maxTagLength,
   maxSheepPerMove,
+  maxUnitLength,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,
+  quantityScale,
   sexes,
 } from "@arashan/core";

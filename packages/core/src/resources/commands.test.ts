@@ -90,8 +90,8 @@ describe("the Stock", () => {
     expect(await stock()).toBe(151_500);
 
     const card = await getResource(ctx, { resourceId: hay });
-    expect(card.stock).toBe(151_500);
-    expect(card.events).toHaveLength(12);
+    expect(card!.stock).toBe(151_500);
+    expect(card!.events).toHaveLength(12);
   });
 
   test("can go below 0 when a Usage comes before its Restock is recorded", async () => {
@@ -130,7 +130,7 @@ describe("an Adjustment", () => {
     });
     expect(await stock()).toBe(65_500);
 
-    const [, adjustment] = (await getResource(ctx, { resourceId: hay })).events;
+    const [, adjustment] = (await getResource(ctx, { resourceId: hay }))!.events;
     expect(adjustment).toMatchObject({
       kind: "adjustment",
       change: -9_500,
@@ -186,7 +186,7 @@ describe("a Restock with a price", () => {
       source: { kind: "restock", id: eventId },
     });
 
-    const [event] = (await getResource(ctx, { resourceId: hay })).events;
+    const [event] = (await getResource(ctx, { resourceId: hay }))!.events;
     expect(event!.expense).toEqual({ id: records[0]!.id, amount: 1_250_050 });
     expect(
       store.audit.filter((e) => e.command === "resource.restock").map((e) => e.target.kind),
@@ -196,7 +196,7 @@ describe("a Restock with a price", () => {
   test("shows the amount of its Expense after a Member changes it", async () => {
     const { ctx, hay, restock } = await setup();
     await restock(1_000, 50_000);
-    const expense = (await getResource(ctx, { resourceId: hay })).events[0]!.expense!;
+    const expense = (await getResource(ctx, { resourceId: hay }))!.events[0]!.expense!;
     const record = ctx.repos.moneyRecords.get(expense.id);
     const { date, categoryId, scope, shepherdId } = (await record)!;
     await updateMoneyRecord(ctx, {
@@ -208,7 +208,7 @@ describe("a Restock with a price", () => {
       shepherdId,
       notes: "скидка",
     });
-    expect((await getResource(ctx, { resourceId: hay })).events[0]!.expense!.amount).toBe(45_000);
+    expect((await getResource(ctx, { resourceId: hay }))!.events[0]!.expense!.amount).toBe(45_000);
   });
 
   test("loses its Expense when a Member cancels it, and the Expense has no separate delete", async () => {
@@ -258,7 +258,7 @@ describe("the events", () => {
       store.audit.filter((e) => e.command === "resource.use").map((e) => e.target),
     ).toContainEqual({ kind: "Flock", id: flockId });
 
-    const [usage] = (await getResource(ctx, { resourceId: hay })).events;
+    const [usage] = (await getResource(ctx, { resourceId: hay }))!.events;
     expect(usage).toMatchObject({
       kind: "usage",
       change: -3_000,
@@ -292,7 +292,7 @@ describe("the events", () => {
 
     const card = await getResource(ctx, { resourceId: hay });
     expect(
-      card.events.map(({ date, change, stockAfter }) => ({ date, change, stockAfter })),
+      card!.events.map(({ date, change, stockAfter }) => ({ date, change, stockAfter })),
     ).toEqual([
       { date: "2026-10-05", change: -2_000, stockAfter: 7_000 },
       { date: "2026-10-05", change: -1_000, stockAfter: 9_000 },

@@ -1,7 +1,6 @@
 import { authorize } from "../access/permissions";
 import type { FarmQueryContext } from "../context";
 import type { CalendarDate } from "../dates";
-import { DomainError } from "../errors";
 import { type FlockRef, flockRefOf, flocksById } from "../flocks/queries";
 import type { MoneyRecordId, ResourceEventId, ResourceId } from "../ids";
 import { restockSource } from "./commands";
@@ -53,16 +52,16 @@ export async function listResources(ctx: FarmQueryContext): Promise<ResourceRow[
 }
 
 /**
- * The card of a Resource. The price of a Restock is the amount of its Automatic Expense: a Member
+ * The card of a Resource, or null if the Farm has no such Resource. The price of a Restock is the amount of its Automatic Expense: a Member
  * can change it in the table of Expenses.
  */
 export async function getResource(
   ctx: FarmQueryContext,
   input: { resourceId: ResourceId },
-): Promise<ResourceCard> {
+): Promise<ResourceCard | null> {
   authorize(ctx.member, "resource.view", { farmId: ctx.farm.id });
   const resource = await ctx.repos.resources.get(input.resourceId);
-  if (resource === null) throw new DomainError("resource.notFound");
+  if (resource === null) return null;
   const [events, flocks] = await Promise.all([
     ctx.repos.resources.events(resource.id),
     flocksById(ctx),

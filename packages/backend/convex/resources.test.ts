@@ -62,15 +62,15 @@ describe("resources", () => {
       { id: resourceId, name: "Сено", unit: "кг", stock: 790_000, archived: false },
     ]);
     const card = await editor.query(api.resources.get, { farmId, resourceId });
-    expect(card.stock).toBe(790_000);
+    expect(card!.stock).toBe(790_000);
     expect(
-      card.events.map(({ kind, change, stockAfter }) => ({ kind, change, stockAfter })),
+      card!.events.map(({ kind, change, stockAfter }) => ({ kind, change, stockAfter })),
     ).toEqual([
       { kind: "adjustment", change: -10_250, stockAfter: 790_000 },
       { kind: "usage", change: -200_250, stockAfter: 800_250 },
       { kind: "restock", change: 1_000_500, stockAfter: 1_000_500 },
     ]);
-    expect(card.events[1]!.flock).toEqual({ id: flockId, name: "Отара", archived: false });
+    expect(card!.events[1]!.flock).toEqual({ id: flockId, name: "Отара", archived: false });
 
     await editor.mutation(api.resources.cancelEvent, { farmId, eventId: usage });
     expect((await editor.query(api.resources.list, { farmId }))[0]!.stock).toBe(990_250);
@@ -109,7 +109,7 @@ describe("resources", () => {
       await errorCode(editor.mutation(api.money.remove, { farmId, recordId: expense!.id })),
     ).toBe("money.automatic");
     const card = await editor.query(api.resources.get, { farmId, resourceId });
-    expect(card.events[0]!.expense).toEqual({ id: expense!.id, amount: 2_500_000 });
+    expect(card!.events[0]!.expense).toEqual({ id: expense!.id, amount: 2_500_000 });
     expect(await auditOf(t, "resource.restock")).toEqual(["Expense", "ResourceEvent", "Resource"]);
 
     await editor.mutation(api.resources.cancelEvent, { farmId, eventId });
