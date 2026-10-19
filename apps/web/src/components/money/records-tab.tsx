@@ -4,6 +4,7 @@ import {
   useFlocks,
   useMoneyCategories,
   useMoneyRecords,
+  useToday,
 } from "@arashan/client";
 import type {
   CalendarDate,
@@ -55,16 +56,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
@@ -81,13 +73,18 @@ import { dealKindLabels } from "@/components/deals/labels";
 
 import { categoryName } from "./category-names";
 import { kindLabels } from "./labels";
+import {
+  defaultPeriod,
+  FilterSelect,
+  type PeriodChoice,
+  PeriodFilter,
+  periodOf,
+} from "./period-filter";
 import { RecordDialog } from "./record-dialog";
 import { SheepCombobox } from "./sheep-combobox";
 
 // The tab «Записи»: the filters, the table of the records with their total, and the dialogs that
 // change and delete a record.
-
-type PeriodPreset = "thisMonth" | "thisYear" | "lastYear" | "all" | "custom";
 
 /** What the Member chose for the scope: all records, or the ones of the Farm, a Flock or a Sheep. */
 type ScopeChoice =
@@ -97,20 +94,14 @@ type ScopeChoice =
   | { kind: "sheep"; sheepId: SheepId | null };
 
 /** The filters of the table. The page keeps them, so that they stay when the Member changes tabs. */
-export interface RecordFilters {
-  period: PeriodPreset;
-  /** The days of «Свой период», as the date fields have them: an empty one is no limit. */
-  from: string;
-  to: string;
+export interface RecordFilters extends PeriodChoice {
   categoryId: MoneyCategoryId | null;
   scope: ScopeChoice;
 }
 
 /** The filters as the page opens: all the records of this year. */
 export const defaultFilters: RecordFilters = {
-  period: "thisYear",
-  from: "",
-  to: "",
+  ...defaultPeriod,
   categoryId: null,
   scope: { kind: "all" },
 };
@@ -122,24 +113,6 @@ function areDefault(filters: RecordFilters): boolean {
     filters.categoryId === null &&
     filters.scope.kind === "all"
   );
-}
-
-/** The first and the last day of the period, both included; null is no limit. */
-function periodOf(filters: RecordFilters, today: CalendarDate) {
-  const year = Number(today.slice(0, 4));
-  switch (filters.period) {
-    // No record is in the future, so a period that goes on now needs no last day.
-    case "thisMonth":
-      return { from: `${today.slice(0, 7)}-01`, to: null };
-    case "thisYear":
-      return { from: `${year}-01-01`, to: null };
-    case "lastYear":
-      return { from: `${year - 1}-01-01`, to: `${year - 1}-12-31` };
-    case "all":
-      return { from: null, to: null };
-    case "custom":
-      return { from: filters.from || null, to: filters.to || null };
-  }
 }
 
 /** The scope that the query filters by: none until the Member picks a Sheep. */
@@ -170,7 +143,8 @@ export function RecordsTab({
   onAdd: () => void;
 }) {
   const { i18n } = useLingui();
-  const today = dateAt(Date.now(), farm.timeZone);
+  // Today changes at midnight in the Farm, also on a page that stays open.
+  const today = useToday(farm.timeZone) ?? dateAt(Date.now(), farm.timeZone);
   const period = periodOf(filters, today);
   const records = useMoneyRecords(farm.id, {
     kind,
@@ -275,13 +249,6 @@ function FilterBar({
   const categories = useMoneyCategories(farm.id, kind);
   const flocks = useFlocks(farm.id);
 
-  const periodItems: { value: PeriodPreset; label: string }[] = [
-    { value: "thisMonth", label: t`Этот месяц` },
-    { value: "thisYear", label: t`Этот год` },
-    { value: "lastYear", label: t`Прошлый год` },
-    { value: "all", label: t`Всё время` },
-    { value: "custom", label: t`Свой период` },
-  ];
   // The filters show all categories and Flocks: the old records have the Archived ones too.
   const categoryItems: { value: MoneyCategoryId | null; label: string }[] = [
     { value: null, label: t`Все категории` },
@@ -310,41 +277,11 @@ function FilterBar({
 
   return (
     <>
-      <FilterSelect
-        label={t`Период`}
-        items={periodItems}
-        value={filters.period}
-        onChange={(period) => {
-          if (period !== "custom") {
-            onChange({ ...filters, period });
-            return;
-          }
-          // «Свой период» starts as the period that the table shows.
-          const shown = periodOf(filters, today);
-          onChange({ ...filters, period, from: shown.from ?? "", to: shown.to ?? today });
-        }}
+      <PeriodFilter
+        value={filters}
+        today={today}
+        onChange={(choice) => onChange({ ...filters, ...choice })}
       />
-      {filters.period === "custom" && (
-        <>
-          <Input
-            type="date"
-            aria-label={t({ context: "from date", message: "С" })}
-            max={today}
-            className="w-36 tabular-nums"
-            value={filters.from}
-            onChange={(event) => onChange({ ...filters, from: event.target.value })}
-          />
-          <span className="text-muted-foreground">–</span>
-          <Input
-            type="date"
-            aria-label={t({ context: "to date", message: "По" })}
-            max={today}
-            className="w-36 tabular-nums"
-            value={filters.to}
-            onChange={(event) => onChange({ ...filters, to: event.target.value })}
-          />
-        </>
-      )}
       <FilterSelect
         label={t`Категория`}
         items={categoryItems}
@@ -375,36 +312,6 @@ function FilterBar({
         />
       )}
     </>
-  );
-}
-
-/** A filter of the table: a select with no label of its own, which shows what it selects. */
-function FilterSelect<Value extends string | null>({
-  label,
-  items,
-  value,
-  onChange,
-}: {
-  label: string;
-  items: { value: Value; label: string }[];
-  value: Value;
-  onChange: (value: Value) => void;
-}) {
-  return (
-    <Select items={items} value={value} onValueChange={(next) => onChange(next as Value)}>
-      <SelectTrigger aria-label={label} className="max-w-56">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {items.map((item) => (
-            <SelectItem key={item.value ?? "all"} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
   );
 }
 

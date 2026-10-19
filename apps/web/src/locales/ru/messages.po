@@ -60,6 +60,10 @@ msgstr "{count, plural, one {Сменить статус # барана} few {С
 msgid "{date}, {category}, {amount} {symbol}. Удалите запись, только если её сделали по ошибке."
 msgstr "{date}, {category}, {amount} {symbol}. Удалите запись, только если её сделали по ошибке."
 
+#: src/components/resources/forecast.tsx
+msgid "{days, plural, one {# день} few {# дня} many {# дней} other {# дня}}"
+msgstr "{days, plural, one {# день} few {# дня} many {# дней} other {# дня}}"
+
 #: src/components/sheep/sheep-details.tsx
 msgid "{kg} кг, взвешен {weighed}"
 msgstr "{kg} кг, взвешен {weighed}"
@@ -107,6 +111,7 @@ msgid "PDF или фото: JPEG, PNG, WebP."
 msgstr "PDF или фото: JPEG, PNG, WebP."
 
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 msgctxt "money record"
 msgid "Авто"
 msgstr "Авто"
@@ -249,12 +254,18 @@ msgstr "без бирки"
 msgid "Без бирки"
 msgstr "Без бирки"
 
+#: src/components/reports/head-count-tab.tsx
+msgid "Без владельца"
+msgstr "Без владельца"
+
 #: src/components/flocks/flock-card.tsx
 #: src/components/flocks/flock-dialog.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Без места"
 msgstr "Без места"
 
 #: src/components/deals/purchase-sheet.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Без стада"
 msgstr "Без стада"
 
@@ -304,6 +315,10 @@ msgstr "в архиве"
 msgid "В архиве"
 msgstr "В архиве"
 
+#: src/components/resources/forecast.tsx
+msgid "В день, {unit}"
+msgstr "В день, {unit}"
+
 #: src/errors.ts
 msgid "В одной сделке слишком много баранов. Разделите её на несколько."
 msgstr "В одной сделке слишком много баранов. Разделите её на несколько."
@@ -344,6 +359,10 @@ msgstr "В этот день баран не был в стаде."
 #: src/components/sheep/sheep-flocks.tsx
 msgid "В этот день барана перевели в другое стадо."
 msgstr "В этот день барана перевели в другое стадо."
+
+#: src/components/resources/event-dialog.tsx
+msgid "В этот день стаду уже выдавали ресурс."
+msgstr "В этот день стаду уже выдавали ресурс."
 
 #: src/components/farm-settings-fields.tsx
 #: src/routes/farms/$farmId/index.tsx
@@ -415,6 +434,10 @@ msgid "Введите номер ветпаспорта."
 msgstr "Введите номер ветпаспорта."
 
 #: src/errors.ts
+msgid "Введите норму от нуля, не больше трёх знаков после запятой."
+msgstr "Введите норму от нуля, не больше трёх знаков после запятой."
+
+#: src/errors.ts
 msgid "Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50."
 msgstr "Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50."
 
@@ -462,6 +485,7 @@ msgid "Вид сделки"
 msgstr "Вид сделки"
 
 #: src/components/deals/purchase-sheet.tsx
+#: src/components/reports/head-count-tab.tsx
 #: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
@@ -537,7 +561,7 @@ msgctxt "filter"
 msgid "Все"
 msgstr "Все"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Всё время"
 msgstr "Всё время"
 
@@ -552,6 +576,10 @@ msgstr "Всё неизвестное — арашан"
 #: src/routes/operator/farms.tsx
 msgid "Все фермы"
 msgstr "Все фермы"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Всего"
+msgstr "Всего"
 
 #: src/routes/invite/$token.tsx
 msgid "Вступить в ферму"
@@ -709,12 +737,17 @@ msgid "Выйти из фермы?"
 msgstr "Выйти из фермы?"
 
 #: src/components/flocks/flocks-tab.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Голов"
 msgstr "Голов"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Готово"
 msgstr "Готово"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Группа"
+msgstr "Группа"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "Да"
@@ -841,9 +874,25 @@ msgstr "Действия"
 msgid "Действия с породой {name}"
 msgstr "Действия с породой {name}"
 
+#: src/components/reports/reports-page.tsx
+msgid "Деньги"
+msgstr "Деньги"
+
+#: src/components/reports/money-tab.tsx
+msgid "Деньги за период"
+msgstr "Деньги за период"
+
 #: src/components/sheep/sheep-details.tsx
 msgid "Дети"
 msgstr "Дети"
+
+#: src/components/resources/forecast.tsx
+msgid "Для каждого стада отдельно, если выдавать весь запас только ему."
+msgstr "Для каждого стада отдельно, если выдавать весь запас только ему."
+
+#: src/components/resources/event-dialog.tsx
+msgid "Для этого стада нет расхода по нормам."
+msgstr "Для этого стада нет расхода по нормам."
 
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Добавить"
@@ -918,8 +967,13 @@ msgstr "Доход «Продажа баранов» получит ту же с
 
 #: src/components/app-shell.tsx
 #: src/components/money/labels.ts
+#: src/components/reports/money-tab.tsx
 msgid "Доходы"
 msgstr "Доходы"
+
+#: src/components/reports/money-tab.tsx
+msgid "Доходы минус расходы"
+msgstr "Доходы минус расходы"
 
 #: src/components/resources/resource-dialog.tsx
 msgid "Единица измерения"
@@ -974,6 +1028,14 @@ msgstr "Забитые"
 #: src/components/loading.tsx
 msgid "Загрузка"
 msgstr "Загрузка"
+
+#: src/components/resources/event-dialog.tsx
+msgid "Задайте нормы, чтобы рассчитать выдачу."
+msgstr "Задайте нормы, чтобы рассчитать выдачу."
+
+#: src/components/resources/forecast.tsx
+msgid "Задайте нормы, чтобы увидеть прогноз запаса."
+msgstr "Задайте нормы, чтобы увидеть прогноз запаса."
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -1049,6 +1111,10 @@ msgstr "Записать"
 #: src/routes/farms/$farmId/sheep/index.tsx
 msgid "Записать окот"
 msgstr "Записать окот"
+
+#: src/components/reports/money-tab.tsx
+msgid "Записей"
+msgstr "Записей"
 
 #: src/components/money/money-page.tsx
 #: src/components/resources/resource-card.tsx
@@ -1204,6 +1270,11 @@ msgstr "Изменить место"
 msgid "Изменить настройки"
 msgstr "Изменить настройки"
 
+#: src/components/resources/norms-dialog.tsx
+#: src/components/resources/resource-card.tsx
+msgid "Изменить нормы"
+msgstr "Изменить нормы"
+
 #: src/components/money/labels.ts
 msgid "Изменить расход"
 msgstr "Изменить расход"
@@ -1283,6 +1354,7 @@ msgstr "Категорию, в которой есть записи, можно 
 
 #: src/components/money/record-dialog.tsx
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 msgid "Категория"
 msgstr "Категория"
 
@@ -1348,6 +1420,10 @@ msgstr "Когда чабан {name} работал в этом стаде."
 #: src/components/resources/event-dialog.tsx
 msgid "Количество"
 msgstr "Количество"
+
+#: src/components/resources/norms-dialog.tsx
+msgid "Количество на одного барана в день. Пустое поле означает, что нормы нет."
+msgstr "Количество на одного барана в день. Пустое поле означает, что нормы нет."
 
 #: src/components/resources/resource-card.tsx
 msgid "Количество, {unit}"
@@ -1434,6 +1510,7 @@ msgstr "Места"
 
 #: src/components/flocks/flock-dialog.tsx
 #: src/components/flocks/flocks-tab.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Место"
 msgstr "Место"
 
@@ -1469,6 +1546,11 @@ msgstr "Можно указать до {limitText}."
 msgid "Мясо"
 msgstr "Мясо"
 
+#. placeholder {0}: formatCalendarDate(data.date, i18n.locale)
+#: src/components/reports/head-count-tab.tsx
+msgid "На {0}. Таблица по статусу считает всех баранов, которые были на ферме, а другие таблицы — только тех, кто на ферме сейчас."
+msgstr "На {0}. Таблица по статусу считает всех баранов, которые были на ферме, а другие таблицы — только тех, кто на ферме сейчас."
+
 #: src/components/home-link.tsx
 msgid "На главную"
 msgstr "На главную"
@@ -1476,6 +1558,10 @@ msgstr "На главную"
 #: src/errors.ts
 msgid "На дату окота мать была в стаде, которое теперь в архиве. Верните стадо из архива или исправьте дату."
 msgstr "На дату окота мать была в стаде, которое теперь в архиве. Верните стадо из архива или исправьте дату."
+
+#: src/components/resources/resource-card.tsx
+msgid "На одного барана в день"
+msgstr "На одного барана в день"
 
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "На ферме ещё нет стад. <0>Создать стадо</0>"
@@ -1596,6 +1682,10 @@ msgstr "Не отменять"
 msgid "Не удалось войти"
 msgstr "Не удалось войти"
 
+#: src/errors.ts
+msgid "Не удалось построить отчёт на эту дату. Обновите страницу."
+msgstr "Не удалось построить отчёт на эту дату. Обновите страницу."
+
 #: src/components/sheep/pedigree-tree.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "неизвестен"
@@ -1637,9 +1727,17 @@ msgstr "Нет барана с такой биркой."
 msgid "Нет баранов с этим статусом."
 msgstr "Нет баранов с этим статусом."
 
+#: src/components/reports/money-tab.tsx
+msgid "Нет доходов за этот период."
+msgstr "Нет доходов за этот период."
+
 #: src/components/money/labels.ts
 msgid "Нет доходов с такими фильтрами."
 msgstr "Нет доходов с такими фильтрами."
+
+#: src/components/reports/money-tab.tsx
+msgid "Нет расходов за этот период."
+msgstr "Нет расходов за этот период."
 
 #: src/components/money/labels.ts
 msgid "Нет расходов с такими фильтрами."
@@ -1706,6 +1804,15 @@ msgstr "Номер ветпаспорта"
 #: src/errors.ts
 msgid "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
 msgstr "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
+
+#: src/components/resources/resource-card.tsx
+msgid "Нормы"
+msgstr "Нормы"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Нормы ресурса изменены"
+msgstr "Нормы ресурса изменены"
 
 #: src/components/money/category-names.ts
 msgid "Оборудование"
@@ -1793,6 +1900,7 @@ msgstr "Открыть скан"
 #: src/components/money/record-dialog.tsx
 #: src/components/money/records-tab.tsx
 #: src/components/resources/event-dialog.tsx
+#: src/components/resources/norms-dialog.tsx
 #: src/components/resources/resource-dialog.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-dialogs.tsx
@@ -1873,6 +1981,11 @@ msgstr "Отправьте её человеку, который будет ве
 #: src/components/invite-link-card.tsx
 msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
 msgstr "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
+
+#: src/components/app-shell.tsx
+#: src/components/reports/reports-page.tsx
+msgid "Отчёты"
+msgstr "Отчёты"
 
 #: src/components/sheep/status-filter.tsx
 msgctxt "filter"
@@ -1958,15 +2071,27 @@ msgstr "Переименовать породу"
 msgid "Пересчитать"
 msgstr "Пересчитать"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Период"
 msgstr "Период"
 
 #: src/components/flocks/flock-shepherds.tsx
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgctxt "to date"
 msgid "По"
 msgstr "По"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По владельцам"
+msgstr "По владельцам"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По группам"
+msgstr "По группам"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По местам"
+msgstr "По местам"
 
 #: src/components/farm-settings-fields.tsx
 msgid "По нему приложение решает, когда начинается день."
@@ -1976,13 +2101,33 @@ msgstr "По нему приложение решает, когда начина
 msgid "По ним приложение считает деньги, даты и возраст."
 msgstr "По ним приложение считает деньги, даты и возраст."
 
+#: src/components/reports/head-count-tab.tsx
+msgid "По стадам"
+msgstr "По стадам"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По статусу"
+msgstr "По статусу"
+
 #: src/components/sheep/lambing-form.tsx
 msgid "По умолчанию владелец ягнёнка — владелец матери на дату окота."
 msgstr "По умолчанию владелец ягнёнка — владелец матери на дату окота."
 
+#: src/components/reports/reports-page.tsx
+msgid "Поголовье"
+msgstr "Поголовье"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Поголовье фермы"
+msgstr "Поголовье фермы"
+
 #: src/components/resources/resource-card.tsx
 msgid "Подробности"
 msgstr "Подробности"
+
+#: src/components/resources/event-dialog.tsx
+msgid "Подставить"
+msgstr "Подставить"
 
 #: src/components/flocks/shared.tsx
 msgid "Показать архив"
@@ -2132,6 +2277,15 @@ msgstr "Потерянные"
 msgid "Прадеды"
 msgstr "Прадеды"
 
+#. placeholder {0}: formatQuantity(suggested.quantity, i18n.locale)
+#. placeholder {1}: resource.unit
+#. placeholder {2}: formatQuantity(suggested.perDay, i18n.locale)
+#. placeholder {3}: resource.unit
+#. placeholder {4}: suggested.days
+#: src/components/resources/event-dialog.tsx
+msgid "Предложено: {0} {1}. В день: {2} {3}, дней: {4}."
+msgstr "Предложено: {0} {1}. В день: {2} {3}, дней: {4}."
+
 #: src/components/sheep/sheep-details.tsx
 msgid "при регистрации"
 msgstr "при регистрации"
@@ -2182,6 +2336,14 @@ msgstr "Проверьте период: дата «по» не может бы�
 #: src/errors.ts
 msgid "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
 msgstr "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
+
+#: src/components/resources/forecast.tsx
+msgid "Прогноз"
+msgstr "Прогноз"
+
+#: src/components/resources/forecast.tsx
+msgid "Прогноз по стадам"
+msgstr "Прогноз по стадам"
 
 #: src/components/deals/labels.ts
 msgid "Продажа"
@@ -2246,7 +2408,7 @@ msgstr "Происхождение меняется только у началь
 msgid "Прочее"
 msgstr "Прочее"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Прошлый год"
 msgstr "Прошлый год"
 
@@ -2271,12 +2433,18 @@ msgstr "Расход"
 msgid "Расход «Покупка баранов» получит ту же сумму."
 msgstr "Расход «Покупка баранов» получит ту же сумму."
 
+#. placeholder {0}: formatQuantity(row.dailyNeed, i18n.locale)
+#: src/components/resources/forecast.tsx
+msgid "Расход в день: {0} {unit}"
+msgstr "Расход в день: {0} {unit}"
+
 #: src/components/resources/resource-card.tsx
 msgid "Расход этого пополнения тоже удалится."
 msgstr "Расход этого пополнения тоже удалится."
 
 #: src/components/app-shell.tsx
 #: src/components/money/labels.ts
+#: src/components/reports/money-tab.tsx
 msgid "Расходы"
 msgstr "Расходы"
 
@@ -2352,7 +2520,7 @@ msgid "Роль участника {username}"
 msgstr "Роль участника {username}"
 
 #: src/components/flocks/flock-shepherds.tsx
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgctxt "from date"
 msgid "С"
 msgstr "С"
@@ -2378,6 +2546,7 @@ msgid "С какого дня"
 msgstr "С какого дня"
 
 #: src/components/deals/purchase-sheet.tsx
+#: src/components/resources/norms-dialog.tsx
 #: src/components/sheep/labels.ts
 #: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-form.tsx
@@ -2385,13 +2554,32 @@ msgid "Самец"
 msgstr "Самец"
 
 #: src/components/deals/purchase-sheet.tsx
+#: src/components/resources/norms-dialog.tsx
 #: src/components/sheep/labels.ts
 #: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-form.tsx
 msgid "Самка"
 msgstr "Самка"
 
-#: src/components/money/records-tab.tsx
+#: src/components/resources/forecast.tsx
+msgid "Самки"
+msgstr "Самки"
+
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
+msgid "Самки"
+msgstr "Самки"
+
+#: src/components/resources/forecast.tsx
+msgid "Самцы"
+msgstr "Самцы"
+
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
+msgid "Самцы"
+msgstr "Самцы"
+
+#: src/components/money/period-filter.tsx
 msgid "Свой период"
 msgstr "Свой период"
 
@@ -2518,6 +2706,7 @@ msgstr "Состав считается по родителям."
 #: src/components/flocks/shepherds-tab.tsx
 #: src/components/money/categories-tab.tsx
 #: src/components/money/record-dialog.tsx
+#: src/components/resources/norms-dialog.tsx
 #: src/components/resources/resource-dialog.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/status-dialogs.tsx
@@ -2558,7 +2747,9 @@ msgstr "Стада"
 
 #: src/components/deals/purchase-sheet.tsx
 #: src/components/money/record-dialog.tsx
+#: src/components/reports/head-count-tab.tsx
 #: src/components/resources/event-dialog.tsx
+#: src/components/resources/forecast.tsx
 #: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-details.tsx
@@ -2596,6 +2787,7 @@ msgctxt "history"
 msgid "Стадо создано"
 msgstr "Стадо создано"
 
+#: src/components/reports/head-count-tab.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-table.tsx
 #: src/components/sheep/status-filter.tsx
@@ -2623,6 +2815,7 @@ msgid "Сумма за всех"
 msgstr "Сумма за всех"
 
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 #: src/routes/farms/$farmId/deals/index.tsx
 msgid "Сумма, {symbol}"
 msgstr "Сумма, {symbol}"
@@ -2933,6 +3126,15 @@ msgstr "Ферма создана"
 msgid "Фермы"
 msgstr "Фермы"
 
+#: src/components/resources/forecast.tsx
+#: src/routes/farms/$farmId/resources/index.tsx
+msgid "Хватит на"
+msgstr "Хватит на"
+
+#: src/components/resources/forecast.tsx
+msgid "Хватит на <0/>"
+msgstr "Хватит на <0/>"
+
 #: src/components/resources/event-dialog.tsx
 msgid "Цена"
 msgstr "Цена"
@@ -3070,11 +3272,11 @@ msgstr "Этот баран — часть сделки, его нельзя у�
 msgid "Этот баран не потерян."
 msgstr "Этот баран не потерян."
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Этот год"
 msgstr "Этот год"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Этот месяц"
 msgstr "Этот месяц"
 
@@ -3116,11 +3318,21 @@ msgstr "Эту ссылку уже использовали. Попросите 
 msgid "ягнёнок"
 msgstr "ягнёнок"
 
+#: src/components/resources/norms-dialog.tsx
+msgid "Ягнёнок"
+msgstr "Ягнёнок"
+
 #: src/components/sheep/lambing-form.tsx
 msgid "Ягнёнок {number}"
 msgstr "Ягнёнок {number}"
 
+#: src/components/resources/forecast.tsx
 #: src/components/sheep/lambing-form.tsx
+msgid "Ягнята"
+msgstr "Ягнята"
+
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
 msgid "Ягнята"
 msgstr "Ягнята"
 

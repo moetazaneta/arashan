@@ -154,13 +154,18 @@ export function DataCell({
   children,
   numeric,
   className,
+  colSpan,
 }: {
   children?: ReactNode;
   numeric?: boolean;
   className?: string;
+  colSpan?: number;
 }) {
   return (
-    <TableCell className={cn("h-9 px-2 py-0", numeric === true && "text-right", className)}>
+    <TableCell
+      colSpan={colSpan}
+      className={cn("h-9 px-2 py-0", numeric === true && "text-right", className)}
+    >
       {children}
     </TableCell>
   );

@@ -166,10 +166,13 @@ export const errorCodes = [
   "resource.dateInvalid",
   "resource.dateInFuture",
   "resource.quantityInvalid",
+  "resource.normInvalid",
   "resource.reasonRequired",
   "resource.reasonTooLong",
   "resource.adjustmentNoChange",
   "resource.eventNotFound",
+  // Reports.
+  "report.dateInvalid",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

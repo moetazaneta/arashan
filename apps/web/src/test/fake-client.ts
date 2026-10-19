@@ -75,6 +75,8 @@ import type {
   ResourceEventId,
   ResourceId,
   ResourceInput,
+  Norms,
+  Period,
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
@@ -88,6 +90,9 @@ import {
   cancelResourceEvent,
   createResource,
   getResource,
+  getStockForecast,
+  suggestUsage,
+  setResourceNorms,
   listResources,
   recordAdjustment,
   recordRestock,
@@ -119,6 +124,8 @@ import {
   getFlock,
   getLambingDefaults,
   getSheep,
+  getHeadCountReport,
+  getMoneyReport,
   getSheepHistory,
   getSheepPedigree,
   getSheepResponsible,
@@ -204,6 +211,9 @@ export {
   nameKey,
   pedigreeDepth,
   quantityScale,
+  isCalendarDate,
+  noNorms,
+  normGroups,
   maxQuantity,
   maxReasonLength,
   maxResourceNameLength,
@@ -277,6 +287,7 @@ type CommandName =
   | "cancelDeal"
   | "createResource"
   | "updateResource"
+  | "setResourceNorms"
   | "archiveResource"
   | "unarchiveResource"
   | "recordRestock"
@@ -1729,6 +1740,21 @@ export const useMoneyRecords = (farmId: FarmId, filter: MoneyRecordFilter) =>
     listMoneyRecords(queryContext(backend, farmId), filter),
   );
 
+/** Today in the time zone. The tests do not cross midnight, so it does not change. */
+export const useToday = (timeZone: string | undefined) =>
+  timeZone === undefined ? undefined : dateAt(Date.now(), timeZone);
+
+export const useHeadCountReport = (farmId: FarmId) =>
+  useCoreQuery(`head count ${farmId}`, (backend) => {
+    const ctx = queryContext(backend, farmId);
+    return getHeadCountReport(ctx, { date: dateAt(Date.now(), ctx.farm.timeZone) });
+  });
+
+export const useMoneyReport = (farmId: FarmId, period: Period) =>
+  useCoreQuery(`money report ${farmId} ${JSON.stringify(period)}`, (backend) =>
+    getMoneyReport(queryContext(backend, farmId), period),
+  );
+
 export const useCreateMoneyRecord = (farmId: FarmId) =>
   useMutation("createMoneyRecord", (backend, input: MoneyRecordInput & { kind: MoneyKind }) =>
     createMoneyRecord(commandContext(backend, farmId), input),
@@ -1909,6 +1935,7 @@ export function addResource(
       name: "Сено",
       unit: "кг",
       stock: 0,
+      norms: { ram: 0, ewe: 0, lamb: 0 },
       archivedAt: null,
       ...change,
     };
@@ -2012,4 +2039,24 @@ export const useRecordAdjustment = (farmId: FarmId) =>
 export const useCancelResourceEvent = (farmId: FarmId) =>
   useMutation("cancelResourceEvent", (backend, eventId: ResourceEventId) =>
     cancelResourceEvent(commandContext(backend, farmId), { eventId }),
+  );
+
+export const useUsageSuggestion = (
+  farmId: FarmId,
+  input: { resourceId: ResourceId; flockId: FlockId; date: CalendarDate } | null,
+) =>
+  useCoreQuery(`suggest usage ${farmId} ${JSON.stringify(input)}`, (backend) =>
+    input === null ? Promise.resolve(null) : suggestUsage(queryContext(backend, farmId), input),
+  );
+
+export const useStockForecast = (farmId: FarmId, date: CalendarDate | undefined) =>
+  useCoreQuery(`stock forecast ${farmId} ${date}`, (backend) =>
+    date === undefined
+      ? Promise.resolve(undefined)
+      : getStockForecast(queryContext(backend, farmId), { date }),
+  );
+
+export const useSetResourceNorms = (farmId: FarmId) =>
+  useMutation("setResourceNorms", (backend, input: { resourceId: ResourceId; norms: Norms }) =>
+    setResourceNorms(commandContext(backend, farmId), input),
   );

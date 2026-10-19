@@ -2,6 +2,7 @@ import type {
   CalendarDate,
   FarmId,
   FlockId,
+  Norms,
   ResourceEventId,
   ResourceId,
   ResourceInput,
@@ -103,5 +104,31 @@ export function useCancelResourceEvent(farmId: FarmId) {
   const cancel = useConvexMutation(api.resources.cancelEvent);
   return useMutation({
     mutationFn: (eventId: ResourceEventId) => callCommand(cancel, { farmId, eventId }),
+  });
+}
+
+/** The quantity suggested for a Usage of the Flock on the date. */
+export function useUsageSuggestion(
+  farmId: FarmId,
+  input: { resourceId: ResourceId; flockId: FlockId; date: CalendarDate } | null,
+) {
+  return useQuery(
+    convexQuery(api.resources.suggestUsage, input === null ? "skip" : { farmId, ...input }),
+  );
+}
+
+/** How long the Stock lasts for the Farm and for each Flock, with the groups on the date. */
+export function useStockForecast(farmId: FarmId, date: CalendarDate | undefined) {
+  return useQuery(
+    convexQuery(api.resources.forecast, date === undefined ? "skip" : { farmId, date }),
+  );
+}
+
+/** A Member changes the Norms of a Resource without changing its Stock. */
+export function useSetResourceNorms(farmId: FarmId) {
+  const setNorms = useConvexMutation(api.resources.setNorms);
+  return useMutation({
+    mutationFn: (input: { resourceId: ResourceId; norms: Norms }) =>
+      callCommand(setNorms, { farmId, ...input }),
   });
 }

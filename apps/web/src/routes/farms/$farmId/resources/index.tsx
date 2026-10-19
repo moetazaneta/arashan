@@ -1,5 +1,5 @@
-import type { FarmId, ResourceId, ResourceRow } from "@arashan/core";
-import { useResources } from "@arashan/client";
+import type { FarmId, ResourceId, ResourceRow, StockForecast } from "@arashan/core";
+import { useFarm, useResources, useStockForecast, useToday } from "@arashan/client";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import {
   useOpenableRows,
 } from "@/components/flocks/shared";
 import { ResourceDialog } from "@/components/resources/resource-dialog";
+import { StockDays } from "@/components/resources/forecast";
 import { Stock } from "@/components/resources/stock";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,7 +31,10 @@ export const Route = createFileRoute("/farms/$farmId/resources/")({
 function ResourcesPage() {
   const farmId = Route.useParams().farmId as FarmId;
   const resources = useResources(farmId);
-  const error = useErrorMessage(resources.error);
+  const farm = useFarm(farmId);
+  const today = useToday(farm.data?.timeZone);
+  const forecast = useStockForecast(farmId, today);
+  const error = useErrorMessage(resources.error ?? forecast.error);
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -69,7 +73,11 @@ function ResourcesPage() {
               action={addButton}
             />
           ) : (
-            <ResourcesTable rows={rows} onOpen={open} />
+            <ResourcesTable
+              rows={rows}
+              forecast={today === undefined ? undefined : forecast.data}
+              onOpen={open}
+            />
           )}
         </div>
       )}
@@ -80,9 +88,11 @@ function ResourcesPage() {
 
 function ResourcesTable({
   rows,
+  forecast,
   onOpen,
 }: {
   rows: ResourceRow[] | undefined;
+  forecast: StockForecast[] | undefined;
   onOpen: (id: ResourceId) => void;
 }) {
   const { t } = useLingui();
@@ -101,11 +111,14 @@ function ResourcesTable({
           <HeadCell numeric>
             <Trans>Запас</Trans>
           </HeadCell>
+          <HeadCell numeric>
+            <Trans>Хватит на</Trans>
+          </HeadCell>
         </TableRow>
       </TableHeader>
       <TableBody {...bodyProps}>
         {rows === undefined ? (
-          <SkeletonRows columns={2} />
+          <SkeletonRows columns={3} />
         ) : (
           rows.map((resource) => (
             <TableRow key={resource.id} {...rowProps(resource.id)}>
@@ -118,6 +131,11 @@ function ResourcesTable({
               </DataCell>
               <DataCell numeric>
                 <Stock quantity={resource.stock} unit={resource.unit} />
+              </DataCell>
+              <DataCell numeric>
+                <StockDays
+                  days={forecast?.find((row) => row.resourceId === resource.id)?.days ?? null}
+                />
               </DataCell>
             </TableRow>
           ))

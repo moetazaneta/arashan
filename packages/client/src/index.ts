@@ -69,7 +69,9 @@ export {
   useUnarchiveMoneyCategory,
   useUpdateMoneyRecord,
 } from "./money";
+export { useHeadCountReport, useMoneyReport } from "./reports";
 export { SignInForm, useSession, useSignOut } from "./session";
+export { useToday } from "./today";
 export type { Session } from "./session-state";
 export {
   useRecordAdjustment,
@@ -82,6 +84,9 @@ export {
   useUnarchiveResource,
   useUpdateResource,
   useRecordUsage,
+  useUsageSuggestion,
+  useStockForecast,
+  useSetResourceNorms,
 } from "./resources";
 export {
   useChangeSheepOwner,
@@ -115,6 +120,7 @@ export {
   grades,
   inviteLifetimeMs,
   isPureArashan,
+  isCalendarDate,
   knownParents,
   manualLimit,
   maxBreedNameLength,
@@ -146,6 +152,8 @@ export {
   minPasswordLength,
   quantityScale,
   nameKey,
+  noNorms,
+  normGroups,
   pedigreeDepth,
   scanContentTypes,
   sexes,
