@@ -29,12 +29,7 @@ import {
   recordRestock,
   recordUsage,
 } from "../resources/commands";
-import {
-  deleteSheep,
-  registerSheep,
-  type SheepRegistration,
-  updateSheep,
-} from "../sheep/commands";
+import { deleteSheep, registerSheep, type SheepRegistration, updateSheep } from "../sheep/commands";
 import { changeSheepStatus } from "../sheep/lifecycle";
 import { InMemoryStore } from "../testing/in-memory";
 import { restoreFromTrash } from "./commands";
@@ -78,7 +73,20 @@ async function setup() {
   };
   const restore = (kind: TrashKind, id: string) => restoreFromTrash(ctx, { kind, id });
   const trash = () => listTrash(ctx);
-  return { store, farmId, admin, adminId, editorId, as, ctx, register, flock, later, restore, trash };
+  return {
+    store,
+    farmId,
+    admin,
+    adminId,
+    editorId,
+    as,
+    ctx,
+    register,
+    flock,
+    later,
+    restore,
+    trash,
+  };
 }
 
 /** The id of the category of the app with the key. */
@@ -125,7 +133,16 @@ describe("listTrash", () => {
     await cancelDeal(ctx, { dealId: saleId });
     later();
     const purchaseId = await buySheep(ctx, {
-      sheep: [{ tag: "B-1", name: null, sex: "ram", birthDate: null, notes: null, ownerId: ctx.member.membershipId }],
+      sheep: [
+        {
+          tag: "B-1",
+          name: null,
+          sex: "ram",
+          birthDate: null,
+          notes: null,
+          ownerId: ctx.member.membershipId,
+        },
+      ],
       date: "2026-10-16",
       price: 1_000_000,
       flockId,
@@ -247,9 +264,9 @@ describe("restoreFromTrash", () => {
     const other = await createFarm(operator, { name: "Другая", ...settings });
     const stranger = await as(store.addMember("stranger", other.farmId, "admin"), other.farmId);
 
-    await expect(
-      restoreFromTrash(stranger, { kind: "sheep", id: sheepId }),
-    ).rejects.toThrow("trash.notFound");
+    await expect(restoreFromTrash(stranger, { kind: "sheep", id: sheepId })).rejects.toThrow(
+      "trash.notFound",
+    );
     expect(sheepOf(store, sheepId).deletedAt).toBeDefined();
   });
 
@@ -286,7 +303,12 @@ describe("restoreFromTrash", () => {
       const { ctx, admin, as, editorId, register } = await setup();
       const sheepId = await register({ tag: "A-1" });
       const dead = await register({ tag: "A-2" });
-      await changeSheepStatus(ctx, { sheepIds: [dead], status: "dead", date: "2026-10-17", reason: null });
+      await changeSheepStatus(ctx, {
+        sheepIds: [dead],
+        status: "dead",
+        date: "2026-10-17",
+        reason: null,
+      });
       await deleteSheep(ctx, { sheepId });
       await deleteSheep(ctx, { sheepId: dead });
       const adminCtx = await as(admin);
@@ -397,7 +419,9 @@ describe("restoreFromTrash", () => {
     test("of a cancelled Purchase comes back only with the Purchase", async () => {
       const { store, ctx, editorId, restore } = await setup();
       const purchaseId = await buySheep(ctx, {
-        sheep: [{ tag: "B-1", name: null, sex: "ram", birthDate: null, notes: null, ownerId: editorId }],
+        sheep: [
+          { tag: "B-1", name: null, sex: "ram", birthDate: null, notes: null, ownerId: editorId },
+        ],
         date: "2026-10-16",
         price: 1_000_000,
         flockId: null,
@@ -447,7 +471,12 @@ describe("restoreFromTrash", () => {
         price: 3_000_000,
       });
       await cancelDeal(ctx, { dealId: saleId });
-      await changeSheepStatus(ctx, { sheepIds: [second!], status: "dead", date: "2026-10-17", reason: null });
+      await changeSheepStatus(ctx, {
+        sheepIds: [second!],
+        status: "dead",
+        date: "2026-10-17",
+        reason: null,
+      });
       const before = snapshot(store);
 
       await expect(restore("deal", saleId)).rejects.toThrow("sheep.notActive");
@@ -504,7 +533,10 @@ describe("restoreFromTrash", () => {
         ["B-1", purchaseId],
         ["B-2", purchaseId],
       ]);
-      const record = await ctx.repos.moneyRecords.findBySource({ kind: "purchase", id: purchaseId });
+      const record = await ctx.repos.moneyRecords.findBySource({
+        kind: "purchase",
+        id: purchaseId,
+      });
       expect(record).toMatchObject({ kind: "expense", amount: 1_000_000 });
       expect(audit()).toEqual([
         "purchase.restore Purchase",
@@ -612,7 +644,12 @@ describe("restoreFromTrash", () => {
         to: null,
       });
       await removeShepherdAssignment(ctx, { assignmentId });
-      const other = await assignShepherd(ctx, { flockId, shepherdId, from: "2026-10-05", to: null });
+      const other = await assignShepherd(ctx, {
+        flockId,
+        shepherdId,
+        from: "2026-10-05",
+        to: null,
+      });
 
       await expect(restore("shepherdAssignment", assignmentId)).rejects.toThrow(
         "flock.assignmentOverlaps",
@@ -630,7 +667,10 @@ describe("restoreFromTrash", () => {
       await removeShepherdAssignment(ctx, { assignmentId: closed });
       const audit = auditFrom(store);
       await restore("shepherdAssignment", closed);
-      expect(audit()).toEqual(["flock.restoreAssignment Flock", "flock.restoreAssignment Shepherd"]);
+      expect(audit()).toEqual([
+        "flock.restoreAssignment Flock",
+        "flock.restoreAssignment Shepherd",
+      ]);
     });
   });
 
