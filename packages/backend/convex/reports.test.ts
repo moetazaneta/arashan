@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { errorCode, farmWithEditor, logIn, setup } from "./test.setup";
 
 describe("reports.headCount", () => {
@@ -84,11 +83,11 @@ describe("reports.money", () => {
     const sheepSale = await byKey("income", "sheepSale");
     await t.run(async (ctx) => {
       await ctx.db.insert("moneyRecords", {
-        farmId: farmId as Id<"farms">,
+        farmId: ctx.db.normalizeId("farms", farmId)!,
         kind: "income",
         date: "2026-06-01",
         amount: 250_000,
-        categoryId: sheepSale as Id<"moneyCategories">,
+        categoryId: ctx.db.normalizeId("moneyCategories", sheepSale)!,
         sourceKind: "sale",
         sourceId: "sale-1",
         createdAt: 0,

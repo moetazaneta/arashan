@@ -165,6 +165,8 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "resource.reasonTooLong": msg`Причина не длиннее ${maxReasonLength} символов.`,
   "resource.adjustmentNoChange": msg`Запас на эту дату уже такой. Корректировка не нужна.`,
   "resource.eventNotFound": msg`Такой записи нет. Возможно, её уже отменили.`,
+  // The client gives today's date, so a Member sees this only after a bug.
+  "report.dateInvalid": msg`Не удалось построить отчёт на эту дату. Обновите страницу.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;

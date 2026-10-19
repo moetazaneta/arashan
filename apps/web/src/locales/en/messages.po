@@ -79,6 +79,7 @@ msgid "PDF или фото: JPEG, PNG, WebP."
 msgstr "A PDF or a photo: JPEG, PNG, WebP."
 
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 msgctxt "money record"
 msgid "Авто"
 msgstr "Auto"
@@ -214,10 +215,19 @@ msgstr "no tag"
 msgid "Без бирки"
 msgstr "No tag"
 
+#: src/components/reports/head-count-tab.tsx
+msgid "Без владельца"
+msgstr "No owner"
+
 #: src/components/flocks/flock-card.tsx
 #: src/components/flocks/flock-dialog.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Без места"
 msgstr "No location"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Без стада"
+msgstr "No flock"
 
 #: src/components/resources/resource-card.tsx
 msgid "Без цены"
@@ -405,6 +415,7 @@ msgstr "Only a sheep that is 100% Arashan can have a passport."
 msgid "Ветпаспорт может быть только у барана со 100 % арашан. Укажите состав породы."
 msgstr "Only a sheep that is 100% Arashan can have a passport. Enter the breed composition."
 
+#: src/components/reports/head-count-tab.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -468,7 +479,7 @@ msgctxt "filter"
 msgid "Все"
 msgstr "All"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Всё время"
 msgstr "All time"
 
@@ -483,6 +494,10 @@ msgstr "All unknown is Arashan"
 #: src/routes/operator/farms.tsx
 msgid "Все фермы"
 msgstr "All farms"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Всего"
+msgstr "Total"
 
 #: src/routes/invite/$token.tsx
 msgid "Вступить в ферму"
@@ -622,12 +637,17 @@ msgid "Выйти из фермы?"
 msgstr "Leave the farm?"
 
 #: src/components/flocks/flocks-tab.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Голов"
 msgstr "Sheep"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Готово"
 msgstr "Done"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Группа"
+msgstr "Group"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "Да"
@@ -731,6 +751,14 @@ msgstr "Actions"
 msgid "Действия с породой {name}"
 msgstr "Actions for the breed {name}"
 
+#: src/components/reports/reports-page.tsx
+msgid "Деньги"
+msgstr "Money"
+
+#: src/components/reports/money-tab.tsx
+msgid "Деньги за период"
+msgstr "Money for the period"
+
 #: src/components/sheep/sheep-details.tsx
 msgid "Дети"
 msgstr "Children"
@@ -792,8 +820,13 @@ msgstr "More"
 
 #: src/components/app-shell.tsx
 #: src/components/money/labels.ts
+#: src/components/reports/money-tab.tsx
 msgid "Доходы"
 msgstr "Incomes"
+
+#: src/components/reports/money-tab.tsx
+msgid "Доходы минус расходы"
+msgstr "Income minus expenses"
 
 #: src/components/resources/resource-dialog.tsx
 msgid "Единица измерения"
@@ -899,6 +932,10 @@ msgstr "Recorded as external"
 #: src/components/resources/event-dialog.tsx
 msgid "Записать"
 msgstr "Record"
+
+#: src/components/reports/money-tab.tsx
+msgid "Записей"
+msgstr "Records"
 
 #: src/components/money/money-page.tsx
 #: src/components/resources/resource-card.tsx
@@ -1107,6 +1144,7 @@ msgstr "A category that has records can only be archived."
 
 #: src/components/money/record-dialog.tsx
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 msgid "Категория"
 msgstr "Category"
 
@@ -1231,6 +1269,7 @@ msgstr "Locations"
 
 #: src/components/flocks/flock-dialog.tsx
 #: src/components/flocks/flocks-tab.tsx
+#: src/components/reports/head-count-tab.tsx
 msgid "Место"
 msgstr "Location"
 
@@ -1265,6 +1304,11 @@ msgstr "You can enter up to {limitText}."
 #: src/components/money/category-names.ts
 msgid "Мясо"
 msgstr "Meat"
+
+#. placeholder {0}: formatCalendarDate(data.date, i18n.locale)
+#: src/components/reports/head-count-tab.tsx
+msgid "На {0}. Таблица по статусу считает всех баранов, которые были на ферме, а другие таблицы — только тех, кто на ферме сейчас."
+msgstr "On {0}. The table by status counts all sheep that were on the farm; the other tables count only the sheep on the farm now."
 
 #: src/components/home-link.tsx
 msgid "На главную"
@@ -1388,6 +1432,10 @@ msgstr "Keep change"
 msgid "Не удалось войти"
 msgstr "Could not log in"
 
+#: src/errors.ts
+msgid "Не удалось построить отчёт на эту дату. Обновите страницу."
+msgstr "Could not make the report for this date. Reload the page."
+
 #: src/components/sheep/pedigree-tree.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "неизвестен"
@@ -1429,9 +1477,17 @@ msgstr "No sheep has this tag."
 msgid "Нет баранов с этим статусом."
 msgstr "No Sheep with this Status."
 
+#: src/components/reports/money-tab.tsx
+msgid "Нет доходов за этот период."
+msgstr "No income in this period."
+
 #: src/components/money/labels.ts
 msgid "Нет доходов с такими фильтрами."
 msgstr "No incomes match these filters."
+
+#: src/components/reports/money-tab.tsx
+msgid "Нет расходов за этот период."
+msgstr "No expenses in this period."
 
 #: src/components/money/labels.ts
 msgid "Нет расходов с такими фильтрами."
@@ -1622,6 +1678,11 @@ msgstr "Send it to the person who will keep the farm's records. They log in with
 msgid "Отправьте её человеку, который будет управлять фермой. Он войдёт по ссылке и станет администратором."
 msgstr "Send it to the person who will manage the farm. That person opens the link, logs in, and becomes its Admin."
 
+#: src/components/app-shell.tsx
+#: src/components/reports/reports-page.tsx
+msgid "Отчёты"
+msgstr "Reports"
+
 #: src/components/sheep/status-filter.tsx
 msgctxt "filter"
 msgid "Павшие"
@@ -1706,15 +1767,27 @@ msgstr "Rename the breed"
 msgid "Пересчитать"
 msgstr "Count"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Период"
 msgstr "Period"
 
 #: src/components/flocks/flock-shepherds.tsx
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgctxt "to date"
 msgid "По"
 msgstr "To"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По владельцам"
+msgstr "By owner"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По группам"
+msgstr "By group"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По местам"
+msgstr "By location"
 
 #: src/components/farm-settings-fields.tsx
 msgid "По нему приложение решает, когда начинается день."
@@ -1723,6 +1796,22 @@ msgstr "The app uses it to know when a day starts."
 #: src/routes/farms/$farmId/index.tsx
 msgid "По ним приложение считает деньги, даты и возраст."
 msgstr "The app uses them for money, dates and ages."
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По стадам"
+msgstr "By flock"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "По статусу"
+msgstr "By status"
+
+#: src/components/reports/reports-page.tsx
+msgid "Поголовье"
+msgstr "Head count"
+
+#: src/components/reports/head-count-tab.tsx
+msgid "Поголовье фермы"
+msgstr "Head count of the farm"
 
 #: src/components/resources/resource-card.tsx
 msgid "Подробности"
@@ -1929,7 +2018,7 @@ msgstr "Only an initial entry can change its origin."
 msgid "Прочее"
 msgstr "Other"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Прошлый год"
 msgstr "Last year"
 
@@ -1952,6 +2041,7 @@ msgstr "The expense of this restock will be deleted too."
 
 #: src/components/app-shell.tsx
 #: src/components/money/labels.ts
+#: src/components/reports/money-tab.tsx
 msgid "Расходы"
 msgstr "Expenses"
 
@@ -2027,7 +2117,7 @@ msgid "Роль участника {username}"
 msgstr "Role of {username}"
 
 #: src/components/flocks/flock-shepherds.tsx
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgctxt "from date"
 msgid "С"
 msgstr "From"
@@ -2062,7 +2152,17 @@ msgstr "Ram"
 msgid "Самка"
 msgstr "Ewe"
 
-#: src/components/money/records-tab.tsx
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
+msgid "Самки"
+msgstr "Ewes"
+
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
+msgid "Самцы"
+msgstr "Rams"
+
+#: src/components/money/period-filter.tsx
 msgid "Свой период"
 msgstr "Custom period"
 
@@ -2216,6 +2316,7 @@ msgid "Стада"
 msgstr "Flocks"
 
 #: src/components/money/record-dialog.tsx
+#: src/components/reports/head-count-tab.tsx
 #: src/components/resources/event-dialog.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-details.tsx
@@ -2251,6 +2352,7 @@ msgctxt "history"
 msgid "Стадо создано"
 msgstr "Flock created"
 
+#: src/components/reports/head-count-tab.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-table.tsx
 #: src/components/sheep/status-filter.tsx
@@ -2270,6 +2372,7 @@ msgid "Сумма"
 msgstr "Amount"
 
 #: src/components/money/records-tab.tsx
+#: src/components/reports/money-tab.tsx
 msgid "Сумма, {symbol}"
 msgstr "Amount, {symbol}"
 
@@ -2667,11 +2770,11 @@ msgstr "This sheep is the parent of other sheep, so it cannot be deleted."
 msgid "Этот баран не потерян."
 msgstr "This Sheep is not Lost."
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Этот год"
 msgstr "This year"
 
-#: src/components/money/records-tab.tsx
+#: src/components/money/period-filter.tsx
 msgid "Этот месяц"
 msgstr "This month"
 
@@ -2712,6 +2815,11 @@ msgstr "Someone already used this link. Ask for a new one."
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "ягнёнок"
 msgstr "lamb"
+
+#: src/components/reports/head-count-tab.tsx
+msgctxt "head count"
+msgid "Ягнята"
+msgstr "Lambs"
 
 #: src/components/locale-switch.tsx
 msgid "Язык"
