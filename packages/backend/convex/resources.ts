@@ -1,4 +1,7 @@
 import {
+  suggestUsage as coreSuggestUsage,
+  getStockForecast,
+  setResourceNorms,
   recordAdjustment,
   archiveResource,
   cancelResourceEvent,
@@ -95,4 +98,31 @@ export const adjust = farmCommand({
 export const cancelEvent = farmCommand({
   args: { eventId: v.string() },
   handler: (ctx, args) => cancelResourceEvent(ctx, { eventId: args.eventId as ResourceEventId }),
+});
+
+/** The quantity suggested for a Usage by the Norms, the Flock and the date. */
+export const suggestUsage = farmQuery({
+  args: { resourceId: v.string(), flockId: v.string(), date: v.string() },
+  handler: (ctx, args) =>
+    coreSuggestUsage(ctx, {
+      ...args,
+      resourceId: args.resourceId as ResourceId,
+      flockId: args.flockId as FlockId,
+    }),
+});
+
+/** How long each Resource will last for the Farm and for each Flock. */
+export const forecast = farmQuery({
+  args: { date: v.string() },
+  handler: (ctx, args) => getStockForecast(ctx, args),
+});
+
+/** A Member sets the Norms of a Resource. */
+export const setNorms = farmCommand({
+  args: {
+    resourceId: v.string(),
+    norms: v.object({ ram: v.number(), ewe: v.number(), lamb: v.number() }),
+  },
+  handler: (ctx, args) =>
+    setResourceNorms(ctx, { ...args, resourceId: args.resourceId as ResourceId }),
 });

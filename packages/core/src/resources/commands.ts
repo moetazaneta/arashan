@@ -10,6 +10,7 @@ import {
   restoreAutomaticRecord,
 } from "../money/commands";
 import { maxAmount, type MoneySource } from "../money/money";
+import { noNorms, normGroups, type Norms } from "./norms";
 import {
   maxQuantity,
   maxReasonLength,
@@ -41,7 +42,12 @@ export async function createResource(
   authorize(ctx.member, "resource.create", { farmId: ctx.farm.id });
   const fields = validResource(input);
   await requireFreeName(ctx, fields.name, null);
-  const resourceId = await ctx.repos.resources.insert({ ...fields, stock: 0, archivedAt: null });
+  const resourceId = await ctx.repos.resources.insert({
+    ...fields,
+    stock: 0,
+    norms: { ...noNorms },
+    archivedAt: null,
+  });
   await auditResource(ctx, "resource.create", resourceId);
   return resourceId;
 }
@@ -363,4 +369,22 @@ function validReason(reason: string): string {
   if (trimmed === "") throw new DomainError("resource.reasonRequired");
   if (trimmed.length > maxReasonLength) throw new DomainError("resource.reasonTooLong");
   return trimmed;
+}
+
+/** A Member sets the Norms. Only events change the Stock. */
+export async function setResourceNorms(
+  ctx: FarmCommandContext,
+  input: { resourceId: ResourceId; norms: Norms },
+): Promise<void> {
+  authorize(ctx.member, "resource.update", { farmId: ctx.farm.id });
+  const resource = await requireOpenResource(ctx, input.resourceId);
+  for (const group of normGroups) {
+    const norm = input.norms[group];
+    if (!Number.isSafeInteger(norm) || norm < 0 || norm > maxQuantity) {
+      throw new DomainError("resource.normInvalid");
+    }
+  }
+  if (normGroups.every((group) => resource.norms[group] === input.norms[group])) return;
+  await ctx.repos.resources.update(resource.id, { norms: { ...input.norms } });
+  await auditResource(ctx, "resource.setNorms", resource.id);
 }

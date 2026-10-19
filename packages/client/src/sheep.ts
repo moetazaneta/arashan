@@ -11,47 +11,21 @@ import type {
   SheepRow,
   SheepUpdate,
 } from "@arashan/core";
-import { dateAt, withLamb } from "@arashan/core";
+import { withLamb } from "@arashan/core";
 import { api } from "@arashan/backend/api";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { callCommand } from "./errors";
 import { useFarm } from "./farms";
+import { useToday } from "./today";
 
 /** A Sheep of the table «Бараны», with the flag Lamb for today. */
 export type SheepListItem = SheepRow & { lamb: boolean };
 
 /** The card of a Sheep, with the flag Lamb for today. */
 export type SheepCardData = SheepCard & { lamb: boolean };
-
-/** How often a page that stays open checks whether the day changed. */
-const dayCheckMs = 60_000;
-
-/**
- * Today in the time zone, or undefined while the time zone is not known. The value changes when the
- * day changes there, also on a page that stays open overnight: the hook checks the date each minute
- * and when the window gets the focus. A check on the same day renders nothing again.
- */
-function useToday(timeZone: string | undefined): CalendarDate | undefined {
-  const [today, setToday] = useState(() =>
-    timeZone === undefined ? undefined : dateAt(Date.now(), timeZone),
-  );
-  useEffect(() => {
-    const check = () => setToday(timeZone === undefined ? undefined : dateAt(Date.now(), timeZone));
-    check();
-    const timer = setInterval(check, dayCheckMs);
-    window.addEventListener("focus", check);
-    document.addEventListener("visibilitychange", check);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("focus", check);
-      document.removeEventListener("visibilitychange", check);
-    };
-  }, [timeZone]);
-  return today;
-}
 
 /**
  * The Sheep of the Farm for the table, by Tag, with the flag Lamb. The backend does not compute the

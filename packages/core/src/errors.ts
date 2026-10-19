@@ -166,10 +166,13 @@ export const errorCodes = [
   "resource.dateInvalid",
   "resource.dateInFuture",
   "resource.quantityInvalid",
+  "resource.normInvalid",
   "resource.reasonRequired",
   "resource.reasonTooLong",
   "resource.adjustmentNoChange",
   "resource.eventNotFound",
+  // Reports.
+  "report.dateInvalid",
   // The Trash.
   "trash.notFound",
   "trash.parentDeleted",

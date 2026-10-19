@@ -1,5 +1,5 @@
 import { dateAt } from "@arashan/core";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vite-plus/test";
 
@@ -7,6 +7,9 @@ import { formatCalendarDate } from "@/format";
 import {
   addDefaultMoneyCategories,
   addFlock,
+  addSheep,
+  fakeResources,
+  fakeResourceEvents,
   addResource,
   addResourceEvent,
   aFarm,
@@ -111,7 +114,7 @@ test("a Member cancels a Restock made by mistake, and its Expense goes away with
   renderApp(`/farms/${farm.id}/resources`);
 
   expect(await screen.findByRole("table", { name: "Ресурсы" })).toBeTruthy();
-  expect(rowsOf("Ресурсы")).toEqual(["Зерно10 мешок"]);
+  expect(rowsOf("Ресурсы")).toEqual(["Зерно10 мешок—"]);
   await user.click(screen.getByText("Зерно"));
   expect(await screen.findByRole("heading", { name: "Зерно" })).toBeTruthy();
   expect(rowsOf("Записи ресурса")[0]).toContain("Без цены");
@@ -153,4 +156,84 @@ test("an Archived Resource offers no new events, and its unit stays once it has 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(screen.getByText("В архиве")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Пополнить" })).toBeNull();
+});
+
+test("a Member sets daily Norms in thousandths and sees the Farm and Flock forecast", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  const flock = addFlock(farm, { name: "Северная" });
+  addSheep(farm, { flockId: flock, sex: "ram" });
+  addSheep(farm, { flockId: flock, sex: "ewe" });
+  const hay = addResource(farm);
+  addResourceEvent(hay, { kind: "restock", date: "2026-01-10", quantity: 55_000 });
+  renderApp(`/farms/${farm.id}/resources/${hay.id}`);
+
+  await screen.findByRole("heading", { name: "Сено" });
+  expect(await screen.findByText("Задайте нормы, чтобы увидеть прогноз запаса.")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Изменить нормы" }));
+  const dialog = await screen.findByRole("dialog", { name: "Изменить нормы" });
+  await user.type(within(dialog).getByRole("textbox", { name: "Самец" }), "3");
+  await user.type(within(dialog).getByRole("textbox", { name: "Самка" }), "2,5");
+  await user.click(within(dialog).getByRole("button", { name: "Сохранить" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(fakeResources()[0]?.norms).toEqual({ ram: 3000, ewe: 2500, lamb: 0 });
+  expect((await screen.findAllByText("10 дней")).length).toBe(2);
+  expect(rowsOf("Прогноз по стадам")).toEqual(["Северная1105,510 дней"]);
+});
+
+test("a Usage suggests a quantity, keeps a typed quantity after a date or Flock change, and applies a suggestion", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  const north = addFlock(farm, { name: "Северная" });
+  const south = addFlock(farm, { name: "Южная" });
+  addSheep(farm, { flockId: north });
+  addSheep(farm, { flockId: south });
+  addSheep(farm, { flockId: south });
+  const hay = addResource(farm, { norms: { ram: 3000, ewe: 2000, lamb: 500 } });
+  renderApp(`/farms/${farm.id}/resources/${hay.id}`);
+  await screen.findByRole("heading", { name: "Сено" });
+  const dialog = await openDialog(user, "Выдать стаду", /Выдача: Сено/);
+  await user.click(within(dialog).getByRole("combobox"));
+  await user.click(await screen.findByRole("option", { name: "Северная" }));
+  const quantity = within(dialog).getByRole("textbox", { name: "Количество" }) as HTMLInputElement;
+  await waitFor(() => expect(quantity.value).toBe("3"));
+  await user.clear(quantity);
+  await user.type(quantity, "4,5");
+  await user.click(within(dialog).getByRole("combobox"));
+  await user.click(await screen.findByRole("option", { name: "Южная" }));
+  await within(dialog).findByText(/Предложено: 6 кг/);
+  expect(quantity.value).toBe("4,5");
+  fireEvent.change(within(dialog).getByLabelText("Дата"), { target: { value: "2026-01-10" } });
+  await within(dialog).findByText(/Предложено: 6 кг/);
+  expect(quantity.value).toBe("4,5");
+  await user.click(within(dialog).getByRole("button", { name: "Подставить" }));
+  expect(quantity.value).toBe("6");
+  await user.click(within(dialog).getByRole("button", { name: "Записать" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(fakeResourceEvents()).toMatchObject([
+    { kind: "usage", quantity: 6000, date: "2026-01-10", flockId: south },
+  ]);
+});
+
+test("a zero suggestion leaves quantity empty and explains a Usage already on that date", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  const flock = addFlock(farm, { name: "Северная" });
+  addSheep(farm, { flockId: flock });
+  const hay = addResource(farm, { norms: { ram: 3000, ewe: 0, lamb: 0 } });
+  addResourceEvent(hay, {
+    kind: "usage",
+    date: dateAt(Date.now(), farm.timeZone),
+    quantity: 3000,
+    flockId: flock,
+  });
+  renderApp(`/farms/${farm.id}/resources/${hay.id}`);
+  await screen.findByRole("heading", { name: "Сено" });
+  const dialog = await openDialog(user, "Выдать стаду", /Выдача: Сено/);
+  await user.click(within(dialog).getByRole("combobox"));
+  await user.click(await screen.findByRole("option", { name: "Северная" }));
+  expect(await within(dialog).findByText("В этот день стаду уже выдавали ресурс.")).toBeTruthy();
+  expect(
+    (within(dialog).getByRole("textbox", { name: "Количество" }) as HTMLInputElement).value,
+  ).toBe("");
 });

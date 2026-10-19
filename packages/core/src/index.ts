@@ -55,7 +55,7 @@ export {
   type FarmRepository,
   type FarmSettings,
 } from "./farms/farm";
-export { addMonths, dateAt, isCalendarDate, type CalendarDate } from "./dates";
+export { addMonths, dateAt, daysBetween, isCalendarDate, type CalendarDate } from "./dates";
 export type { FileReader, FileStorage, StoredFile } from "./files/files";
 export {
   buySheep,
@@ -294,7 +294,21 @@ export {
   type MoneySheepRef,
 } from "./money/queries";
 export {
+  getHeadCountReport,
+  getMoneyReport,
+  sheepGroup,
+  sheepGroups,
+  type HeadCountOwner,
+  type HeadCountReport,
+  type HeadCountRow,
+  type MoneyReport,
+  type MoneyReportCategory,
+  type MoneyReportPart,
+  type SheepGroup,
+} from "./reports/reports";
+export {
   recordAdjustment,
+  setResourceNorms,
   archiveResource,
   cancelResourceEvent,
   createResource,
@@ -306,6 +320,23 @@ export {
   type ResourceInput,
 } from "./resources/commands";
 export {
+  normGroups,
+  noNorms,
+  groupCounts,
+  dailyNeed,
+  usageDays,
+  usageSuggestion,
+  daysOfStock,
+  type Norms,
+  type NormGroup,
+  type GroupCounts,
+} from "./resources/norms";
+export {
+  suggestUsage,
+  getStockForecast,
+  type UsageSuggestion,
+  type FlockForecast,
+  type StockForecast,
   getResource,
   listResources,
   type ResourceCard,

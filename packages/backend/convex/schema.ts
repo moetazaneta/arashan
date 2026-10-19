@@ -322,6 +322,11 @@ export default defineSchema({
     unit: v.string(),
     /** The Stock now, in thousandths of the unit: the sum of the events, which each command writes. */
     stock: v.number(),
+    /**
+     * The Norms for one Sheep for one day, in thousandths of the unit. A Resource made before the
+     * Norms has none: the adapter reads it as all 0.
+     */
+    norms: v.optional(v.object({ ram: v.number(), ewe: v.number(), lamb: v.number() })),
     archivedAt: v.optional(v.number()),
     ...deletable,
   })

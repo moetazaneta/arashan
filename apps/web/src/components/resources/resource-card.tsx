@@ -1,4 +1,4 @@
-import { useCancelResourceEvent } from "@arashan/client";
+import { normGroups, useCancelResourceEvent } from "@arashan/client";
 import type { Farm, ResourceCard, ResourceEventKind, ResourceEventRow } from "@arashan/core";
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
@@ -44,6 +44,8 @@ import { currencySymbol, formatAmount, formatCalendarDate, formatQuantity } from
 import { EventDialog } from "./event-dialog";
 import { ResourceDialog } from "./resource-dialog";
 import { Stock } from "./stock";
+import { NormsDialog, normLabels } from "./norms-dialog";
+import { ResourceForecast } from "./forecast";
 
 /** The name of each kind of event, as the list of events shows it. */
 const kindLabels: Record<ResourceEventKind, MessageDescriptor> = {
@@ -55,6 +57,8 @@ const kindLabels: Record<ResourceEventKind, MessageDescriptor> = {
 /** The card of a Resource: its Stock now, the actions that record an event, and the events. */
 export function ResourceCardView({ farm, resource }: { farm: Farm; resource: ResourceCard }) {
   const [editing, setEditing] = useState(false);
+  const [normsOpen, setNormsOpen] = useState(false);
+  const { i18n } = useLingui();
   const [recording, setRecording] = useState<ResourceEventKind | null>(null);
   // The last kind stays while the dialog closes, so that its title does not change, and each
   // opening gets a new form with empty fields.
@@ -102,7 +106,43 @@ export function ResourceCardView({ farm, resource }: { farm: Farm; resource: Res
           </Button>
         </div>
       </header>
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-semibold tracking-tight">
+            <Trans>Нормы</Trans>
+          </h2>
+          {!resource.archived && (
+            <Button variant="outline" size="sm" onClick={() => setNormsOpen(true)}>
+              <Trans>Изменить нормы</Trans>
+            </Button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          <Trans>На одного барана в день</Trans>
+        </p>
+        <dl className="flex flex-wrap gap-6 text-sm">
+          {normGroups.map((group) => (
+            <div key={group} className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">{i18n._(normLabels[group])}</dt>
+              <dd>
+                {resource.norms[group] === 0 ? (
+                  <NoValue />
+                ) : (
+                  <Stock quantity={resource.norms[group]} unit={resource.unit} />
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      {!resource.archived && <ResourceForecast farm={farm} resource={resource} />}
       <EventsTable farm={farm} resource={resource} />
+      <NormsDialog
+        farmId={farm.id}
+        resource={resource}
+        open={normsOpen}
+        onOpenChange={setNormsOpen}
+      />
       <ResourceDialog
         farmId={farm.id}
         resource={resource}
