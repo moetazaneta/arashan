@@ -417,7 +417,9 @@ have the same fields, so one module keeps both: a money record is an Expense or 
   rule finds a category by its key, never by its name: «Оплата чабану» is the key `shepherdPay`,
   also after a rename. The core keeps no names (ADR 0004), so the web app has the name of each key
   (`components/money/category-names.ts`), and a new key fails its type check until it has one. The
-  names of a list are unique (`nameKey`), also among the Archived categories. A category in use (by
+  names of a list are unique (`nameKey`), also among the Archived categories. The core sees only the
+  names that Members gave, so the view refuses the shown name of a category of the app
+  (`isNameOfKey`): else a Member could make a second «Оплата чабану» without its rule. A category in use (by
   a record, also a Deleted one, which a Member can restore) can only become Archived; one that no
   record uses can become Deleted.
 - **The default lists.** Each Farm has these categories:
@@ -451,6 +453,7 @@ with the name of the command of the event.
 
 - `createAutomaticRecord(ctx, command, { key, source, date, amount, scope })` makes the record in
   the System category of the key, with `source: { kind: "sale" | "purchase" | "restock", id }`.
+  An event has one record: a second call for the same source throws.
 - `updateAutomaticRecord(ctx, command, source, { date, amount, scope })` changes it when the event
   changes. `deleteAutomaticRecord(ctx, command, source)` makes it Deleted when someone cancels the
   event. The repository finds the record of an event with `findBySource`.

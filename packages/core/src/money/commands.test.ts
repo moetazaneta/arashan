@@ -280,6 +280,18 @@ describe("the System categories", () => {
       { id: recordId, date: "2026-10-12", amount: 4_000_000, notes: "Скидка", source },
     ]);
 
+    // An event has one record: a second one for the same event is a bug of the caller.
+    await expect(
+      createAutomaticRecord(ctx, "money.create", {
+        key: "sheepSale",
+        source,
+        date: "2026-10-12",
+        amount: 100,
+        scope: { kind: "farm" },
+      }),
+    ).rejects.toThrow("already has an Automatic record");
+    expect(store.moneyRecords.filter((r) => r.source?.id === "sale-1")).toHaveLength(1);
+
     // The cancel of the event makes it Deleted.
     await deleteAutomaticRecord(ctx, "money.delete", source);
     expect(store.moneyRecords.find((r) => r.id === recordId)?.deletedAt).toBe(store.time);

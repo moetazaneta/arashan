@@ -135,6 +135,10 @@ export async function createAutomaticRecord(
   command: CommandName,
   input: AutomaticRecordInput & { key: SystemCategoryKey; source: MoneySource },
 ): Promise<MoneyRecordId> {
+  // An event has one record: a second one would count twice, and no Member could delete it.
+  if ((await ctx.repos.moneyRecords.findBySource(input.source)) !== null) {
+    throw new Error("The event already has an Automatic record: change it instead.");
+  }
   const kind = systemCategoryKinds[input.key];
   const category = await requireSystemCategory(ctx, input.key);
   const fields = await validAutomatic(ctx, input, null);

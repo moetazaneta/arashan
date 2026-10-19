@@ -292,3 +292,37 @@ test("a Member adds a category and renames it", async () => {
 
   await waitFor(() => expect(rowsOf("Категории")[5]).toBe("Перевозка"));
 });
+
+test("a new or renamed category cannot take the name of a category of the app", async () => {
+  const user = userEvent.setup();
+  const farm = memberOfFarm();
+  addDefaultMoneyCategories(farm);
+  renderApp(`/farms/${farm.id}/expenses?tab=categories`);
+
+  await screen.findByRole("table", { name: "Категории" });
+  const before = rowsOf("Категории");
+  // The System category, in another case: a manual copy of it would look the same in the forms.
+  const newName = screen.getByRole("textbox", { name: "Новая категория" });
+  await user.type(newName, "покупка  баранов");
+  await user.click(screen.getByRole("button", { name: "Добавить категорию" }));
+  expect(
+    await screen.findByText("Категория с таким названием уже есть, может быть, в архиве."),
+  ).toBeTruthy();
+  expect(rowsOf("Категории")).toEqual(before);
+
+  // A copy of «Оплата чабану» would not need a Shepherd.
+  await user.click(
+    within(screen.getByRole("row", { name: /Прочее/ })).getByRole("button", { name: "Действия" }),
+  );
+  await user.click(await screen.findByRole("menuitem", { name: "Переименовать" }));
+  const dialog = await screen.findByRole("dialog", { name: "Переименовать категорию" });
+  const name = within(dialog).getByRole("textbox", { name: "Название" });
+  await user.clear(name);
+  await user.type(name, "Оплата чабану{Enter}");
+  expect(
+    await within(dialog).findByText("Категория с таким названием уже есть, может быть, в архиве."),
+  ).toBeTruthy();
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(rowsOf("Категории")).toEqual(before);
+});

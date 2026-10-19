@@ -184,7 +184,8 @@ function RecordForm({
   const amountValue = parseAmount(amount);
   const amountError = useCodeError(checked && amountValue === null ? "money.amountInvalid" : null);
   const saveError = useError(save.error);
-  const error = amountError ?? saveError;
+  const categoriesError = useError(categories.error);
+  const error = amountError ?? saveError ?? categoriesError;
   const id = useId();
   // Of an Automatic record, its event owns all but the amount and the notes.
   const automatic = record !== null && record.source !== null;
