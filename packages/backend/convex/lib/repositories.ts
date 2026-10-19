@@ -72,6 +72,8 @@ import {
   type ShepherdFields,
   type ShepherdAssignmentId,
   type ShepherdId,
+  type StatusChange,
+  type StatusChangeId,
   tagKey,
   type TargetKind,
   type User,
@@ -285,6 +287,19 @@ function toFlockMove(doc: Doc<"sheepFlockMoves">): FlockMove {
     sheepId: doc.sheepId as string as SheepId,
     flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
     date: doc.date,
+    at: doc.at,
+  };
+}
+
+function toStatusChange(doc: Doc<"sheepStatusChanges">): StatusChange {
+  return {
+    id: doc._id as string as StatusChangeId,
+    sheepId: doc.sheepId as string as SheepId,
+    from: doc.from,
+    to: doc.to,
+    date: doc.date,
+    reason: doc.reason ?? null,
+    flockMoveId: doc.flockMoveId === undefined ? null : (doc.flockMoveId as string as FlockMoveId),
     at: doc.at,
   };
 }
@@ -673,6 +688,20 @@ async function sheepOfFarm(db: DatabaseReader, farmId: FarmId, id: string) {
 }
 
 function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
+  /** True if the Member owns at least one Sheep of the Farm with the Status. */
+  const ownsSheepWithStatus = async (status: "active" | "lost", ownerId: MembershipId) => {
+    const doc = await db
+      .query("sheep")
+      .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+        q
+          .eq("farmId", idOf(farmId))
+          .eq("deletedAt", undefined)
+          .eq("status", status)
+          .eq("ownerId", idOf(ownerId)),
+      )
+      .first();
+    return doc !== null;
+  };
   return {
     async get(id) {
       const doc = await sheepOfFarm(db, farmId, id);
@@ -731,18 +760,11 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .collect();
       return docs.map(toOwnerChange);
     },
-    async ownsActiveSheep(ownerId) {
-      const doc = await db
-        .query("sheep")
-        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
-          q
-            .eq("farmId", idOf(farmId))
-            .eq("deletedAt", undefined)
-            .eq("status", "active")
-            .eq("ownerId", idOf(ownerId)),
-        )
-        .first();
-      return doc !== null;
+    ownsActiveSheep(ownerId) {
+      return ownsSheepWithStatus("active", ownerId);
+    },
+    ownsLostSheep(ownerId) {
+      return ownsSheepWithStatus("lost", ownerId);
     },
     async listInFlock(flockId) {
       const flockDocId = db.normalizeId("flocks", flockId);
@@ -766,6 +788,18 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         )
         .collect();
       return docs.map(toFlockMove);
+    },
+    async statusChanges(sheepId) {
+      const sheepDocId = db.normalizeId("sheep", sheepId);
+      if (sheepDocId === null) return [];
+      // The order of creation, as in `ownerChanges`.
+      const docs = await db
+        .query("sheepStatusChanges")
+        .withIndex("by_farmId_deletedAt_sheepId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("sheepId", sheepDocId),
+        )
+        .collect();
+      return docs.map(toStatusChange);
     },
   };
 }
@@ -1153,6 +1187,24 @@ export function farmRepositories(
       const doc = await getActive(db, "sheepFlockMoves", id);
       if (doc !== null && doc.farmId === idOf<"farms">(farmId)) {
         await db.patch("sheepFlockMoves", doc._id, { deletedAt });
+      }
+    },
+    async insertStatusChange(change) {
+      return (await db.insert("sheepStatusChanges", {
+        farmId: idOf(farmId),
+        sheepId: idOf(change.sheepId),
+        from: change.from,
+        to: change.to,
+        date: change.date,
+        reason: change.reason ?? undefined,
+        flockMoveId: change.flockMoveId === null ? undefined : idOf(change.flockMoveId),
+        at: change.at,
+      })) as string as StatusChangeId;
+    },
+    async markStatusChangeDeleted(id, deletedAt) {
+      const doc = await getActive(db, "sheepStatusChanges", id);
+      if (doc !== null && doc.farmId === idOf<"farms">(farmId)) {
+        await db.patch("sheepStatusChanges", doc._id, { deletedAt });
       }
     },
     async markDeleted(id, deletedAt) {

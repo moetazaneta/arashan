@@ -50,6 +50,11 @@ export const permissions = {
   "breed.delete": ["admin", "editor"],
   /** Move Sheep into a Flock or out of all Flocks, on a date. */
   "sheep.move": ["admin", "editor"],
+  /**
+   * Change the Status of Sheep to Slaughtered, Dead or Lost, bring a Lost Sheep back, or undo the
+   * last change of the Status.
+   */
+  "sheep.changeStatus": ["admin", "editor"],
   /** See the Flocks, the Locations and the Shepherds, and the Flock history of a Sheep. */
   "flock.view": ["admin", "editor"],
   /** Make a Flock. */
