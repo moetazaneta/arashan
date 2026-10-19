@@ -59,7 +59,13 @@ export type CommandName =
   | "moneyCategory.update"
   | "moneyCategory.archive"
   | "moneyCategory.unarchive"
-  | "moneyCategory.delete";
+  | "moneyCategory.delete"
+  | "sale.create"
+  | "sale.updatePrice"
+  | "sale.cancel"
+  | "purchase.create"
+  | "purchase.updatePrice"
+  | "purchase.cancel";
 
 /** The kind of record that a command changed. */
 export type TargetKind =
@@ -75,7 +81,9 @@ export type TargetKind =
   | "Expense"
   | "Income"
   | "ExpenseCategory"
-  | "IncomeCategory";
+  | "IncomeCategory"
+  | "Sale"
+  | "Purchase";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

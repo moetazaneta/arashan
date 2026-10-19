@@ -22,3 +22,5 @@ export type FlockMoveId = Id<"FlockMove">;
 export type MoneyCategoryId = Id<"MoneyCategory">;
 export type MoneyRecordId = Id<"MoneyRecord">;
 export type StatusChangeId = Id<"StatusChange">;
+/** A Sale or a Purchase. */
+export type DealId = Id<"Deal">;

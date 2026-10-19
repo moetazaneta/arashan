@@ -11,7 +11,15 @@ import {
   type SheepFlockStay,
   sheepFlockStays,
 } from "../flocks/queries";
-import type { FileId, FlockId, MembershipId, SheepId, StatusChangeId, UserId } from "../ids";
+import type {
+  DealId,
+  FileId,
+  FlockId,
+  MembershipId,
+  SheepId,
+  StatusChangeId,
+  UserId,
+} from "../ids";
 import type { BreedComposition, BreedShare } from "../pedigree/composition";
 import { cachedLookup, compositions, type SheepLookup } from "../pedigree/pedigree";
 import type { Grading, Origin, Sex, Sheep, SheepStatus, Weighing } from "./sheep";
@@ -93,6 +101,8 @@ export interface StatusChangeRow {
   to: SheepStatus;
   date: CalendarDate;
   reason: string | null;
+  /** The Sale that made the Sheep Sold, or null for a change of another kind. */
+  saleId: DealId | null;
 }
 
 /**
@@ -110,6 +120,8 @@ export interface SheepCard extends SheepRow {
   passport: PassportView | null;
   flocks: SheepFlockStay[];
   statusChanges: StatusChangeRow[];
+  /** The Purchase that brought a Bought Sheep to the Farm, or null. */
+  purchaseId: DealId | null;
 }
 
 /** A Sheep in the pedigree tree, with its parents up to the depth of the tree. */
@@ -229,7 +241,7 @@ export async function getSheep(
     periods.push({ owner: ownerOf(owners, change.ownerId), since: change.date });
   }
   const statusChanges = (await ctx.repos.sheep.statusChanges(sheep.id))
-    .map(({ id, from, to, date, reason }) => ({ id, from, to, date, reason }))
+    .map(({ id, from, to, date, reason, saleId }) => ({ id, from, to, date, reason, saleId }))
     .reverse();
   return {
     ...row,
@@ -241,6 +253,7 @@ export async function getSheep(
     manualBreeds: sheep.manualBreeds,
     passport: sheep.passport === null ? null : await passportView(ctx, sheep.passport),
     statusChanges,
+    purchaseId: sheep.purchaseId,
   };
 }
 
@@ -316,7 +329,7 @@ function toRef(sheep: Sheep): SheepRef {
 }
 
 /** The username of each Member of the Farm, also of a removed one, by the id of the Membership. */
-async function ownerNames(ctx: FarmQueryContext): Promise<Map<MembershipId, string>> {
+export async function ownerNames(ctx: FarmQueryContext): Promise<Map<MembershipId, string>> {
   const memberships = await ctx.repos.memberships.list();
   const names = new Map<MembershipId, string>();
   for (const membership of memberships) {

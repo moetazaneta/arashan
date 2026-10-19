@@ -34,6 +34,7 @@ import {
   type Sex,
   type Sheep,
   type SheepFields,
+  tagKey,
   type Weighing,
 } from "./sheep";
 
@@ -105,6 +106,7 @@ export async function registerSheep(
     ...pedigree,
     origin: input.origin,
     initialEntry: input.initialEntry,
+    purchaseId: null,
     status: "active",
     ownerId: input.ownerId,
     flockId: null,
@@ -144,6 +146,7 @@ export async function registerExternalSheep(
     ...pedigree,
     origin: "external",
     initialEntry: false,
+    purchaseId: null,
     // The Status of a Sheep is its life on the Farm. An External Sheep has none, and keeps the
     // default; each list of the Farm skips it by its Origin.
     status: "active",
@@ -180,6 +183,8 @@ export async function updateSheep(ctx: FarmCommandContext, input: SheepUpdate): 
   requireBirthDate(details, { origin, initialEntry: sheep.initialEntry });
   const { birthDate } = details;
   if (birthDate !== null && birthDate !== sheep.birthDate) {
+    const bought = await purchaseDate(ctx, sheep);
+    if (bought !== null && birthDate > bought) throw new DomainError("deal.bornAfterPurchase");
     const changes = await ctx.repos.sheep.ownerChanges(sheep.id);
     if (changes.some((change) => change.date < birthDate)) {
       throw new DomainError("sheep.birthDateAfterOwnerChange");
@@ -223,9 +228,11 @@ export async function changeSheepOwner(
   const date = validDate(input.date);
   const lastChange = (await ctx.repos.sheep.ownerChanges(sheep.id)).at(-1);
   const lastStatusChange = (await ctx.repos.sheep.statusChanges(sheep.id)).at(-1);
+  const bought = await purchaseDate(ctx, sheep);
   if (
     date > today(ctx) ||
     (sheep.birthDate !== null && date < sheep.birthDate) ||
+    (bought !== null && date < bought) ||
     (lastChange !== undefined && date < lastChange.date) ||
     (lastStatusChange !== undefined && date < lastStatusChange.date)
   ) {
@@ -245,7 +252,9 @@ export async function changeSheepOwner(
 /**
  * A Member deletes a Sheep that was registered by mistake, also an External Sheep. The Sheep becomes
  * Deleted: the app hides it but keeps it, and a Member can restore it (ADR 0005). A Sheep that is
- * the parent of another Sheep cannot become Deleted (`sheep.isParent`).
+ * the parent of another Sheep cannot become Deleted (`sheep.isParent`), nor a Sheep of a deal
+ * (`sheep.inDeal`): a Sold Sheep, or a Sheep that a Purchase brought. A Member cancels the deal
+ * instead, so that a deal never has a Deleted Sheep.
  */
 export async function deleteSheep(
   ctx: FarmCommandContext,
@@ -253,9 +262,63 @@ export async function deleteSheep(
 ): Promise<void> {
   authorize(ctx.member, "sheep.delete", { farmId: ctx.farm.id });
   const sheep = await requireRecord(ctx, input.sheepId);
+  if (sheep.status === "sold" || sheep.purchaseId !== null) throw new DomainError("sheep.inDeal");
   await requireNotParent(ctx, sheep.id);
   await ctx.repos.sheep.markDeleted(sheep.id, ctx.now());
   await recordSheepAudit(ctx, "sheep.delete", sheep.id);
+}
+
+/** A new Sheep of a Purchase: one row of its form. An empty text is no value. */
+export interface BoughtSheep {
+  tag: string | null;
+  name: string | null;
+  sex: Sex;
+  /** Null if nobody knows it. Not after the day of the Purchase. */
+  birthDate: CalendarDate | null;
+  notes: string | null;
+  ownerId: MembershipId;
+}
+
+/**
+ * The fields of the new Sheep of a Purchase on the date, or the error of the first rule that a row
+ * breaks: the rules of `registerSheep`, and a Sheep is not born after the Purchase
+ * (`deal.bornAfterPurchase`). Two rows do not have the same Tag (`sheep.tagTaken`). For the command
+ * of the Purchase: it checks all rows before it writes, then inserts the Sheep with its id.
+ */
+export async function validBoughtSheep(
+  ctx: FarmCommandContext,
+  rows: readonly BoughtSheep[],
+  date: CalendarDate,
+): Promise<Omit<SheepFields, "purchaseId">[]> {
+  const fields: Omit<SheepFields, "purchaseId">[] = [];
+  const tags = new Set<string>();
+  for (const row of rows) {
+    const details = validDetails({ ...row, weight: null }, today(ctx));
+    if (details.birthDate !== null && details.birthDate > date) {
+      throw new DomainError("deal.bornAfterPurchase");
+    }
+    if (details.tag !== null) {
+      if (tags.has(tagKey(details.tag))) throw new DomainError("sheep.tagTaken");
+      tags.add(tagKey(details.tag));
+    }
+    await requireFreeTag(ctx, details.tag, null);
+    await requireOwner(ctx, row.ownerId);
+    fields.push({
+      ...details,
+      motherId: null,
+      fatherId: null,
+      manualBreeds: [],
+      passport: null,
+      grade: null,
+      origin: "bought",
+      initialEntry: false,
+      status: "active",
+      ownerId: row.ownerId,
+      flockId: null,
+      registeredAt: ctx.now(),
+    });
+  }
+  return fields;
 }
 
 /** Today in the time zone of the Farm. */
@@ -270,6 +333,19 @@ function today(ctx: FarmCommandContext): CalendarDate {
 export async function requestPassportScanUpload(ctx: FarmCommandContext): Promise<string> {
   authorize(ctx.member, "sheep.update", { farmId: ctx.farm.id });
   return ctx.repos.files.uploadUrl();
+}
+
+/**
+ * The day of the Purchase that brought the Sheep, or null if no Purchase brought it. No event of a
+ * Bought Sheep on the Farm (a move, a change of the Owner or of the Status) is before it, as no event
+ * is before the birth date.
+ */
+export async function purchaseDate(
+  ctx: Pick<FarmCommandContext, "repos">,
+  sheep: Pick<Sheep, "purchaseId">,
+): Promise<CalendarDate | null> {
+  if (sheep.purchaseId === null) return null;
+  return (await ctx.repos.deals.get(sheep.purchaseId))?.date ?? null;
 }
 
 /**
@@ -566,7 +642,10 @@ function optionalText(text: string | null, maxLength: number, code: ErrorCode): 
 
 function sameFields(
   sheep: Sheep,
-  fields: Omit<SheepFields, "initialEntry" | "status" | "ownerId" | "flockId" | "registeredAt">,
+  fields: Omit<
+    SheepFields,
+    "initialEntry" | "purchaseId" | "status" | "ownerId" | "flockId" | "registeredAt"
+  >,
 ): boolean {
   return (
     sameParts(sheep.manualBreeds, fields.manualBreeds) &&

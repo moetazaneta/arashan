@@ -58,6 +58,33 @@ export {
 export { addMonths, dateAt, isCalendarDate, type CalendarDate } from "./dates";
 export type { FileReader, FileStorage, StoredFile } from "./files/files";
 export {
+  buySheep,
+  cancelDeal,
+  changeDealPrice,
+  sellSheep,
+  type PurchaseInput,
+  type SaleInput,
+} from "./deals/commands";
+export {
+  dealKinds,
+  dealSource,
+  maxSheepPerPurchase,
+  maxSheepPerSale,
+  type Deal,
+  type DealFields,
+  type DealKind,
+  type FarmDealReader,
+  type FarmDealRepository,
+} from "./deals/deal";
+export {
+  dealSheepPreview,
+  getDeal,
+  listDeals,
+  type DealCard,
+  type DealRow,
+  type DealSheepRow,
+} from "./deals/queries";
+export {
   archiveFlock,
   archiveLocation,
   archiveShepherd,
@@ -128,6 +155,7 @@ export {
 } from "./flocks/queries";
 export type {
   BreedId,
+  DealId,
   FarmId,
   FileId,
   FlockId,
@@ -264,9 +292,12 @@ export {
   registerExternalSheep,
   registerSheep,
   requestPassportScanUpload,
+  purchaseDate,
   requireNotParent,
   requireOwner,
   updateSheep,
+  validBoughtSheep,
+  type BoughtSheep,
   type ExternalSheepRegistration,
   type PedigreeDetails,
   type RegisteredOrigin,
@@ -279,6 +310,8 @@ export {
   markSheepFound,
   maxSheepPerStatusChange,
   recordStatusChange,
+  requireStatusChange,
+  revertStatusChange,
   undoSheepStatusChange,
   type ExitInput,
 } from "./sheep/lifecycle";
