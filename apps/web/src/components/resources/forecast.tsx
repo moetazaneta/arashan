@@ -1,4 +1,4 @@
-import { useStockForecast, useToday } from "@arashan/client";
+import { normGroups, useStockForecast, useToday } from "@arashan/client";
 import type { Farm, ResourceCard } from "@arashan/core";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 
@@ -39,19 +39,17 @@ export function ResourceForecast({ farm, resource }: { farm: Farm; resource: Res
         <Skeleton className="h-5 w-48" />
       ) : row === undefined ? (
         <NoValue />
+      ) : normGroups.every((group) => resource.norms[group] === 0) ? (
+        <p className="text-sm text-muted-foreground">
+          <Trans>Задайте нормы, чтобы увидеть прогноз запаса.</Trans>
+        </p>
       ) : (
         <>
-          {resource.norms.ram === 0 && resource.norms.ewe === 0 && resource.norms.lamb === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              <Trans>Задайте нормы, чтобы увидеть прогноз запаса.</Trans>
-            </p>
-          ) : (
-            <p className="text-sm">
-              <Trans>
-                Хватит на <StockDays days={row.days} />
-              </Trans>
-            </p>
-          )}
+          <p className="text-sm">
+            <Trans>
+              Хватит на <StockDays days={row.days} />
+            </Trans>
+          </p>
           <p className="text-sm text-muted-foreground">
             <Trans>
               Расход в день: {formatQuantity(row.dailyNeed, i18n.locale)} {unit}
