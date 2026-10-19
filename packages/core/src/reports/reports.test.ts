@@ -19,6 +19,8 @@ import {
   deleteMoneyRecord,
 } from "../money/commands";
 import type { CategoryKey, MoneyKind } from "../money/money";
+import { cancelResourceEvent, createResource, recordRestock } from "../resources/commands";
+import { quantityScale } from "../resources/resource";
 import { deleteSheep, registerExternalSheep, registerSheep } from "../sheep/commands";
 import { changeSheepStatus } from "../sheep/lifecycle";
 import type { Sex } from "../sheep/sheep";
@@ -198,7 +200,7 @@ describe("getMoneyReport", () => {
     await record("expense", feed, "2026-04-01", 30_000);
     await archiveMoneyCategory(ctx, { categoryId: feed });
     await record("income", category("income", "wool"), "2026-07-01", 200_000);
-    // The Automatic records of a Sale and of a Restock.
+    // The Automatic record of a Sale, as the command of a Sale (#12) makes it.
     await createAutomaticRecord(ctx, "money.create", {
       key: "sheepSale",
       source: { kind: "sale", id: "sale-1" },
@@ -206,13 +208,21 @@ describe("getMoneyReport", () => {
       amount: 500_000,
       scope: { kind: "farm" },
     });
-    await createAutomaticRecord(ctx, "money.create", {
-      key: "restock",
-      source: { kind: "restock", id: "restock-1" },
+    // A Restock of hay with a price, and a cancelled one: its Expense is Deleted.
+    const hay = await createResource(ctx, { name: "Сено", unit: "кг" });
+    await recordRestock(ctx, {
+      resourceId: hay,
       date: "2026-08-01",
-      amount: 70_000,
-      scope: { kind: "farm" },
+      quantity: 500 * quantityScale,
+      price: 70_000,
     });
+    const cancelled = await recordRestock(ctx, {
+      resourceId: hay,
+      date: "2026-08-02",
+      quantity: 100 * quantityScale,
+      price: 12_000,
+    });
+    await cancelResourceEvent(ctx, { eventId: cancelled });
     return { ctx, category, feed };
   }
 

@@ -138,6 +138,8 @@ export type {
   MembershipId,
   MoneyCategoryId,
   MoneyRecordId,
+  ResourceEventId,
+  ResourceId,
   OwnerChangeId,
   PasswordResetId,
   SheepId,
@@ -254,6 +256,44 @@ export {
   type MoneyReportPart,
   type SheepGroup,
 } from "./reports/reports";
+export {
+  recordAdjustment,
+  archiveResource,
+  cancelResourceEvent,
+  createResource,
+  recordRestock,
+  restockSource,
+  unarchiveResource,
+  updateResource,
+  recordUsage,
+  type ResourceInput,
+} from "./resources/commands";
+export {
+  getResource,
+  listResources,
+  type ResourceCard,
+  type ResourceEventRow,
+  type ResourceRow,
+} from "./resources/queries";
+export {
+  inEventOrder,
+  maxQuantity,
+  maxReasonLength,
+  maxResourceNameLength,
+  maxUnitLength,
+  quantityScale,
+  resourceEventKinds,
+  stockOf,
+  stockOn,
+  stockSteps,
+  type FarmResourceReader,
+  type FarmResourceRepository,
+  type Resource,
+  type ResourceEvent,
+  type ResourceEventKind,
+  type ResourceFields,
+  type StockStep,
+} from "./resources/resource";
 export {
   arashanShare,
   compositionOf,

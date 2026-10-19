@@ -72,6 +72,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/farms/$farmId/flocks" params={{ farmId: farm.id }} className={navLink}>
               <Trans>Стада</Trans>
             </Link>
+            <Link to="/farms/$farmId/resources" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Ресурсы</Trans>
+            </Link>
             <Link to="/farms/$farmId/expenses" params={{ farmId: farm.id }} className={navLink}>
               <Trans>Расходы</Trans>
             </Link>

@@ -134,6 +134,22 @@ export const errorCodes = [
   "moneyCategory.system",
   "moneyCategory.archived",
   "moneyCategory.inUse",
+  // Resources and their events.
+  "resource.notFound",
+  "resource.nameRequired",
+  "resource.nameTooLong",
+  "resource.nameTaken",
+  "resource.unitRequired",
+  "resource.unitTooLong",
+  "resource.unitLocked",
+  "resource.archived",
+  "resource.dateInvalid",
+  "resource.dateInFuture",
+  "resource.quantityInvalid",
+  "resource.reasonRequired",
+  "resource.reasonTooLong",
+  "resource.adjustmentNoChange",
+  "resource.eventNotFound",
   // Reports.
   "report.dateInvalid",
 ] as const;
