@@ -185,6 +185,10 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "resource.reasonTooLong": msg`Причина не длиннее ${maxReasonLength} символов.`,
   "resource.adjustmentNoChange": msg`Запас на эту дату уже такой. Корректировка не нужна.`,
   "resource.eventNotFound": msg`Такой записи нет. Возможно, её уже отменили.`,
+  "trash.notFound": msg`Этой записи уже нет в корзине: возможно, её уже восстановили.`,
+  "trash.parentDeleted": msg`Мать или отец этого барана удалены. Сначала восстановите их из корзины.`,
+  "trash.sheepDeleted": msg`Баран этой записи удалён. Сначала восстановите его из корзины.`,
+  "trash.breedDeleted": msg`Порода этого барана удалена. Сначала восстановите её из корзины.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;

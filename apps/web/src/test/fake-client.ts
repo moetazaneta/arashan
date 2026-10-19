@@ -75,6 +75,7 @@ import type {
   ResourceEventId,
   ResourceId,
   ResourceInput,
+  TrashKind,
 } from "@arashan/core";
 import {
   addBreed as addCoreBreed,
@@ -132,6 +133,7 @@ import {
   listMoneyRecords,
   listSheep,
   listSheepOwners,
+  listTrash,
   registerExternalSheep,
   listShepherds,
   markSheepFound,
@@ -144,6 +146,7 @@ import {
   setBreedArchived,
   removeShepherdAssignment,
   renameMoneyCategory,
+  restoreFromTrash,
   tagKey,
   unarchiveFlock,
   unarchiveLocation,
@@ -283,7 +286,8 @@ type CommandName =
   | "recordUsage"
   | "recordAdjustment"
   | "cancelResourceEvent"
-  | "recordLambing";
+  | "recordLambing"
+  | "restoreFromTrash";
 
 interface FakeBackend {
   session: Client.Session;
@@ -296,11 +300,13 @@ interface FakeBackend {
   passwords: Map<MembershipId, string>;
   /** The Sheep of all Farms, also the Deleted ones. */
   sheep: Sheep[];
-  deletedSheep: Set<SheepId>;
+  /** When each Deleted Sheep became Deleted, by id. */
+  deletedSheep: Map<SheepId, number>;
   ownerChanges: OwnerChange[];
   /** The Breeds of all Farms that the Members added, also the Deleted ones. */
   breeds: Breed[];
-  deletedBreeds: Set<BreedId>;
+  /** When each Deleted Breed became Deleted, by id. */
+  deletedBreeds: Map<BreedId, number>;
   /** The uploaded files, such as the scans of Passports. */
   files: Map<FileId, StoredFile>;
   /** The moves of Sheep between Flocks, also the undone ones. */
@@ -310,18 +316,18 @@ interface FakeBackend {
   flocks: Flock[];
   locations: Location[];
   shepherds: Shepherd[];
-  /** The assignments of Shepherds to Flocks, also the removed ones. */
-  assignments: (ShepherdAssignment & { farmId: FarmId; deleted?: boolean })[];
+  /** The assignments of Shepherds to Flocks, also the removed ones, with the time of the removal. */
+  assignments: (ShepherdAssignment & { farmId: FarmId; deletedAt?: number })[];
   lambings: Lambing[];
-  /** The categories of Expenses and Incomes, also the Deleted ones. */
-  moneyCategories: (MoneyCategory & { deleted?: boolean })[];
-  /** The Expenses and the Incomes, also the Deleted ones. */
-  moneyRecords: (MoneyRecord & { deleted?: boolean })[];
-  /** The Sales and the Purchases, also the cancelled ones. */
-  deals: (Deal & { deleted?: boolean })[];
+  /** The categories of Expenses and Incomes, also the Deleted ones, with the time of the delete. */
+  moneyCategories: (MoneyCategory & { deletedAt?: number })[];
+  /** The Expenses and the Incomes, also the Deleted ones, with the time of the delete. */
+  moneyRecords: (MoneyRecord & { deletedAt?: number })[];
+  /** The Sales and the Purchases, also the cancelled ones, with the time of the cancel. */
+  deals: (Deal & { deletedAt?: number })[];
   resources: Resource[];
-  /** The events of the Resources, also the cancelled ones. */
-  resourceEvents: (ResourceEvent & { farmId: FarmId; deleted?: boolean })[];
+  /** The events of the Resources, also the cancelled ones, with the time of the cancel. */
+  resourceEvents: (ResourceEvent & { farmId: FarmId; deletedAt?: number })[];
   audit: AuditEntry[];
   /** A command that fails with a domain error, and changes nothing. */
   failures: Partial<Record<CommandName, DomainError>>;
@@ -336,10 +342,10 @@ const emptyBackend = (): FakeBackend => ({
   members: new Map(),
   passwords: new Map(),
   sheep: [],
-  deletedSheep: new Set(),
+  deletedSheep: new Map(),
   ownerChanges: [],
   breeds: [],
-  deletedBreeds: new Set(),
+  deletedBreeds: new Map(),
   files: new Map(),
   flockMoves: [],
   statusChanges: [],
@@ -809,6 +815,17 @@ function nextId(backend: FakeBackend, kind: string): string {
   return `${kind}-${backend.ids}`;
 }
 
+/** The Deleted records of the list, for the Trash: the stored rows, with the time of the delete. */
+function deletedOf<T extends { deletedAt?: number }>(records: T[]): (T & { deletedAt: number })[] {
+  return records.filter((r): r is T & { deletedAt: number } => r.deletedAt !== undefined);
+}
+
+/** A copy of a stored record without the time of its delete, as a read of one record gives it. */
+function withoutDeletedAt<T extends { deletedAt?: number }>(record: T): Omit<T, "deletedAt"> {
+  const { deletedAt: _, ...rest } = record;
+  return rest;
+}
+
 /** The Memberships of the Farm: its Members, and the User of `signIn` if a test added no Member. */
 function membershipsOf(backend: FakeBackend, farmId: FarmId): Membership[] {
   const memberships: Membership[] = (backend.members.get(farmId) ?? []).map((member) => ({
@@ -867,6 +884,8 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
   const ofFarm = () =>
     backend.sheep.filter((s) => s.farmId === farmId && !backend.deletedSheep.has(s.id));
   const find = (id: SheepId) => ofFarm().find((s) => s.id === id);
+  const findDeleted = (id: SheepId) =>
+    backend.sheep.find((s) => s.id === id && s.farmId === farmId && backend.deletedSheep.has(id));
   return {
     get: async (id) => {
       const found = find(id);
@@ -937,8 +956,20 @@ function sheepRepository(backend: FakeBackend, farmId: FarmId): FarmSheepReposit
       const found = backend.statusChanges.find((c) => c.id === id);
       if (found !== undefined) found.deleted = true;
     },
-    markDeleted: async (id) => {
-      backend.deletedSheep.add(id);
+    markDeleted: async (id, deletedAt) => {
+      backend.deletedSheep.set(id, deletedAt);
+    },
+    listDeleted: async () =>
+      backend.sheep.flatMap((s) => {
+        const deletedAt = backend.deletedSheep.get(s.id);
+        return s.farmId === farmId && deletedAt !== undefined ? [{ ...s, deletedAt }] : [];
+      }),
+    getDeleted: async (id) => {
+      const found = findDeleted(id);
+      return found === undefined ? null : { ...found };
+    },
+    markRestored: async (id) => {
+      if (findDeleted(id) !== undefined) backend.deletedSheep.delete(id);
     },
   };
 }
@@ -947,6 +978,8 @@ function breedRepository(backend: FakeBackend, farmId: FarmId): FarmBreedReposit
   const ofFarm = () =>
     backend.breeds.filter((b) => b.farmId === farmId && !backend.deletedBreeds.has(b.id));
   const find = (id: BreedId) => ofFarm().find((b) => b.id === id);
+  const findDeleted = (id: BreedId) =>
+    backend.breeds.find((b) => b.id === id && b.farmId === farmId && backend.deletedBreeds.has(id));
   return {
     get: async (id) => {
       const found = find(id);
@@ -963,8 +996,20 @@ function breedRepository(backend: FakeBackend, farmId: FarmId): FarmBreedReposit
       const found = find(id);
       if (found !== undefined) Object.assign(found, fields);
     },
-    markDeleted: async (id) => {
-      backend.deletedBreeds.add(id);
+    markDeleted: async (id, deletedAt) => {
+      backend.deletedBreeds.set(id, deletedAt);
+    },
+    listDeleted: async () =>
+      backend.breeds.flatMap((b) => {
+        const deletedAt = backend.deletedBreeds.get(b.id);
+        return b.farmId === farmId && deletedAt !== undefined ? [{ ...b, deletedAt }] : [];
+      }),
+    getDeleted: async (id) => {
+      const found = findDeleted(id);
+      return found === undefined ? null : { ...found };
+    },
+    markRestored: async (id) => {
+      if (findDeleted(id) !== undefined) backend.deletedBreeds.delete(id);
     },
   };
 }
@@ -1015,8 +1060,10 @@ function shepherdRepository(backend: FakeBackend, farmId: FarmId): FarmShepherdR
 
 function flockRepository(backend: FakeBackend, farmId: FarmId): FarmFlockRepository {
   const ofFarm = () => backend.flocks.filter((f) => f.farmId === farmId);
-  const assignments = () =>
-    backend.assignments.filter((a) => a.farmId === farmId && a.deleted !== true);
+  const allAssignments = () => backend.assignments.filter((a) => a.farmId === farmId);
+  const assignments = () => allAssignments().filter((a) => a.deletedAt === undefined);
+  const findDeletedAssignment = (id: ShepherdAssignmentId) =>
+    allAssignments().find((a) => a.id === id && a.deletedAt !== undefined);
   const assignment = ({ id, flockId, shepherdId, from, to }: ShepherdAssignment) => ({
     id,
     flockId,
@@ -1041,6 +1088,16 @@ function flockRepository(backend: FakeBackend, farmId: FarmId): FarmFlockReposit
       assignments()
         .filter((a) => a.shepherdId === shepherdId)
         .map(assignment),
+    listDeletedAssignments: async () =>
+      deletedOf(allAssignments()).map((a) => ({ ...assignment(a), deletedAt: a.deletedAt })),
+    getDeletedAssignment: async (id) => {
+      const found = findDeletedAssignment(id);
+      return found === undefined ? null : assignment(found);
+    },
+    markAssignmentRestored: async (id) => {
+      const found = findDeletedAssignment(id);
+      if (found !== undefined) delete found.deletedAt;
+    },
     insert: async (fields) => {
       const id = nextId(backend, "flock") as FlockId;
       backend.flocks.push({ id, farmId, ...fields });
@@ -1059,9 +1116,9 @@ function flockRepository(backend: FakeBackend, farmId: FarmId): FarmFlockReposit
       const found = assignments().find((a) => a.id === id);
       if (found !== undefined) Object.assign(found, dates);
     },
-    markAssignmentDeleted: async (id) => {
+    markAssignmentDeleted: async (id, deletedAt) => {
       const found = assignments().find((a) => a.id === id);
-      if (found !== undefined) found.deleted = true;
+      if (found !== undefined) found.deletedAt = deletedAt;
     },
   };
 }
@@ -1554,7 +1611,9 @@ function moneyCategoryRepository(
   farmId: FarmId,
 ): FarmMoneyCategoryRepository {
   const all = () => backend.moneyCategories.filter((c) => c.farmId === farmId);
-  const ofFarm = () => all().filter((c) => c.deleted !== true);
+  const ofFarm = () => all().filter((c) => c.deletedAt === undefined);
+  const findDeleted = (id: MoneyCategoryId) =>
+    all().find((c) => c.id === id && c.deletedAt !== undefined);
   return {
     get: async (id) => ofFarm().find((c) => c.id === id) ?? null,
     list: async (kind) =>
@@ -1577,16 +1636,27 @@ function moneyCategoryRepository(
       const found = ofFarm().find((c) => c.id === id);
       if (found !== undefined) Object.assign(found, fields);
     },
-    markDeleted: async (id) => {
+    markDeleted: async (id, deletedAt) => {
       const found = ofFarm().find((c) => c.id === id);
-      if (found !== undefined) found.deleted = true;
+      if (found !== undefined) found.deletedAt = deletedAt;
+    },
+    listDeleted: async () => deletedOf(all()).map((c) => ({ ...c })),
+    getDeleted: async (id) => {
+      const found = findDeleted(id);
+      return found === undefined ? null : withoutDeletedAt(found);
+    },
+    markRestored: async (id) => {
+      const found = findDeleted(id);
+      if (found !== undefined) delete found.deletedAt;
     },
   };
 }
 
 function moneyRecordRepository(backend: FakeBackend, farmId: FarmId): FarmMoneyRecordRepository {
   const all = () => backend.moneyRecords.filter((r) => r.farmId === farmId);
-  const ofFarm = () => all().filter((r) => r.deleted !== true);
+  const ofFarm = () => all().filter((r) => r.deletedAt === undefined);
+  const findDeleted = (id: MoneyRecordId) =>
+    all().find((r) => r.id === id && r.deletedAt !== undefined);
   return {
     get: async (id) => ofFarm().find((r) => r.id === id) ?? null,
     list: async (kind, period) =>
@@ -1611,9 +1681,25 @@ function moneyRecordRepository(backend: FakeBackend, farmId: FarmId): FarmMoneyR
       const found = ofFarm().find((r) => r.id === id);
       if (found !== undefined) Object.assign(found, fields);
     },
-    markDeleted: async (id) => {
+    markDeleted: async (id, deletedAt) => {
       const found = ofFarm().find((r) => r.id === id);
-      if (found !== undefined) found.deleted = true;
+      if (found !== undefined) found.deletedAt = deletedAt;
+    },
+    listDeleted: async () => deletedOf(all()).map((r) => ({ ...r })),
+    getDeleted: async (id) => {
+      const found = findDeleted(id);
+      return found === undefined ? null : withoutDeletedAt(found);
+    },
+    findDeletedBySource: async (source) => {
+      // The one that became Deleted last, if the event has more than one.
+      const found = deletedOf(all())
+        .filter((r) => r.source?.kind === source.kind && r.source.id === source.id)
+        .sort((a, b) => b.deletedAt - a.deletedAt)[0];
+      return found === undefined ? null : withoutDeletedAt(found);
+    },
+    markRestored: async (id) => {
+      const found = findDeleted(id);
+      if (found !== undefined) delete found.deletedAt;
     },
   };
 }
@@ -1777,7 +1863,9 @@ export const useDeleteMoneyCategory = (farmId: FarmId) =>
 // its Automatic record in the money records of the fake.
 
 function dealRepository(backend: FakeBackend, farmId: FarmId): FarmDealRepository {
-  const ofFarm = () => backend.deals.filter((d) => d.farmId === farmId && d.deleted !== true);
+  const all = () => backend.deals.filter((d) => d.farmId === farmId);
+  const ofFarm = () => all().filter((d) => d.deletedAt === undefined);
+  const findDeleted = (id: DealId) => all().find((d) => d.id === id && d.deletedAt !== undefined);
   const plain = ({ id, kind, date, sheepIds, flockId, createdAt }: Deal): Deal => ({
     id,
     farmId,
@@ -1802,9 +1890,18 @@ function dealRepository(backend: FakeBackend, farmId: FarmId): FarmDealRepositor
       const found = ofFarm().find((d) => d.id === id);
       if (found !== undefined) found.sheepIds = [...sheepIds];
     },
-    markDeleted: async (id) => {
+    markDeleted: async (id, deletedAt) => {
       const found = ofFarm().find((d) => d.id === id);
-      if (found !== undefined) found.deleted = true;
+      if (found !== undefined) found.deletedAt = deletedAt;
+    },
+    listDeleted: async () => deletedOf(all()).map((d) => ({ ...plain(d), deletedAt: d.deletedAt })),
+    getDeleted: async (id) => {
+      const found = findDeleted(id);
+      return found === undefined ? null : plain(found);
+    },
+    markRestored: async (id) => {
+      const found = findDeleted(id);
+      if (found !== undefined) delete found.deletedAt;
     },
   };
 }
@@ -1851,8 +1948,10 @@ export const useCancelDeal = (farmId: FarmId) =>
 
 function resourceRepository(backend: FakeBackend, farmId: FarmId): FarmResourceRepository {
   const ofFarm = () => backend.resources.filter((r) => r.farmId === farmId);
-  const events = () =>
-    backend.resourceEvents.filter((e) => e.farmId === farmId && e.deleted !== true);
+  const allEvents = () => backend.resourceEvents.filter((e) => e.farmId === farmId);
+  const events = () => allEvents().filter((e) => e.deletedAt === undefined);
+  const findDeletedEvent = (id: ResourceEventId) =>
+    allEvents().find((e) => e.id === id && e.deletedAt !== undefined);
   const eventOf = (stored: FakeBackend["resourceEvents"][number]): ResourceEvent => ({
     id: stored.id,
     resourceId: stored.resourceId,
@@ -1889,9 +1988,19 @@ function resourceRepository(backend: FakeBackend, farmId: FarmId): FarmResourceR
       backend.resourceEvents.push({ id, farmId, ...event });
       return id;
     },
-    markEventDeleted: async (id) => {
+    markEventDeleted: async (id, deletedAt) => {
       const found = events().find((e) => e.id === id);
-      if (found !== undefined) found.deleted = true;
+      if (found !== undefined) found.deletedAt = deletedAt;
+    },
+    listDeletedEvents: async () =>
+      deletedOf(allEvents()).map((e) => ({ ...eventOf(e), deletedAt: e.deletedAt })),
+    getDeletedEvent: async (id) => {
+      const found = findDeletedEvent(id);
+      return found === undefined ? null : eventOf(found);
+    },
+    markEventRestored: async (id) => {
+      const found = findDeletedEvent(id);
+      if (found !== undefined) delete found.deletedAt;
     },
   };
 }
@@ -1934,7 +2043,9 @@ export function addResourceEvent(
     });
     const stored = backend.resources.find((r) => r.id === resource.id)!;
     stored.stock = stockOf(
-      backend.resourceEvents.filter((e) => e.resourceId === resource.id && e.deleted !== true),
+      backend.resourceEvents.filter(
+        (e) => e.resourceId === resource.id && e.deletedAt === undefined,
+      ),
     );
   });
 }
@@ -2012,4 +2123,28 @@ export const useRecordAdjustment = (farmId: FarmId) =>
 export const useCancelResourceEvent = (farmId: FarmId) =>
   useMutation("cancelResourceEvent", (backend, eventId: ResourceEventId) =>
     cancelResourceEvent(commandContext(backend, farmId), { eventId }),
+  );
+
+// The Trash. The fake runs the query and the command of the core, so a restore checks the rules of
+// the core, as the backend does.
+
+/**
+ * Runs a command of the core on the fake backend, as if the signed-in Member ran it: for a test that
+ * needs a record that another page makes, such as a Deleted Sheep or a cancelled deal.
+ */
+export async function runCommand<T>(
+  farm: FakeFarm,
+  command: (ctx: FarmCommandContext) => Promise<T>,
+): Promise<T> {
+  const result = await command(commandContext(backend, farm.id));
+  updateFake(() => {});
+  return result;
+}
+
+export const useTrash = (farmId: FarmId) =>
+  useCoreQuery(`trash ${farmId}`, (backend) => listTrash(queryContext(backend, farmId)));
+
+export const useRestoreFromTrash = (farmId: FarmId) =>
+  useMutation("restoreFromTrash", (backend, input: { kind: TrashKind; id: string }) =>
+    restoreFromTrash(commandContext(backend, farmId), input),
   );

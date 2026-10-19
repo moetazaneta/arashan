@@ -108,4 +108,15 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "resource.use": msg({ context: "history", message: "Выдача" }),
   "resource.adjust": msg({ context: "history", message: "Корректировка" }),
   "resource.cancelEvent": msg({ context: "history", message: "Запись ресурса отменена" }),
+  "sheep.restore": msg({ context: "history", message: "Восстановлен из корзины" }),
+  "breed.restore": msg({ context: "history", message: "Порода восстановлена" }),
+  "flock.restoreAssignment": msg({
+    context: "history",
+    message: "Назначение чабана восстановлено",
+  }),
+  "money.restore": msg({ context: "history", message: "Запись восстановлена" }),
+  "moneyCategory.restore": msg({ context: "history", message: "Категория восстановлена" }),
+  "sale.restore": msg({ context: "history", message: "Продажа восстановлена" }),
+  "purchase.restore": msg({ context: "history", message: "Покупка восстановлена" }),
+  "resource.restoreEvent": msg({ context: "history", message: "Запись ресурса восстановлена" }),
 };
