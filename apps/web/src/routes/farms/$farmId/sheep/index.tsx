@@ -4,6 +4,7 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 
+import { SellSheepDialog } from "@/components/deals/sell-dialog";
 import { type MoveResult, MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { statusLabels } from "@/components/sheep/labels";
 import { RegisterSheepSheet } from "@/components/sheep/sheep-form";
@@ -61,6 +62,9 @@ function SheepPage() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [statusIds, setStatusIds] = useState<readonly SheepId[]>([]);
   const [statusResult, setStatusResult] = useState<StatusResult | null>(null);
+  // The Sheep of the dialog of a Sale, as for the move.
+  const [selling, setSelling] = useState(false);
+  const [sellingIds, setSellingIds] = useState<readonly SheepId[]>([]);
   const filter: StatusFilter = Route.useSearch().status ?? "active";
   const all = sheep.data;
   const shown = useMemo(
@@ -156,6 +160,15 @@ function SheepPage() {
             >
               <Trans>Сменить статус</Trans>
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSellingIds([...selection]);
+                setSelling(true);
+              }}
+            >
+              <Trans>Продать</Trans>
+            </Button>
           </div>
         ) : (
           hasSheep && (
@@ -225,6 +238,15 @@ function SheepPage() {
           setMoveResult(null);
           setStatusResult(result);
         }}
+      />
+      <SellSheepDialog
+        farm={farm}
+        sheepIds={sellingIds}
+        open={selling}
+        onOpenChange={setSelling}
+        onSold={(dealId) =>
+          void navigate({ to: "/farms/$farmId/deals/$dealId", params: { farmId, dealId } })
+        }
       />
     </div>
   );

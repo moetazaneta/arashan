@@ -7,6 +7,7 @@ import {
 } from "@arashan/client";
 import type {
   CalendarDate,
+  DealId,
   Farm,
   FarmId,
   FlockId,
@@ -16,11 +17,12 @@ import type {
   MoneyRecordRow,
   MoneyScope,
   MoneyScopeRef,
+  MoneySource,
   SheepId,
 } from "@arashan/core";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
-import { EllipsisIcon } from "lucide-react";
+import { ArrowRightIcon, EllipsisIcon } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -74,6 +76,8 @@ import {
 } from "@/components/ui/table";
 import { useErrorMessage } from "@/errors";
 import { currencySymbol, formatAmount, formatCalendarDate } from "@/format";
+
+import { dealKindLabels } from "@/components/deals/labels";
 
 import { categoryName } from "./category-names";
 import { kindLabels } from "./labels";
@@ -476,9 +480,7 @@ function RecordsTable({
                 <span className="flex items-center gap-2">
                   {categoryName(record.category, i18n)}
                   {record.source !== null && (
-                    <Badge variant="secondary">
-                      <Trans context="money record">Авто</Trans>
-                    </Badge>
+                    <SourceBadge farmId={farm.id} source={record.source} />
                   )}
                 </span>
               </DataCell>
@@ -615,5 +617,34 @@ function DeleteRecordDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/**
+ * The mark of an Automatic record. The record of a Sale or a Purchase links to the card of its deal,
+ * where a Member changes the price or cancels the deal.
+ */
+function SourceBadge({ farmId, source }: { farmId: FarmId; source: MoneySource }) {
+  const { i18n } = useLingui();
+  if (source.kind === "sale" || source.kind === "purchase") {
+    return (
+      <Badge
+        variant="secondary"
+        render={
+          <Link
+            to="/farms/$farmId/deals/$dealId"
+            params={{ farmId, dealId: source.id as DealId }}
+          />
+        }
+      >
+        {i18n._(dealKindLabels[source.kind])}
+        <ArrowRightIcon data-icon="inline-end" />
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary">
+      <Trans context="money record">Авто</Trans>
+    </Badge>
   );
 }
