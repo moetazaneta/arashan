@@ -18,8 +18,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { callCommand } from "./errors";
-import { useToday } from "./dates";
 import { useFarm } from "./farms";
+import { useToday } from "./today";
 
 /** A Sheep of the table «Бараны», with the flag Lamb for today. */
 export type SheepListItem = SheepRow & { lamb: boolean };

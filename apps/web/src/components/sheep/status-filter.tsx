@@ -11,7 +11,7 @@ export const statusFilters = ["active", "lost", "sold", "slaughtered", "dead", "
 export type StatusFilter = (typeof statusFilters)[number];
 
 /** The name of each filter: the Sheep with that Status. */
-const filterLabels: Record<StatusFilter, MessageDescriptor> = {
+export const filterLabels: Record<StatusFilter, MessageDescriptor> = {
   active: msg({ context: "filter", message: "Активные" }),
   lost: msg({ context: "filter", message: "Потерянные" }),
   sold: msg({ context: "filter", message: "Проданные" }),

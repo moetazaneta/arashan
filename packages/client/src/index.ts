@@ -8,7 +8,14 @@ export {
   useSetBreedArchived,
 } from "./breeds";
 export { ClientProvider, createClient, type Client, type Locale } from "./client";
-export { useToday } from "./dates";
+export {
+  useBuySheep,
+  useCancelDeal,
+  useChangeDealPrice,
+  useDeal,
+  useDeals,
+  useSellSheep,
+} from "./deals";
 export { toDomainError } from "./errors";
 export {
   useCreateFarm,
@@ -61,7 +68,9 @@ export {
   useUnarchiveMoneyCategory,
   useUpdateMoneyRecord,
 } from "./money";
+export { useHeadCountReport, useMoneyReport } from "./reports";
 export { SignInForm, useSession, useSignOut } from "./session";
+export { useToday } from "./today";
 export type { Session } from "./session-state";
 export {
   useRecordAdjustment,
@@ -104,6 +113,7 @@ export {
   arashanShare,
   compositionOf,
   dateAt,
+  dealSheepPreview,
   defaultLambAgeMonths,
   exitStatuses,
   grades,
@@ -128,6 +138,8 @@ export {
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxSheepPerPurchase,
+  maxSheepPerSale,
   maxUnitLength,
   maxSheepPerStatusChange,
   maxStatusReasonLength,

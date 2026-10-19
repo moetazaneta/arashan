@@ -5,6 +5,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeftIcon, SearchXIcon } from "lucide-react";
 import { useState } from "react";
 
+import { SellSheepDialog } from "@/components/deals/sell-dialog";
 import { Loading } from "@/components/loading";
 import { PedigreeTree } from "@/components/sheep/pedigree-tree";
 import { MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
@@ -88,6 +89,7 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [selling, setSelling] = useState(false);
 
   return (
     <>
@@ -107,6 +109,11 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
           {sheep.status === "active" && sheep.origin !== "external" && (
             <Button variant="outline" onClick={() => setChangingStatus(true)}>
               <Trans>Сменить статус</Trans>
+            </Button>
+          )}
+          {sheep.status === "active" && sheep.origin !== "external" && (
+            <Button variant="outline" onClick={() => setSelling(true)}>
+              <Trans>Продать</Trans>
             </Button>
           )}
           {sheep.status === "lost" && <FoundDialog farm={farm} sheep={sheep} />}
@@ -156,6 +163,18 @@ function SheepCard({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
             sheepIds={[sheep.id]}
             open={changingStatus}
             onOpenChange={setChangingStatus}
+          />
+          <SellSheepDialog
+            farm={farm}
+            sheepIds={[sheep.id]}
+            open={selling}
+            onOpenChange={setSelling}
+            onSold={(dealId) =>
+              void navigate({
+                to: "/farms/$farmId/deals/$dealId",
+                params: { farmId: farm.id, dealId },
+              })
+            }
           />
         </>
       )}

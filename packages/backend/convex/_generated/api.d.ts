@@ -10,6 +10,7 @@
 
 import type * as app from "../app.js";
 import type * as breeds from "../breeds.js";
+import type * as deals from "../deals.js";
 import type * as farms from "../farms.js";
 import type * as flocks from "../flocks.js";
 import type * as invites from "../invites.js";
@@ -21,6 +22,7 @@ import type * as lib_tokens from "../lib/tokens.js";
 import type * as locations from "../locations.js";
 import type * as members from "../members.js";
 import type * as money from "../money.js";
+import type * as reports from "../reports.js";
 import type * as resources from "../resources.js";
 import type * as sheep from "../sheep.js";
 import type * as shepherds from "../shepherds.js";
@@ -35,6 +37,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   app: typeof app;
   breeds: typeof breeds;
+  deals: typeof deals;
   farms: typeof farms;
   flocks: typeof flocks;
   invites: typeof invites;
@@ -46,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   locations: typeof locations;
   members: typeof members;
   money: typeof money;
+  reports: typeof reports;
   resources: typeof resources;
   sheep: typeof sheep;
   shepherds: typeof shepherds;

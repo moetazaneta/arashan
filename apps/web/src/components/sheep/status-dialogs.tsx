@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DealLink } from "@/components/deals/deal-link";
 import { formatCalendarDate } from "@/format";
 import { formError, useError, useErrorMessage } from "@/errors";
 
@@ -446,7 +447,12 @@ export function StatusChanges({ farm, sheep }: { farm: Farm; sheep: SheepCardDat
               {formatCalendarDate(change.date, i18n.locale)}
               {change.reason !== null && <>, {change.reason}</>}
             </span>
-            {index === 0 && <UndoStatusChangeDialog farm={farm} sheep={sheep} change={change} />}
+            {/* A Sale is undone with its own cancel, on the card of the Sale. */}
+            {change.saleId !== null ? (
+              <DealLink farmId={farm.id} deal={{ kind: "sale", id: change.saleId }} />
+            ) : (
+              index === 0 && <UndoStatusChangeDialog farm={farm} sheep={sheep} change={change} />
+            )}
           </li>
         ))}
       </ol>

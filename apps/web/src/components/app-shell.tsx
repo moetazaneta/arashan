@@ -72,6 +72,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/farms/$farmId/flocks" params={{ farmId: farm.id }} className={navLink}>
               <Trans>Стада</Trans>
             </Link>
+            <Link to="/farms/$farmId/deals" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Сделки</Trans>
+            </Link>
             <Link to="/farms/$farmId/resources" params={{ farmId: farm.id }} className={navLink}>
               <Trans>Ресурсы</Trans>
             </Link>
@@ -80,6 +83,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <Link to="/farms/$farmId/incomes" params={{ farmId: farm.id }} className={navLink}>
               <Trans>Доходы</Trans>
+            </Link>
+            <Link to="/farms/$farmId/reports" params={{ farmId: farm.id }} className={navLink}>
+              <Trans>Отчёты</Trans>
             </Link>
             {farm.role === "admin" && (
               <>

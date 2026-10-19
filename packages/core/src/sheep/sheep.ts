@@ -2,6 +2,7 @@ import { addMonths, type CalendarDate } from "../dates";
 import type { FarmSettings } from "../farms/farm";
 import type { FlockMove } from "../flocks/flock";
 import type {
+  DealId,
   FarmId,
   FileId,
   FlockId,
@@ -75,6 +76,11 @@ export interface Sheep {
   origin: Origin;
   /** True if a Member registered the Sheep as an Initial entry: it was on the Farm before the app. */
   initialEntry: boolean;
+  /**
+   * The Purchase that brought a Bought Sheep to the Farm, or null: a Born Sheep, an External Sheep
+   * and an Initial entry have none.
+   */
+  purchaseId: DealId | null;
   status: SheepStatus;
   /** The Member to whom the Sheep belongs. Null only for an External Sheep, which has no Owner. */
   ownerId: MembershipId | null;
@@ -135,6 +141,8 @@ export interface StatusChange {
    * Flock on that date. Null if the Sheep was in no Flock, and for a Lost Sheep that came back.
    */
   flockMoveId: FlockMoveId | null;
+  /** The Sale that made the Sheep Sold, or null for a change of another kind. */
+  saleId: DealId | null;
   /** When a Member recorded the change, in milliseconds since the Unix epoch. */
   at: number;
 }

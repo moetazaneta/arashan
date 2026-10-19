@@ -60,6 +60,12 @@ export type CommandName =
   | "moneyCategory.archive"
   | "moneyCategory.unarchive"
   | "moneyCategory.delete"
+  | "sale.create"
+  | "sale.updatePrice"
+  | "sale.cancel"
+  | "purchase.create"
+  | "purchase.updatePrice"
+  | "purchase.cancel"
   | "resource.create"
   | "resource.update"
   | "resource.setNorms"
@@ -85,6 +91,8 @@ export type TargetKind =
   | "Income"
   | "ExpenseCategory"
   | "IncomeCategory"
+  | "Sale"
+  | "Purchase"
   | "Resource"
   | "ResourceEvent";
 
