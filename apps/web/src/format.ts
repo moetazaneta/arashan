@@ -133,3 +133,48 @@ export function formatKg(kg: number, locale: string): string {
   }
   return format.format(kg);
 }
+
+// The parts of a Breed composition, in millionths of the whole (`wholeShare` of the core): 125 000
+// is 12.5 percent.
+
+const shareFormats = new Map<string, Intl.NumberFormat>();
+
+/** A part of a Breed composition as a percent, with at most 2 decimals: «12,5 %». */
+export function formatShare(share: number, locale: string): string {
+  let format = shareFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });
+    shareFormats.set(locale, format);
+  }
+  return format.format(share / 1_000_000);
+}
+
+const shareNumberFormats = new Map<string, Intl.NumberFormat>();
+
+/** A part of a Breed composition as the number of percent, for a column «, %»: «12,5». */
+export function formatShareNumber(share: number, locale: string): string {
+  let format = shareNumberFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+    shareNumberFormats.set(locale, format);
+  }
+  return format.format(share / 10_000);
+}
+
+/**
+ * A part of a Breed composition as the text of a percent field, exact to one millionth and without
+ * the grouping of thousands: «12,5». `parseShare` reads it back.
+ */
+export function formatShareInput(share: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 4, useGrouping: false }).format(
+    share / 10_000,
+  );
+}
+
+/**
+ * The text of a percent field as a part in millionths: «12,5» and "12.5" give 125 000. A text that
+ * is not a number gives NaN, and the core refuses it (`sheep.breedsInvalid`).
+ */
+export function parseShare(text: string): number {
+  return Math.round(Number(text.trim().replace(",", ".")) * 10_000);
+}
