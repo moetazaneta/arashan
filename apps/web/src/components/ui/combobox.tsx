@@ -64,6 +64,8 @@ function ComboboxInput({
           <InputGroupButton
             size="icon-xs"
             variant="ghost"
+            // The input opens the list with ArrowDown, so the button is not a stop of Tab.
+            tabIndex={-1}
             render={<ComboboxTrigger />}
             data-slot="input-group-button"
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"

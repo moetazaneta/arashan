@@ -2,6 +2,7 @@ import type { ErrorCode } from "@arashan/core";
 import {
   maxBreedNameLength,
   maxLambAgeMonths,
+  maxLambs,
   maxPassportNumberLength,
   maxNameLength,
   maxNotesLength,
@@ -11,6 +12,7 @@ import {
   maxSheepNameLength,
   maxSheepNotesLength,
   maxSheepPerMove,
+  maxStillborn,
   maxTagLength,
   maxWeightKg,
   minLambAgeMonths,
@@ -117,6 +119,14 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "flock.assignmentDatesInvalid": msg`Даты не могут быть в будущем, и дата «по» не может быть раньше даты «с».`,
   "flock.assignmentOverlaps": msg`В эти дни этот чабан уже работает в этом стаде.`,
   "flock.endDateInvalid": msg`Дата не может быть в будущем или раньше начала работы чабана в стаде.`,
+  "lambing.dateInvalid": msg`Укажите дату окота не позже сегодняшнего дня.`,
+  "lambing.motherExternal": msg`Мать должна быть овцой фермы, а не внешней.`,
+  "lambing.motherNotActive": msg`Этой овцы уже нет на ферме: окот записывают только для активной овцы.`,
+  "lambing.lambsRequired": msg`Добавьте хотя бы одного живого ягнёнка.`,
+  "lambing.tooManyLambs": msg`В одном окоте не больше ${maxLambs} живых ягнят.`,
+  "lambing.stillbornInvalid": msg`Мертворождённых — целое число от 0 до ${maxStillborn}.`,
+  "lambing.tagRepeated": msg`У двух ягнят одна и та же бирка. Проверьте номера.`,
+  "lambing.flockArchived": msg`На дату окота мать была в стаде, которое теперь в архиве. Верните стадо из архива или исправьте дату.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;

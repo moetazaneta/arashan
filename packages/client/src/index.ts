@@ -41,6 +41,7 @@ export {
   useUpdateShepherdAssignment,
 } from "./flocks";
 export { useAcceptInvite, useInvite } from "./invites";
+export { useLambingDefaults, useLambings, useRecordLambing } from "./lambings";
 export {
   useChangeMemberRole,
   useInviteMember,
@@ -81,6 +82,7 @@ export {
   manualLimit,
   maxBreedNameLength,
   maxLambAgeMonths,
+  maxLambs,
   maxPassportNumberLength,
   maxNameLength,
   maxNotesLength,
@@ -91,6 +93,7 @@ export {
   maxSheepNotesLength,
   maxTagLength,
   maxSheepPerMove,
+  maxStillborn,
   maxWeightKg,
   minLambAgeMonths,
   minPasswordLength,

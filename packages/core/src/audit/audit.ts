@@ -46,7 +46,8 @@ export type CommandName =
   | "shepherd.create"
   | "shepherd.update"
   | "shepherd.archive"
-  | "shepherd.unarchive";
+  | "shepherd.unarchive"
+  | "lambing.record";
 
 /** The kind of record that a command changed. */
 export type TargetKind =
@@ -58,7 +59,8 @@ export type TargetKind =
   | "Breed"
   | "Flock"
   | "Location"
-  | "Shepherd";
+  | "Shepherd"
+  | "Lambing";
 
 /** One record of the audit log: who did what to which record, and when. */
 export interface AuditEntry {

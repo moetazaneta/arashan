@@ -29,6 +29,7 @@ import type {
   FarmShepherdRepository,
 } from "./flocks/flock";
 import type { FarmSheepReader, FarmSheepRepository } from "./sheep/sheep";
+import type { FarmLambingReader, FarmLambingRepository } from "./lambings/lambing";
 import type { Identity, UserReader, UserRepository } from "./users/user";
 
 /** The repositories that a query gets: they only read. */
@@ -84,6 +85,7 @@ export interface FarmReaders {
   flocks: FarmFlockReader;
   locations: FarmLocationReader;
   shepherds: FarmShepherdReader;
+  lambings: FarmLambingReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
 }
@@ -104,6 +106,7 @@ export interface FarmRepositories {
   flocks: FarmFlockRepository;
   locations: FarmLocationRepository;
   shepherds: FarmShepherdRepository;
+  lambings: FarmLambingRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;
   audit: AuditLog;

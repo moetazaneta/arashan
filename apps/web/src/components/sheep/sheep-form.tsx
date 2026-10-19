@@ -230,7 +230,8 @@ export function EditSheepSheet({
   );
 }
 
-function SheepSheet({
+/** The side panel of a form of Sheep: its title, the button that closes it, and the form. */
+export function SheepSheet({
   open,
   onOpenChange,
   title,
@@ -883,6 +884,6 @@ function SheepForm({
 }
 
 /** True on a Mac or an iPad, where the shortcut uses ⌘ in place of Ctrl. */
-function isApple(): boolean {
+export function isApple(): boolean {
   return typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 }

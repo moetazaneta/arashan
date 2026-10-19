@@ -72,6 +72,8 @@ export const permissions = {
   "shepherd.update": ["admin", "editor"],
   /** Archive a Shepherd, or take the Shepherd out of the archive. */
   "shepherd.archive": ["admin", "editor"],
+  /** Record a Lambing: it registers its live Lambs as new Sheep. */
+  "lambing.record": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

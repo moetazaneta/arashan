@@ -29,6 +29,7 @@ import type {
   FlockId,
   FlockMoveId,
   InviteId,
+  LambingId,
   LocationId,
   MembershipId,
   OwnerChangeId,
@@ -38,6 +39,7 @@ import type {
   ShepherdId,
   UserId,
 } from "../ids";
+import type { FarmLambingRepository, Lambing } from "../lambings/lambing";
 import type { Invite, InviteRepository, Tokens } from "../members/invite";
 import type { Membership, MembershipRepository } from "../members/membership";
 import type { PasswordReset, PasswordResetRepository } from "../members/password-reset";
@@ -65,6 +67,7 @@ export class InMemoryStore {
   readonly shepherds: Stored<Shepherd>[] = [];
   readonly flocks: Stored<Flock>[] = [];
   readonly assignments: Stored<ShepherdAssignment & { farmId: FarmId }>[] = [];
+  readonly lambings: Stored<Lambing>[] = [];
   readonly audit: AuditEntry[] = [];
   private nextId = 1;
 
@@ -243,6 +246,7 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      lambings: this.farmLambings(farmId),
       history: {
         listForTarget: async (target) =>
           this.audit.filter(
@@ -310,6 +314,27 @@ export class InMemoryStore {
       markDeleted: async (id, deletedAt) => {
         const found = ofFarm().find((s) => s.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
+      },
+    };
+  }
+
+  /** The Lambings of one Farm, as the backend binds them to it. */
+  private farmLambings(farmId: FarmId): FarmLambingRepository {
+    const ofFarm = () =>
+      this.lambings.filter((l) => l.farmId === farmId && l.deletedAt === undefined);
+    return {
+      get: async (id) => {
+        const found = ofFarm().find((l) => l.id === id);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      listOfMother: async (motherId) =>
+        ofFarm()
+          .filter((l) => l.motherId === motherId)
+          .map(withoutDeletedAt),
+      insert: async (fields) => {
+        const id = this.id("Lambing") as LambingId;
+        this.lambings.push({ id, farmId, ...fields, lambIds: [...fields.lambIds] });
+        return id;
       },
     };
   }
@@ -508,6 +533,7 @@ export class InMemoryStore {
       flocks: this.farmFlocks(farmId),
       locations: this.farmLocations(farmId),
       shepherds: this.farmShepherds(farmId),
+      lambings: this.farmLambings(farmId),
       audit: repos.audit,
     };
   }

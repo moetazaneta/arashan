@@ -41,6 +41,7 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "shepherd.create": { admin: true, editor: true },
   "shepherd.update": { admin: true, editor: true },
   "shepherd.archive": { admin: true, editor: true },
+  "lambing.record": { admin: true, editor: true },
 };
 
 describe("can", () => {

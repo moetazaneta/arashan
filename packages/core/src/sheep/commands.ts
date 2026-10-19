@@ -478,9 +478,10 @@ function validGrade(
 
 /**
  * Throws `sheep.tagTaken` if another Sheep of the Farm has the same Tag. A Sold or a Dead Sheep keeps
- * its Tag; a Deleted Sheep and an External Sheep do not count.
+ * its Tag; a Deleted Sheep and an External Sheep do not count. A command that registers Sheep, such
+ * as a Lambing, checks each Tag with this rule too.
  */
-async function requireFreeTag(
+export async function requireFreeTag(
   ctx: FarmCommandContext,
   tag: string | null,
   self: SheepId | null,

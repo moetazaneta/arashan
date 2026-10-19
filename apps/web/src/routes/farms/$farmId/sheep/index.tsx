@@ -4,6 +4,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
+import { LambsRecorded, RecordLambingSheet } from "@/components/sheep/lambing-form";
 import { type MoveResult, MoveSheepDialog } from "@/components/sheep/move-sheep-dialog";
 import { RegisterSheepSheet } from "@/components/sheep/sheep-form";
 import {
@@ -24,8 +25,8 @@ export const Route = createFileRoute("/farms/$farmId/sheep/")({
 });
 
 /**
- * The table «Бараны»: all Sheep of the Farm, and the side panel that registers new ones. With Sheep
- * selected, the actions of the header give way to the bulk actions on them.
+ * The table «Бараны»: all Sheep of the Farm, and the side panels that register new ones and record a
+ * Lambing. With Sheep selected, the actions of the header give way to the bulk actions on them.
  */
 function SheepPage() {
   const farmId = Route.useParams().farmId as FarmId;
@@ -41,13 +42,19 @@ function SheepPage() {
   const [moving, setMoving] = useState(false);
   const [movingIds, setMovingIds] = useState<readonly SheepId[]>([]);
   const [moveResult, setMoveResult] = useState<MoveResult | null>(null);
+  const [lambing, setLambing] = useState(false);
+  const [lambsRecorded, setLambsRecorded] = useState<number | null>(null);
   useKeyShortcut("KeyN", () => setRegistering(true));
+  useKeyShortcut("KeyL", () => setLambing(true));
   useKeyShortcut("Escape", () => setSelection(noSelection));
 
-  // A new selection starts a new bulk action: the result of the last one goes.
+  // A new selection starts a new bulk action: the result of the last action goes.
   const changeSelection = useCallback((next: ReadonlySet<SheepId>) => {
     setSelection(next);
-    if (next.size > 0) setMoveResult(null);
+    if (next.size > 0) {
+      setMoveResult(null);
+      setLambsRecorded(null);
+    }
   }, []);
 
   const openCard = useCallback(
@@ -68,6 +75,14 @@ function SheepPage() {
       </Kbd>
     </Button>
   );
+  const lambingButton = (
+    <Button variant="outline" aria-keyshortcuts="L" onClick={() => setLambing(true)}>
+      <Trans>Записать окот</Trans>
+      <Kbd aria-hidden className="ml-1">
+        L
+      </Kbd>
+    </Button>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -82,6 +97,7 @@ function SheepPage() {
         </h1>
         <p role="status" className="text-sm text-muted-foreground">
           {moveResult !== null && <MoveResultText result={moveResult} />}
+          {lambsRecorded !== null && <LambsRecorded count={lambsRecorded} />}
         </p>
         {selection.size > 0 ? (
           <div className="ml-auto flex items-center gap-2">
@@ -111,6 +127,7 @@ function SheepPage() {
           hasSheep && (
             <div className="ml-auto flex items-center gap-2">
               <ColumnSettings visibility={columnVisibility} onChange={setColumnVisibility} />
+              {lambingButton}
               {addButton}
             </div>
           )
@@ -139,6 +156,15 @@ function SheepPage() {
         />
       )}
       <RegisterSheepSheet farm={farm} open={registering} onOpenChange={setRegistering} />
+      <RecordLambingSheet
+        farm={farm}
+        open={lambing}
+        onOpenChange={setLambing}
+        onRecorded={(count) => {
+          setMoveResult(null);
+          setLambsRecorded(count);
+        }}
+      />
       <MoveSheepDialog
         farm={farm}
         sheepIds={movingIds}
@@ -146,6 +172,7 @@ function SheepPage() {
         onOpenChange={setMoving}
         onMoved={(result) => {
           setSelection(noSelection);
+          setLambsRecorded(null);
           setMoveResult(result);
         }}
       />

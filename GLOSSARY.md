@@ -93,6 +93,9 @@ A Sheep that was never on the Farm. The Farm records it only as the Mother or th
 **Lambing** (рус. окот):
 The event when an Ewe gives birth to one or more Lambs.
 
+**Stillborn Lamb** (рус. мертворождённый ягнёнок):
+A Lamb that was born dead. The Farm records only the number of stillborn Lambs on the Lambing: a stillborn Lamb is not a Sheep.
+
 **Sale** (рус. продажа):
 The event when the Farm sells one or more Sheep for one total price. A Sale always has a price, and the Farm gets all the money on the day of the Sale.
 

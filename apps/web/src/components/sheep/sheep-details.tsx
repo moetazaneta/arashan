@@ -12,14 +12,15 @@ import { formatCalendarDate, formatDateAt, formatKg } from "@/format";
 
 import { CompositionText } from "./composition";
 import { gradeLabels, originLabels, sexLabels } from "./labels";
+import { LambingsSection } from "./lambing-list";
 import { SheepLink } from "./sheep-ref";
 import { NoValue, StatusCell } from "./sheep-table";
 
 /**
- * The tab «Карточка»: the main fields of a Sheep, the history of its Owners, and the block
- * «Дополнительно» with the pedigree, the Passport, the Grade and the fields that a Member needs less
- * often. An External Sheep has no Owner and no life on the Farm, so it shows neither the Owners nor
- * the Status.
+ * The tab «Карточка»: the main fields of a Sheep, the history of its Owners, the Lambings of an Ewe
+ * of the Farm, and the block «Дополнительно» with the pedigree, the Passport, the Grade and the
+ * fields that a Member needs less often. An External Sheep has no Owner and no life on the Farm, so
+ * it shows neither the Owners nor the Status.
  */
 export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData }) {
   const { i18n } = useLingui();
@@ -93,6 +94,8 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
           </ol>
         </section>
       )}
+
+      {!external && sheep.sex === "ewe" && <LambingsSection farm={farm} motherId={sheep.id} />}
 
       <Separator />
 

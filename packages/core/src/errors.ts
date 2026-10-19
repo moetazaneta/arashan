@@ -107,6 +107,15 @@ export const errorCodes = [
   "flock.assignmentDatesInvalid",
   "flock.assignmentOverlaps",
   "flock.endDateInvalid",
+  // Lambings.
+  "lambing.dateInvalid",
+  "lambing.motherExternal",
+  "lambing.motherNotActive",
+  "lambing.lambsRequired",
+  "lambing.tooManyLambs",
+  "lambing.stillbornInvalid",
+  "lambing.tagRepeated",
+  "lambing.flockArchived",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

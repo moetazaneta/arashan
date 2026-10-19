@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/components/sheep/lambing-form.tsx
+msgid "«{name}» в архиве, и ягнят нельзя записать в это стадо. Верните стадо из архива или исправьте дату окота."
+msgstr "“{name}” is archived, so the lambs cannot go into this flock. Restore the flock from the archive or correct the lambing date."
+
 #. placeholder {0}: shepherds.length
 #: src/components/sheep/sheep-flocks.tsx
 msgid "{0, plural, =1 {чабан: {names}} other {чабаны: {names}}}"
@@ -15,6 +19,10 @@ msgstr "{0, plural, =1 {shepherd: {names}} other {shepherds: {names}}}"
 #: src/components/flocks/flock-card.tsx
 msgid "{count, plural, one {# голова} few {# головы} many {# голов} other {# головы}}"
 msgstr "{count, plural, one {# sheep} other {# sheep}}"
+
+#: src/components/sheep/lambing-list.tsx
+msgid "{count, plural, one {# ягнёнок} few {# ягнёнка} many {# ягнят} other {# ягнёнка}}"
+msgstr "{count, plural, one {# lamb} other {# lambs}}"
 
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "{count, plural, one {Перевести в стадо # барана} few {Перевести в стадо # барана} many {Перевести в стадо # баранов} other {Перевести в стадо # барана}}"
@@ -158,12 +166,14 @@ msgid "Без места"
 msgstr "No location"
 
 #: src/components/flocks/flock-sheep.tsx
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
 msgid "Бирка"
 msgstr "Tag"
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Бирка или кличка"
 msgstr "Tag or name"
@@ -191,6 +201,11 @@ msgstr "archived"
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "В архиве"
 msgstr "Archived"
+
+#: src/components/sheep/lambing-form.tsx
+#: src/errors.ts
+msgid "В одном окоте не больше {maxLambs} живых ягнят."
+msgstr "One lambing has at most {maxLambs} live lambs."
 
 #: src/errors.ts
 msgid "В стаде есть бараны. Сначала переведите их в другое стадо или выведите из стада."
@@ -306,6 +321,7 @@ msgstr "Only a sheep that is 100% Arashan can have a passport."
 msgid "Ветпаспорт может быть только у барана со 100 % арашан. Укажите состав породы."
 msgstr "Only a sheep that is 100% Arashan can have a passport. Enter the breed composition."
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -320,10 +336,15 @@ msgstr "The owner must be a member of the farm. Choose another one."
 msgid "Владельцы"
 msgstr "Owners"
 
+#: src/components/sheep/lambing-form.tsx
+msgid "вне стада"
+msgstr "no flock"
+
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "Вне стада"
 msgstr "No flock"
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/pedigree-tree.tsx
 #: src/components/sheep/sheep-ref.tsx
@@ -405,9 +426,22 @@ msgstr "Select a currency"
 msgid "Выберите валюту из списка."
 msgstr "Select a currency from the list."
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-form.tsx
 msgid "Выберите владельца"
 msgstr "Choose an owner"
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Выберите владельца каждого ягнёнка."
+msgstr "Choose an owner for each lamb."
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Выберите мать."
+msgstr "Choose the mother."
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Выберите пол каждого ягнёнка."
+msgstr "Choose the sex of each lamb."
 
 #: src/components/sheep/sheep-form.tsx
 msgid "Выберите пол: самец или самка."
@@ -508,6 +542,10 @@ msgstr "The date cannot be in the future or before the shepherd started to work 
 msgid "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
 msgstr "The date cannot be in the future, before the birth of the sheep, or before the last change of owner."
 
+#: src/components/sheep/lambing-form.tsx
+msgid "Дата окота"
+msgstr "Lambing date"
+
 #: src/errors.ts
 msgid "Дата перевода не может быть в будущем, раньше рождения барана или раньше его прошлого перевода."
 msgstr "The date of the move cannot be in the future, before the birth of the sheep, or before its last move."
@@ -582,6 +620,14 @@ msgstr "Add a breed"
 msgid "Добавить чабана"
 msgstr "Add a shepherd"
 
+#: src/components/sheep/lambing-form.tsx
+msgid "Добавить ягнёнка"
+msgstr "Add a lamb"
+
+#: src/errors.ts
+msgid "Добавьте хотя бы одного живого ягнёнка."
+msgstr "Add at least one live lamb."
+
 #: src/errors.ts
 msgid "Доли пород больше, чем можно указать вручную: остальное дают родители. Уменьшите доли."
 msgstr "The breed parts are more than you can enter by hand: the parents give the rest. Make the parts smaller."
@@ -598,6 +644,10 @@ msgstr "More"
 #: src/components/sheep/sheep-form.tsx
 msgid "Если дату никто не знает, оставьте поле пустым."
 msgstr "If nobody knows the date, leave the field empty."
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Если отец неизвестен, оставьте поле пустым."
+msgstr "If nobody knows the father, leave the field empty."
 
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Если родителя нет в списке, добавьте его как внешнего барана: «Добавить барана» → «Внешний»."
@@ -656,6 +706,21 @@ msgstr "Notes can have at most {maxSheepNotesLength} characters. Shorten the tex
 msgctxt "history"
 msgid "Записан как внешний"
 msgstr "Recorded as external"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Записан при окоте"
+msgstr "Recorded at a lambing"
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Записано ягнят: {count}"
+msgstr "Lambs recorded: {count}"
+
+#: src/components/sheep/lambing-form.tsx
+#: src/routes/farms/$farmId/sheep/$sheepId.tsx
+#: src/routes/farms/$farmId/sheep/index.tsx
+msgid "Записать окот"
+msgstr "Record a lambing"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -778,6 +843,10 @@ msgstr "Back to the flocks"
 msgid "Как записать барана"
 msgstr "How to register the sheep"
 
+#: src/components/sheep/lambing-form.tsx
+msgid "Как у матери"
+msgstr "Same as the mother"
+
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "Карточка"
 msgstr "Card"
@@ -828,14 +897,31 @@ msgstr "Bought"
 msgid "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 msgstr "A bought sheep comes with a purchase. If it was on the farm before the app, choose “Initial entry”."
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "Мать"
 msgstr "Mother"
 
 #: src/errors.ts
+msgid "Мать должна быть овцой фермы, а не внешней."
+msgstr "The mother must be a ewe of the farm, not an external one."
+
+#: src/errors.ts
 msgid "Мать должна быть самкой."
 msgstr "The mother must be an ewe."
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Мертворождённых"
+msgstr "Stillborn"
+
+#: src/errors.ts
+msgid "Мертворождённых — целое число от 0 до {maxStillborn}."
+msgstr "Stillborn is a whole number from 0 to {maxStillborn}."
+
+#: src/components/sheep/lambing-list.tsx
+msgid "мертворождённых: {stillborn}"
+msgstr "stillborn: {stillborn}"
 
 #: src/components/flocks/locations-tab.tsx
 #: src/routes/farms/$farmId/flocks/index.tsx
@@ -878,6 +964,10 @@ msgstr "You can enter up to {limitText}."
 #: src/components/home-link.tsx
 msgid "На главную"
 msgstr "To the home page"
+
+#: src/errors.ts
+msgid "На дату окота мать была в стаде, которое теперь в архиве. Верните стадо из архива или исправьте дату."
+msgstr "On the lambing date, the mother was in a flock that is archived now. Restore the flock from the archive or correct the date."
 
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "На ферме ещё нет стад. <0>Создать стадо</0>"
@@ -1036,6 +1126,14 @@ msgstr "Passport number"
 msgid "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
 msgstr "A passport number can have at most {maxPassportNumberLength} characters."
 
+#: src/components/sheep/lambing-form.tsx
+msgid "Окот"
+msgstr "Lambing"
+
+#: src/components/sheep/lambing-list.tsx
+msgid "Окоты"
+msgstr "Lambings"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
 msgstr "They cannot open the farm, but they stay in its history. To bring a member back, send them a new link."
@@ -1052,6 +1150,7 @@ msgstr "Keep"
 msgid "От {minPasswordLength} до {maxPasswordLength} символов."
 msgstr "From {minPasswordLength} to {maxPasswordLength} characters."
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "Отец"
@@ -1060,6 +1159,14 @@ msgstr "Father"
 #: src/errors.ts
 msgid "Отец должен быть самцом."
 msgstr "The father must be a ram."
+
+#: src/components/sheep/lambing-list.tsx
+msgid "отец неизвестен"
+msgstr "father unknown"
+
+#: src/components/sheep/lambing-list.tsx
+msgid "отец:"
+msgstr "father:"
 
 #: src/components/flocks/flock-shepherds.tsx
 msgid "Открыть вкладку «Чабаны»"
@@ -1187,6 +1294,10 @@ msgstr "The app uses it to know when a day starts."
 msgid "По ним приложение считает деньги, даты и возраст."
 msgstr "The app uses them for money, dates and ages."
 
+#: src/components/sheep/lambing-form.tsx
+msgid "По умолчанию владелец ягнёнка — владелец матери на дату окота."
+msgstr "By default, the owner of a lamb is the owner of the mother on the lambing date."
+
 #: src/components/flocks/shared.tsx
 msgid "Показать архив"
 msgstr "Show archived"
@@ -1196,6 +1307,7 @@ msgid "Показывать столбцы"
 msgstr "Show columns"
 
 #: src/components/flocks/flock-sheep.tsx
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -1376,11 +1488,13 @@ msgid "С какого дня"
 msgstr "Starting on"
 
 #: src/components/sheep/labels.ts
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-form.tsx
 msgid "Самец"
 msgstr "Ram"
 
 #: src/components/sheep/labels.ts
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/sheep-form.tsx
 msgid "Самка"
 msgstr "Ewe"
@@ -1454,6 +1568,7 @@ msgstr "Create a flock"
 msgid "Создать ферму"
 msgstr "Create the farm"
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "Состав породы"
@@ -1503,6 +1618,7 @@ msgstr "Invite link"
 msgid "Стада"
 msgstr "Flocks"
 
+#: src/components/sheep/lambing-form.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -1574,6 +1690,10 @@ msgstr "There is no such shepherd assignment. Maybe someone deleted it."
 msgid "Такого пользователя нет."
 msgstr "There is no such user."
 
+#: src/components/sheep/lambing-form.tsx
+msgid "Такого самца нет. Отца с другой фермы сначала добавьте как внешнего барана."
+msgstr "No such ram. Add a father from another farm as an external sheep first."
+
 #: src/errors.ts
 #: src/routes/farms/$farmId/flocks/$flockId.tsx
 msgid "Такого стада нет."
@@ -1590,6 +1710,10 @@ msgstr "There is no such shepherd."
 #: src/components/farm-settings-fields.tsx
 msgid "Такого часового пояса нет."
 msgstr "No such time zone."
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Такой овцы нет среди активных овец фермы."
+msgstr "No such ewe among the active ewes of the farm."
 
 #: src/errors.ts
 msgid "Такой породы нет. Возможно, её удалили."
@@ -1636,6 +1760,10 @@ msgid "У вашей учётной записи нет имени пользо�
 msgstr "Your account has no username. Log out, and log in with a username."
 
 #: src/errors.ts
+msgid "У двух ягнят одна и та же бирка. Проверьте номера."
+msgstr "Two lambs have the same tag. Check the numbers."
+
+#: src/errors.ts
 msgid "У потомка этого барана есть ветпаспорт, а после изменения он перестанет быть чистым арашаном. Сначала уберите ветпаспорт потомка."
 msgstr "An offspring of this sheep has a passport, and after this change it would no longer be pure Arashan. First remove the passport of the offspring."
 
@@ -1662,6 +1790,10 @@ msgstr "Remove the breed"
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Убрать скан"
 msgstr "Remove the scan"
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Убрать ягнёнка {number}"
+msgstr "Remove lamb {number}"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Удалён"
@@ -1714,6 +1846,10 @@ msgstr "Delete the assignment?"
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Удалить породу {name}?"
 msgstr "Delete the breed {name}?"
+
+#: src/errors.ts
+msgid "Укажите дату окота не позже сегодняшнего дня."
+msgstr "Enter a lambing date that is not later than today."
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участник больше не сможет открыть ферму. Его записи и история останутся."
@@ -1850,6 +1986,10 @@ msgid "Этого барана уже нет на ферме: он продан,
 msgstr "This sheep is no longer on the farm: it is sold, slaughtered, dead or lost."
 
 #: src/errors.ts
+msgid "Этой овцы уже нет на ферме: окот записывают только для активной овцы."
+msgstr "This ewe is not on the farm any more: a lambing is recorded only for an active ewe."
+
+#: src/errors.ts
 msgid "Этому участнику нельзя задать пароль здесь: это ваша учётная запись, учётная запись оператора или участника другой фермы."
 msgstr "You cannot set a password for this member here: it is your own account, the operator's, or the account of a member of another farm."
 
@@ -1882,6 +2022,14 @@ msgstr "Someone already used this link. Ask for a new one."
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "ягнёнок"
 msgstr "lamb"
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Ягнёнок {number}"
+msgstr "Lamb {number}"
+
+#: src/components/sheep/lambing-form.tsx
+msgid "Ягнята"
+msgstr "Lambs"
 
 #: src/components/locale-switch.tsx
 msgid "Язык"
