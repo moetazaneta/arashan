@@ -433,3 +433,13 @@ export {
 } from "./sheep/sheep";
 export { getViewer, registerUser, setOperator, type Viewer } from "./users/commands";
 export type { Identity, User, UserReader, UserRepository } from "./users/user";
+export { restoreFromTrash } from "./trash/commands";
+export { listTrash } from "./trash/queries";
+export { isTrashKind, trashKinds, type TrashItem, type TrashKind } from "./trash/registry";
+export type { Deleted, TrashEntry } from "./trash/trash";
+export type { TrashBreed } from "./breeds/trash";
+export type { TrashDeal } from "./deals/trash";
+export type { TrashShepherdAssignment } from "./flocks/trash";
+export type { TrashMoneyCategory, TrashMoneyRecord } from "./money/trash";
+export type { TrashResourceEvent } from "./resources/trash";
+export type { TrashSheep } from "./sheep/trash";

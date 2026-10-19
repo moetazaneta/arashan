@@ -1,5 +1,6 @@
 import type { CalendarDate } from "../dates";
 import type { FarmId, FlockId, MoneyCategoryId, MoneyRecordId, SheepId, ShepherdId } from "../ids";
+import type { Deleted } from "../trash/trash";
 
 // The money of a Farm: the Expenses and the Incomes, and the list of categories of each kind. An
 // Expense and an Income have the same fields, so one module keeps both: a "money record" is an
@@ -148,6 +149,8 @@ export interface FarmMoneyCategoryReader {
   findByName(kind: MoneyKind, name: string): Promise<MoneyCategory[]>;
   /** The category of the kind with the key, or null. */
   findByKey(kind: MoneyKind, key: CategoryKey): Promise<MoneyCategory | null>;
+  /** The Deleted categories of both kinds, for the Trash, in no order. */
+  listDeleted(): Promise<Deleted<MoneyCategory>[]>;
 }
 
 export type MoneyCategoryFields = Omit<MoneyCategory, "id" | "farmId">;
@@ -163,6 +166,10 @@ export interface FarmMoneyCategoryRepository extends FarmMoneyCategoryReader {
     fields: Partial<Pick<MoneyCategory, "name" | "archivedAt">>,
   ): Promise<void>;
   markDeleted(id: MoneyCategoryId, deletedAt: number): Promise<void>;
+  /** The category if it is Deleted, for its restore; else null. */
+  getDeleted(id: MoneyCategoryId): Promise<MoneyCategory | null>;
+  /** Makes a Deleted category not Deleted: a Member restored it from the Trash. */
+  markRestored(id: MoneyCategoryId): Promise<void>;
 }
 
 /**
@@ -198,6 +205,11 @@ export interface FarmMoneyRecordReader {
   findBySource(source: MoneySource): Promise<MoneyRecord | null>;
   /** True if the Farm has a record, also a Deleted one. */
   anyWithDeleted(): Promise<boolean>;
+  /**
+   * The Deleted records of both kinds, for the Trash: also the Automatic records of cancelled
+   * events. In no order.
+   */
+  listDeleted(): Promise<Deleted<MoneyRecord>[]>;
 }
 
 export type MoneyRecordFields = Omit<MoneyRecord, "id" | "farmId">;
@@ -212,4 +224,13 @@ export interface FarmMoneyRecordRepository extends FarmMoneyRecordReader {
   ): Promise<void>;
   /** Makes the record Deleted. */
   markDeleted(id: MoneyRecordId, deletedAt: number): Promise<void>;
+  /** The record if it is Deleted, for its restore; else null. */
+  getDeleted(id: MoneyRecordId): Promise<MoneyRecord | null>;
+  /**
+   * The Deleted Automatic record of the event, for the restore of the event, or null. If the event
+   * has more than one, the one that became Deleted last.
+   */
+  findDeletedBySource(source: MoneySource): Promise<MoneyRecord | null>;
+  /** Makes a Deleted record not Deleted: a Member restored it, or the event of an Automatic record. */
+  markRestored(id: MoneyRecordId): Promise<void>;
 }

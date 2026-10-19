@@ -8,6 +8,7 @@ import type { DealId, FlockId, SheepId } from "../ids";
 import {
   createAutomaticRecord,
   deleteAutomaticRecord,
+  restoreAutomaticRecord,
   updateAutomaticRecord,
 } from "../money/commands";
 import { maxAmount, type MoneyScope } from "../money/money";
@@ -15,6 +16,7 @@ import {
   type BoughtSheep,
   requireNotParent,
   requireOwner,
+  requireRestorableSheep,
   validBoughtSheep,
 } from "../sheep/commands";
 import { recordStatusChange, requireStatusChange, revertStatusChange } from "../sheep/lifecycle";
@@ -214,6 +216,84 @@ async function cancelPurchase(ctx: FarmCommandContext, deal: Deal): Promise<void
     await ctx.repos.sheep.markDeleted(sheep.id, ctx.now());
     await auditSheep(ctx, "purchase.cancel", sheep.id);
   }
+}
+
+/**
+ * A Member restores a cancelled Sale or Purchase from the Trash: it comes back as a full deal, with
+ * its Automatic record and its price. It checks all rules before the first write, as a new deal does.
+ *
+ * - A restored Sale sells its Sheep again on its date: each Sheep becomes Sold and leaves its Flock,
+ *   by the rules of a change of the Status. A Sheep that is Deleted now fails with
+ *   `trash.sheepDeleted`, one that is not Active with `sheep.notActive`, and a Sale dated before a
+ *   later event of a Sheep with `sheep.statusDateInvalid`.
+ * - A restored Purchase brings its Sheep back, each one by the rules of a restored Sheep
+ *   (`requireRestorableSheep`): for example, a Tag that another Sheep took fails with
+ *   `sheep.tagTaken`.
+ *
+ * For the Trash, which checks the permission.
+ */
+export async function restoreDeal(ctx: FarmCommandContext, id: DealId): Promise<void> {
+  const deal = await ctx.repos.deals.getDeleted(id);
+  if (deal === null) throw new DomainError("trash.notFound");
+  const write =
+    deal.kind === "sale"
+      ? await checkSaleRestore(ctx, deal)
+      : await checkPurchaseRestore(ctx, deal);
+  if ((await ctx.repos.moneyRecords.findDeletedBySource(dealSource(deal))) === null) {
+    throw new DomainError("money.notFound");
+  }
+  await ctx.repos.deals.markRestored(deal.id);
+  await auditDeal(ctx, restoreCommands[deal.kind], deal.kind, deal.id);
+  await write();
+  await restoreAutomaticRecord(ctx, restoreCommands[deal.kind], dealSource(deal));
+}
+
+const restoreCommands = {
+  sale: "sale.restore",
+  purchase: "purchase.restore",
+} as const satisfies Record<DealKind, CommandName>;
+
+/** Checks that each Sheep of the Sale can be sold again, and gives the writes of the restore. */
+async function checkSaleRestore(ctx: FarmCommandContext, deal: Deal): Promise<() => Promise<void>> {
+  const selling: Sheep[] = [];
+  for (const sheepId of deal.sheepIds) {
+    const sheep = await ctx.repos.sheep.get(sheepId);
+    if (sheep === null) throw new DomainError("trash.sheepDeleted");
+    await requireStatusChange(ctx, sheep, deal.date);
+    selling.push(sheep);
+  }
+  return async () => {
+    for (const sheep of selling) {
+      await recordStatusChange(ctx, sheep, {
+        status: "sold",
+        date: deal.date,
+        reason: null,
+        saleId: deal.id,
+      });
+      await auditSheep(ctx, "sale.restore", sheep.id);
+    }
+  };
+}
+
+/** Checks that each Sheep of the Purchase can come back, and gives the writes of the restore. */
+async function checkPurchaseRestore(
+  ctx: FarmCommandContext,
+  deal: Deal,
+): Promise<() => Promise<void>> {
+  const restoring: Sheep[] = [];
+  for (const sheepId of deal.sheepIds) {
+    // The Sheep of a Purchase become Deleted with it, and come back only with it.
+    const sheep = await ctx.repos.sheep.getDeleted(sheepId);
+    if (sheep === null) throw new DomainError("sheep.notFound");
+    await requireRestorableSheep(ctx, sheep);
+    restoring.push(sheep);
+  }
+  return async () => {
+    for (const sheep of restoring) {
+      await ctx.repos.sheep.markRestored(sheep.id);
+      await auditSheep(ctx, "purchase.restore", sheep.id);
+    }
+  };
 }
 
 /** The deal, or `deal.notFound`: a cancelled deal is Deleted, so it is not found either. */

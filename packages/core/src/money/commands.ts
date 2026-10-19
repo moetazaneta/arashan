@@ -113,6 +113,26 @@ export async function deleteMoneyRecord(
   await auditRecord(ctx, "money.delete", record.kind, record.id);
 }
 
+/**
+ * A Member restores a Deleted Expense or Income from the Trash. Its category stays while a Deleted
+ * record has it, and an Archived category, Flock or Shepherd stays valid for it, as for a change.
+ * Its Sheep can be Deleted now (`trash.sheepDeleted`): restore the Sheep first. An Automatic record
+ * comes back only with its event (`money.automatic`). For the Trash, which checks the permission.
+ */
+export async function restoreMoneyRecord(
+  ctx: FarmCommandContext,
+  id: MoneyRecordId,
+): Promise<void> {
+  const record = await ctx.repos.moneyRecords.getDeleted(id);
+  if (record === null) throw new DomainError("trash.notFound");
+  if (record.source !== null) throw new DomainError("money.automatic");
+  if (record.scope.kind === "sheep" && (await ctx.repos.sheep.get(record.scope.sheepId)) === null) {
+    throw new DomainError("trash.sheepDeleted");
+  }
+  await ctx.repos.moneyRecords.markRestored(record.id);
+  await auditRecord(ctx, "money.restore", record.kind, record.id);
+}
+
 // Automatic records, for the commands of other slices.
 
 /** The fields of an Automatic record that its event gives. */
@@ -189,6 +209,27 @@ export async function deleteAutomaticRecord(
 ): Promise<void> {
   const record = await requireAutomatic(ctx, source);
   await ctx.repos.moneyRecords.markDeleted(record.id, ctx.now());
+  await auditRecord(ctx, command, record.kind, record.id);
+}
+
+/**
+ * Restores the Automatic record of an event, when a Member restores the event from the Trash: the
+ * record that became Deleted with the event comes back as it was, with its amount. Throws
+ * `money.notFound` if the event has no Deleted record. The command of the event checks first that
+ * the record exists (`findDeletedBySource`), with its other rules, and then calls this.
+ */
+export async function restoreAutomaticRecord(
+  ctx: FarmCommandContext,
+  command: CommandName,
+  source: MoneySource,
+): Promise<void> {
+  // An event has one record: a second one would count twice.
+  if ((await ctx.repos.moneyRecords.findBySource(source)) !== null) {
+    throw new Error("The event already has an Automatic record.");
+  }
+  const record = await ctx.repos.moneyRecords.findDeletedBySource(source);
+  if (record === null) throw new DomainError("money.notFound");
+  await ctx.repos.moneyRecords.markRestored(record.id);
   await auditRecord(ctx, command, record.kind, record.id);
 }
 
@@ -290,6 +331,24 @@ export async function deleteMoneyCategory(
   }
   await ctx.repos.moneyCategories.markDeleted(category.id, ctx.now());
   await auditCategory(ctx, "moneyCategory.delete", category.kind, category.id);
+}
+
+/**
+ * A Member restores a Deleted category from the Trash. Its name is still unique in its list
+ * (`moneyCategory.nameTaken`): a Member can give the name to a new category while this one is
+ * Deleted. For the Trash, which checks the permission.
+ */
+export async function restoreMoneyCategory(
+  ctx: FarmCommandContext,
+  id: MoneyCategoryId,
+): Promise<void> {
+  const category = await ctx.repos.moneyCategories.getDeleted(id);
+  if (category === null) throw new DomainError("trash.notFound");
+  if (category.name !== null) {
+    await requireFreeCategoryName(ctx, category.kind, category.name, category.id);
+  }
+  await ctx.repos.moneyCategories.markRestored(category.id);
+  await auditCategory(ctx, "moneyCategory.restore", category.kind, category.id);
 }
 
 // The default lists.

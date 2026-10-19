@@ -1,5 +1,6 @@
 import type { BreedId, FarmId } from "../ids";
 import { tagKey } from "../sheep/sheep";
+import type { Deleted } from "../trash/trash";
 
 /**
  * The id of the Breed Arashan, the main Breed. Each Farm has it from the start: it is built into the
@@ -41,6 +42,8 @@ export interface FarmBreedReader {
   list(): Promise<Breed[]>;
   /** The Breeds whose name has the same key (`breedNameKey`) as this name. */
   findByName(name: string): Promise<Breed[]>;
+  /** The Deleted Breeds of the Farm, for the Trash, in no order. */
+  listDeleted(): Promise<Deleted<Breed>[]>;
 }
 
 /** Reads and writes the Breeds of one Farm. Nothing erases a Breed. */
@@ -49,4 +52,8 @@ export interface FarmBreedRepository extends FarmBreedReader {
   update(id: BreedId, fields: Partial<Pick<Breed, "name" | "archivedAt">>): Promise<void>;
   /** Makes the Breed Deleted. A Member can restore it later. */
   markDeleted(id: BreedId, deletedAt: number): Promise<void>;
+  /** The Breed if it is Deleted, for its restore; else null. */
+  getDeleted(id: BreedId): Promise<Breed | null>;
+  /** Makes a Deleted Breed not Deleted: a Member restored it from the Trash. */
+  markRestored(id: BreedId): Promise<void>;
 }

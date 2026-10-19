@@ -325,6 +325,29 @@ export async function removeShepherdAssignment(
   await auditAssignment(ctx, "flock.removeAssignment", assignment);
 }
 
+/**
+ * A Member restores a removed assignment from the Trash. It does not overlap another assignment of
+ * the Shepherd to the Flock (`flock.assignmentOverlaps`), and an open one needs a Flock and a
+ * Shepherd that are not Archived now (`flock.archived`, `shepherd.archived`), as for a change of the
+ * dates. For the Trash, which checks the permission.
+ */
+export async function restoreShepherdAssignment(
+  ctx: FarmCommandContext,
+  id: ShepherdAssignmentId,
+): Promise<void> {
+  const assignment = await ctx.repos.flocks.getDeletedAssignment(id);
+  if (assignment === null) throw new DomainError("trash.notFound");
+  if (assignment.to === null) {
+    const flock = await requireFlock(ctx, assignment.flockId);
+    if (flock.archivedAt !== null) throw new DomainError("flock.archived");
+    const shepherd = await requireShepherd(ctx, assignment.shepherdId);
+    if (shepherd.archivedAt !== null) throw new DomainError("shepherd.archived");
+  }
+  await requireNoOverlap(ctx, assignment, assignment.id);
+  await ctx.repos.flocks.markAssignmentRestored(assignment.id);
+  await auditAssignment(ctx, "flock.restoreAssignment", assignment);
+}
+
 // The moves of Sheep.
 
 /**

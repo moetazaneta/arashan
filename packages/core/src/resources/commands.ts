@@ -4,7 +4,11 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import type { FlockId, ResourceEventId, ResourceId } from "../ids";
-import { createAutomaticRecord, deleteAutomaticRecord } from "../money/commands";
+import {
+  createAutomaticRecord,
+  deleteAutomaticRecord,
+  restoreAutomaticRecord,
+} from "../money/commands";
 import { maxAmount, type MoneySource } from "../money/money";
 import {
   maxQuantity,
@@ -211,6 +215,28 @@ export async function cancelResourceEvent(
   }
   await refreshStock(ctx, resource, await ctx.repos.resources.events(resource.id));
   await auditEvent(ctx, "resource.cancelEvent", resource.id, event.id, event.flockId);
+}
+
+/**
+ * A Member restores a cancelled Restock, Usage or Adjustment from the Trash, with the Automatic
+ * Expense of a Restock with a price. The Stock of the Resource changes as when the event was new. An
+ * Archived Resource gets no events (`resource.archived`); the Flock of a Usage can be Archived now,
+ * as the event had it already. For the Trash, which checks the permission.
+ */
+export async function restoreResourceEvent(
+  ctx: FarmCommandContext,
+  id: ResourceEventId,
+): Promise<void> {
+  const event = await ctx.repos.resources.getDeletedEvent(id);
+  if (event === null) throw new DomainError("trash.notFound");
+  const resource = await requireOpenResource(ctx, event.resourceId);
+  const source = restockSource(event.id);
+  const expense =
+    event.kind === "restock" ? await ctx.repos.moneyRecords.findDeletedBySource(source) : null;
+  await ctx.repos.resources.markEventRestored(event.id);
+  if (expense !== null) await restoreAutomaticRecord(ctx, "resource.restoreEvent", source);
+  await refreshStock(ctx, resource, await ctx.repos.resources.events(resource.id));
+  await auditEvent(ctx, "resource.restoreEvent", resource.id, event.id, event.flockId);
 }
 
 /** The source of the Automatic Expense of a Restock. */

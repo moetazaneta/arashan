@@ -170,6 +170,11 @@ export const errorCodes = [
   "resource.reasonTooLong",
   "resource.adjustmentNoChange",
   "resource.eventNotFound",
+  // The Trash.
+  "trash.notFound",
+  "trash.parentDeleted",
+  "trash.sheepDeleted",
+  "trash.breedDeleted",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

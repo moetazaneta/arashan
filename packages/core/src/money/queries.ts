@@ -179,7 +179,7 @@ async function sheepOf(
   return refs;
 }
 
-function categoryRef(category: MoneyCategory): MoneyCategoryRef {
+export function categoryRef(category: MoneyCategory): MoneyCategoryRef {
   return {
     id: category.id,
     key: category.key,
@@ -189,7 +189,7 @@ function categoryRef(category: MoneyCategory): MoneyCategoryRef {
   };
 }
 
-function categoryRefOf(
+export function categoryRefOf(
   categories: Map<MoneyCategoryId, MoneyCategory>,
   id: MoneyCategoryId,
 ): MoneyCategoryRef {
