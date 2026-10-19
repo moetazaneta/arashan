@@ -8,6 +8,7 @@ export {
   useSetBreedArchived,
 } from "./breeds";
 export { ClientProvider, createClient, type Client, type Locale } from "./client";
+export { useToday } from "./dates";
 export { toDomainError } from "./errors";
 export {
   useCreateFarm,
@@ -73,6 +74,9 @@ export {
   useUnarchiveResource,
   useUpdateResource,
   useRecordUsage,
+  useUsageSuggestion,
+  useStockForecast,
+  useSetResourceNorms,
 } from "./resources";
 export {
   useChangeSheepOwner,
@@ -105,6 +109,7 @@ export {
   grades,
   inviteLifetimeMs,
   isPureArashan,
+  isCalendarDate,
   knownParents,
   manualLimit,
   maxBreedNameLength,
@@ -132,6 +137,8 @@ export {
   minPasswordLength,
   quantityScale,
   nameKey,
+  noNorms,
+  normGroups,
   pedigreeDepth,
   scanContentTypes,
   sexes,
