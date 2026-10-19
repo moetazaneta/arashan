@@ -75,7 +75,16 @@ export type CommandName =
   | "resource.use"
   | "resource.adjust"
   | "resource.cancelEvent"
-  | "lambing.record";
+  | "lambing.record"
+  // The restores from the Trash: one name for each kind of record, as for its delete.
+  | "sheep.restore"
+  | "breed.restore"
+  | "flock.restoreAssignment"
+  | "money.restore"
+  | "moneyCategory.restore"
+  | "sale.restore"
+  | "purchase.restore"
+  | "resource.restoreEvent";
 
 /** The kind of record that a command changed. */
 export type TargetKind =

@@ -188,6 +188,10 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "resource.eventNotFound": msg`Такой записи нет. Возможно, её уже отменили.`,
   // The client gives today's date, so a Member sees this only after a bug.
   "report.dateInvalid": msg`Не удалось построить отчёт на эту дату. Обновите страницу.`,
+  "trash.notFound": msg`Этой записи уже нет в корзине: возможно, её уже восстановили.`,
+  "trash.parentDeleted": msg`Мать или отец этого барана удалены. Сначала восстановите их из корзины или покупку, в которой их купили.`,
+  "trash.sheepDeleted": msg`Баран этой записи удалён. Сначала восстановите из корзины его или покупку, в которой его купили.`,
+  "trash.breedDeleted": msg`Порода этого барана удалена. Сначала восстановите её из корзины.`,
 };
 
 const unknownErrorMessage = msg`Что-то пошло не так. Попробуйте ещё раз.`;

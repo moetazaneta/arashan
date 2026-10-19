@@ -13,6 +13,7 @@ import type {
   StatusChangeId,
 } from "../ids";
 import type { BreedShare } from "../pedigree/composition";
+import type { Deleted } from "../trash/trash";
 
 /** The sex of a Sheep: a Ram or an Ewe. */
 export const sexes = ["ram", "ewe"] as const;
@@ -267,6 +268,11 @@ export interface FarmSheepReader {
   flockMoves(sheepId: SheepId): Promise<FlockMove[]>;
   /** The changes of the Status of the Sheep, in the order in which a Member recorded them. */
   statusChanges(sheepId: SheepId): Promise<StatusChange[]>;
+  /**
+   * The Deleted Sheep of the Farm, for the Trash: also the External ones and the Sheep of a cancelled
+   * Purchase. In no order.
+   */
+  listDeleted(): Promise<Deleted<Sheep>[]>;
 }
 
 /** The fields of a Sheep that a command writes. */
@@ -286,4 +292,8 @@ export interface FarmSheepRepository extends FarmSheepReader {
   markStatusChangeDeleted(id: StatusChangeId, deletedAt: number): Promise<void>;
   /** Makes the Sheep Deleted. A Member can restore it later. */
   markDeleted(id: SheepId, deletedAt: number): Promise<void>;
+  /** The Sheep if it is Deleted, for its restore; else null. */
+  getDeleted(id: SheepId): Promise<Sheep | null>;
+  /** Makes a Deleted Sheep not Deleted: a Member restored it from the Trash. */
+  markRestored(id: SheepId): Promise<void>;
 }

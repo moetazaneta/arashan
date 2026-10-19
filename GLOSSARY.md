@@ -175,6 +175,10 @@ A record that is correct but not in use now, for example a Shepherd who left. Hi
 **Deleted** (рус. удалён):
 A record that someone made by mistake. Reports do not show Deleted records, but a Member can restore them. The app never erases a record.
 
+**Trash** (рус. корзина):
+The list of the Deleted records of a Farm. A Member restores a record from the Trash: it comes back as it was, with the records that became Deleted with it, such as the Automatic record of a cancelled deal.
+_Avoid_: Recycle bin, archive (when you mean Deleted records)
+
 **Audit entry** (рус. запись журнала):
 A record of one change: who made it, when, with which command, and to which record. The audit log keeps all audit entries, and nothing changes or erases them. The history of a record shows its audit entries.
 _Avoid_: Log line, event

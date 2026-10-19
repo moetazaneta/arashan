@@ -4,7 +4,11 @@ import type { FarmCommandContext } from "../context";
 import { type CalendarDate, dateAt, isCalendarDate } from "../dates";
 import { DomainError } from "../errors";
 import type { FlockId, ResourceEventId, ResourceId } from "../ids";
-import { createAutomaticRecord, deleteAutomaticRecord } from "../money/commands";
+import {
+  createAutomaticRecord,
+  deleteAutomaticRecord,
+  restoreAutomaticRecord,
+} from "../money/commands";
 import { maxAmount, type MoneySource } from "../money/money";
 import { noNorms, normGroups, type Norms } from "./norms";
 import {
@@ -50,7 +54,8 @@ export async function createResource(
 
 /**
  * A Member changes the name or the unit of a Resource. The unit changes only while the Resource has
- * no events (`resource.unitLocked`): the quantities of its events are in the unit.
+ * no events (`resource.unitLocked`): the quantities of its events are in the unit. A cancelled event
+ * counts too, because a Member can restore it from the Trash.
  */
 export async function updateResource(
   ctx: FarmCommandContext,
@@ -61,7 +66,10 @@ export async function updateResource(
   const fields = validResource(input);
   await requireFreeName(ctx, fields.name, resource.id);
   if (resource.name === fields.name && resource.unit === fields.unit) return;
-  if (resource.unit !== fields.unit && (await ctx.repos.resources.events(resource.id)).length > 0) {
+  if (
+    resource.unit !== fields.unit &&
+    (await ctx.repos.resources.hasEventsWithDeleted(resource.id))
+  ) {
     throw new DomainError("resource.unitLocked");
   }
   await ctx.repos.resources.update(resource.id, fields);
@@ -217,6 +225,28 @@ export async function cancelResourceEvent(
   }
   await refreshStock(ctx, resource, await ctx.repos.resources.events(resource.id));
   await auditEvent(ctx, "resource.cancelEvent", resource.id, event.id, event.flockId);
+}
+
+/**
+ * A Member restores a cancelled Restock, Usage or Adjustment from the Trash, with the Automatic
+ * Expense of a Restock with a price. The Stock of the Resource changes as when the event was new. An
+ * Archived Resource gets no events (`resource.archived`); the Flock of a Usage can be Archived now,
+ * as the event had it already. For the Trash, which checks the permission.
+ */
+export async function restoreResourceEvent(
+  ctx: FarmCommandContext,
+  id: ResourceEventId,
+): Promise<void> {
+  const event = await ctx.repos.resources.getDeletedEvent(id);
+  if (event === null) throw new DomainError("trash.notFound");
+  const resource = await requireOpenResource(ctx, event.resourceId);
+  const source = restockSource(event.id);
+  const expense =
+    event.kind === "restock" ? await ctx.repos.moneyRecords.findDeletedBySource(source) : null;
+  await ctx.repos.resources.markEventRestored(event.id);
+  if (expense !== null) await restoreAutomaticRecord(ctx, "resource.restoreEvent", source);
+  await refreshStock(ctx, resource, await ctx.repos.resources.events(resource.id));
+  await auditEvent(ctx, "resource.restoreEvent", resource.id, event.id, event.flockId);
 }
 
 /** The source of the Automatic Expense of a Restock. */

@@ -90,6 +90,19 @@ export async function deleteBreed(
 }
 
 /**
+ * A Member restores a Deleted Breed from the Trash. Its name is still unique in the Farm
+ * (`breed.nameTaken`): a Member can give the name to a new Breed while this one is Deleted. For the
+ * Trash, which checks the permission.
+ */
+export async function restoreBreed(ctx: FarmCommandContext, id: BreedId): Promise<void> {
+  const breed = await ctx.repos.breeds.getDeleted(id);
+  if (breed === null) throw new DomainError("trash.notFound");
+  await requireFreeName(ctx, breed.name, breed.id);
+  await ctx.repos.breeds.markRestored(breed.id);
+  await recordBreedAudit(ctx, "breed.restore", breed.id);
+}
+
+/**
  * The Breeds that the Sheep of the Farm have by hand. Each part of a Breed composition comes from
  * the parts by hand of a Sheep or of its ancestors, so a Breed that is not here is in no composition.
  */
@@ -131,7 +144,13 @@ function validName(name: string): string {
 
 function recordBreedAudit(
   ctx: FarmCommandContext,
-  command: "breed.add" | "breed.rename" | "breed.archive" | "breed.unarchive" | "breed.delete",
+  command:
+    | "breed.add"
+    | "breed.rename"
+    | "breed.archive"
+    | "breed.unarchive"
+    | "breed.delete"
+    | "breed.restore",
   breedId: BreedId,
 ): Promise<void> {
   return recordFarmAudit(ctx, { command, target: { kind: "Breed", id: breedId } });

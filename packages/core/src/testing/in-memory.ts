@@ -375,6 +375,16 @@ export class InMemoryStore {
         const found = ofFarm().find((s) => s.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
       },
+      listDeleted: async () =>
+        deletedOf(this.sheep.filter((s) => s.farmId === farmId)).map((r) => ({ ...r })),
+      getDeleted: async (id) => {
+        const found = deletedOf(this.sheep).find((s) => s.id === id && s.farmId === farmId);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      markRestored: async (id) => {
+        const found = deletedOf(this.sheep).find((s) => s.id === id && s.farmId === farmId);
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
+      },
     };
   }
 
@@ -425,6 +435,16 @@ export class InMemoryStore {
       markDeleted: async (id, deletedAt) => {
         const found = ofFarm().find((b) => b.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
+      },
+      listDeleted: async () =>
+        deletedOf(this.breeds.filter((b) => b.farmId === farmId)).map((r) => ({ ...r })),
+      getDeleted: async (id) => {
+        const found = deletedOf(this.breeds).find((b) => b.id === id && b.farmId === farmId);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      markRestored: async (id) => {
+        const found = deletedOf(this.breeds).find((b) => b.id === id && b.farmId === farmId);
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
       },
     };
   }
@@ -529,6 +549,19 @@ export class InMemoryStore {
         assignments()
           .filter((a) => a.shepherdId === shepherdId)
           .map(assignment),
+      listDeletedAssignments: async () =>
+        deletedOf(this.assignments.filter((a) => a.farmId === farmId)).map((a) => ({
+          ...assignment(a),
+          deletedAt: a.deletedAt,
+        })),
+      getDeletedAssignment: async (id) => {
+        const found = deletedOf(this.assignments).find((a) => a.id === id && a.farmId === farmId);
+        return found === undefined ? null : assignment(found);
+      },
+      markAssignmentRestored: async (id) => {
+        const found = deletedOf(this.assignments).find((a) => a.id === id && a.farmId === farmId);
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
+      },
       insert: async (fields) => {
         const id = this.id("Flock") as FlockId;
         this.flocks.push({ id, farmId, ...fields });
@@ -592,6 +625,20 @@ export class InMemoryStore {
         const found = ofFarm().find((c) => c.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
       },
+      listDeleted: async () =>
+        deletedOf(this.moneyCategories.filter((c) => c.farmId === farmId)).map((r) => ({ ...r })),
+      getDeleted: async (id) => {
+        const found = deletedOf(this.moneyCategories).find(
+          (c) => c.id === id && c.farmId === farmId,
+        );
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      markRestored: async (id) => {
+        const found = deletedOf(this.moneyCategories).find(
+          (c) => c.id === id && c.farmId === farmId,
+        );
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
+      },
     };
   }
 
@@ -635,6 +682,22 @@ export class InMemoryStore {
         const found = ofFarm().find((r) => r.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
       },
+      listDeleted: async () =>
+        deletedOf(this.moneyRecords.filter((r) => r.farmId === farmId)).map((r) => ({ ...r })),
+      getDeleted: async (id) => {
+        const found = deletedOf(this.moneyRecords).find((r) => r.id === id && r.farmId === farmId);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      findDeletedBySource: async (source) => {
+        const found = deletedOf(this.moneyRecords.filter((r) => r.farmId === farmId))
+          .filter((r) => sameSource(r.source, source))
+          .sort((a, b) => b.deletedAt - a.deletedAt)[0];
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      markRestored: async (id) => {
+        const found = deletedOf(this.moneyRecords).find((r) => r.id === id && r.farmId === farmId);
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
+      },
     };
   }
 
@@ -659,6 +722,16 @@ export class InMemoryStore {
       markDeleted: async (id, deletedAt) => {
         const found = ofFarm().find((d) => d.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
+      },
+      listDeleted: async () =>
+        deletedOf(this.deals.filter((d) => d.farmId === farmId)).map((r) => ({ ...r })),
+      getDeleted: async (id) => {
+        const found = deletedOf(this.deals).find((d) => d.id === id && d.farmId === farmId);
+        return found === undefined ? null : withoutDeletedAt(found);
+      },
+      markRestored: async (id) => {
+        const found = deletedOf(this.deals).find((d) => d.id === id && d.farmId === farmId);
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
       },
     };
   }
@@ -692,6 +765,8 @@ export class InMemoryStore {
             const { farmId: _, ...event } = withoutDeletedAt(e);
             return event;
           }),
+      hasEventsWithDeleted: async (resourceId) =>
+        this.resourceEvents.some((e) => e.farmId === farmId && e.resourceId === resourceId),
       insert: async (fields) => {
         const id = this.id("Resource") as ResourceId;
         this.resources.push({ id, farmId, ...fields });
@@ -709,6 +784,25 @@ export class InMemoryStore {
       markEventDeleted: async (id, deletedAt) => {
         const found = eventsOfFarm().find((e) => e.id === id);
         if (found !== undefined) found.deletedAt = deletedAt;
+      },
+      listDeletedEvents: async () =>
+        deletedOf(this.resourceEvents.filter((e) => e.farmId === farmId)).map((e) => {
+          const { farmId: _, ...event } = e;
+          return event;
+        }),
+      getDeletedEvent: async (id) => {
+        const found = deletedOf(this.resourceEvents).find(
+          (e) => e.id === id && e.farmId === farmId,
+        );
+        if (found === undefined) return null;
+        const { farmId: _, ...event } = withoutDeletedAt(found);
+        return event;
+      },
+      markEventRestored: async (id) => {
+        const found = deletedOf(this.resourceEvents).find(
+          (e) => e.id === id && e.farmId === farmId,
+        );
+        if (found !== undefined) delete (found as { deletedAt?: number }).deletedAt;
       },
     };
   }
@@ -794,6 +888,11 @@ export class InMemoryStore {
     this.memberships.push({ id: this.id("Membership") as MembershipId, farmId, userId, role });
     return ctx;
   }
+}
+
+/** The Deleted records of the list, for the Trash: the rows themselves, with their time. */
+function deletedOf<T extends { deletedAt?: number }>(records: T[]): (T & { deletedAt: number })[] {
+  return records.filter((r): r is T & { deletedAt: number } => r.deletedAt !== undefined);
 }
 
 function withoutDeletedAt<T extends { deletedAt?: number }>(record: T): Omit<T, "deletedAt"> {

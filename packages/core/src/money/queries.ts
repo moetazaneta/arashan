@@ -199,7 +199,7 @@ export function categoryRef(category: MoneyCategory): MoneyCategoryRef {
   };
 }
 
-function categoryRefOf(
+export function categoryRefOf(
   categories: Map<MoneyCategoryId, MoneyCategory>,
   id: MoneyCategoryId,
 ): MoneyCategoryRef {

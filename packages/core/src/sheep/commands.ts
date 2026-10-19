@@ -272,6 +272,60 @@ export async function deleteSheep(
   await recordSheepAudit(ctx, "sheep.delete", sheep.id);
 }
 
+/**
+ * A Member restores a Deleted Sheep from the Trash, also an External Sheep. A Sheep of a Purchase
+ * comes back only with its Purchase (`sheep.inDeal`), so that a deal never has a Deleted Sheep. The
+ * rules about other records can change while the Sheep is Deleted, so the restore checks them again
+ * (`requireRestorableSheep`). For the Trash, which checks the permission.
+ */
+export async function restoreSheep(ctx: FarmCommandContext, id: SheepId): Promise<void> {
+  const sheep = await ctx.repos.sheep.getDeleted(id);
+  if (sheep === null) throw new DomainError("trash.notFound");
+  if (sheep.purchaseId !== null) throw new DomainError("sheep.inDeal");
+  await requireRestorableSheep(ctx, sheep);
+  await ctx.repos.sheep.markRestored(sheep.id);
+  await recordSheepAudit(ctx, "sheep.restore", sheep.id);
+}
+
+/**
+ * Throws the error of the first rule that the restore of a Deleted Sheep breaks. While the Sheep was
+ * Deleted, no rule saw it: another Sheep could take its Tag, its Owner could leave the Farm, and its
+ * parents, its Breeds and its Flock could change. So the restore checks again:
+ *
+ * - the Tag is free (`sheep.tagTaken`), unless the Sheep is External;
+ * - the Owner of an Active or a Lost Sheep is a Member now (`sheep.ownerNotMember`);
+ * - no parent is Deleted (`trash.parentDeleted`), and the parents keep the rules of the pedigree
+ *   (`requireParents`), for example a Mother that is an Ewe;
+ * - no Breed of the parts by hand is Deleted (`trash.breedDeleted`);
+ * - a Sheep with a Passport is still 100 percent Arashan (`passport.notArashan`);
+ * - its Flock is not Archived (`flock.archived`): an Archived Flock has no Sheep.
+ *
+ * The restore of a Purchase checks its Sheep with it too.
+ */
+export async function requireRestorableSheep(ctx: FarmCommandContext, sheep: Sheep): Promise<void> {
+  if (sheep.origin !== "external") await requireFreeTag(ctx, sheep.tag, sheep.id);
+  if ((sheep.status === "active" || sheep.status === "lost") && sheep.ownerId !== null) {
+    await requireOwner(ctx, sheep.ownerId);
+  }
+  const lookup = cachedLookup((parentId) => ctx.repos.sheep.get(parentId));
+  for (const parentId of [sheep.motherId, sheep.fatherId]) {
+    if (parentId !== null && (await lookup(parentId)) === null) {
+      throw new DomainError("trash.parentDeleted");
+    }
+  }
+  await requireParents(lookup, sheep);
+  for (const { breedId } of sheep.manualBreeds) {
+    if (breedId !== arashanBreedId && (await ctx.repos.breeds.get(breedId)) === null) {
+      throw new DomainError("trash.breedDeleted");
+    }
+  }
+  await requirePassportsFit(ctx, lookup, sheep, sheep);
+  if (sheep.flockId !== null) {
+    const flock = await ctx.repos.flocks.get(sheep.flockId);
+    if (flock === null || flock.archivedAt !== null) throw new DomainError("flock.archived");
+  }
+}
+
 /** A new Sheep of a Purchase: one row of its form. An empty text is no value. */
 export interface BoughtSheep {
   tag: string | null;
@@ -369,7 +423,8 @@ function recordSheepAudit(
     | "sheep.registerExternal"
     | "sheep.update"
     | "sheep.changeOwner"
-    | "sheep.delete",
+    | "sheep.delete"
+    | "sheep.restore",
   sheepId: SheepId,
 ): Promise<void> {
   return recordFarmAudit(ctx, { command, target: { kind: "Sheep", id: sheepId } });

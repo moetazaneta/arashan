@@ -27,6 +27,7 @@ import type * as reports from "../reports.js";
 import type * as resources from "../resources.js";
 import type * as sheep from "../sheep.js";
 import type * as shepherds from "../shepherds.js";
+import type * as trash from "../trash.js";
 import type * as users from "../users.js";
 
 import type {
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   resources: typeof resources;
   sheep: typeof sheep;
   shepherds: typeof shepherds;
+  trash: typeof trash;
   users: typeof users;
 }>;
 

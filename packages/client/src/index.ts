@@ -88,6 +88,7 @@ export {
   useStockForecast,
   useSetResourceNorms,
 } from "./resources";
+export { useRestoreFromTrash, useTrash } from "./trash";
 export {
   useChangeSheepOwner,
   useChangeSheepStatus,

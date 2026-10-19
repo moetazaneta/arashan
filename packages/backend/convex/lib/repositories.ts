@@ -9,6 +9,7 @@ import {
   type CommandName,
   type Deal,
   type DealId,
+  type Deleted,
   type Farm,
   type FarmAuditReader,
   type FarmDealReader,
@@ -114,6 +115,23 @@ async function getActive<Table extends TableNames>(
   const docId = db.normalizeId(table, id);
   const doc = docId === null ? null : await db.get(table, docId);
   return doc === null || (doc as { deletedAt?: number }).deletedAt !== undefined ? null : doc;
+}
+
+/**
+ * The first value of `deletedAt` in an index range of the Deleted rows. A row that is not Deleted has
+ * no `deletedAt`, which sorts before each time, so `gte("deletedAt", deletedFrom)` after `farmId`
+ * reads the Deleted rows of the Farm and no others.
+ */
+const deletedFrom = 0;
+
+/** The records of the Deleted rows, each with the time when its row became Deleted. */
+function withDeletedAt<Row extends { deletedAt?: number }, Shown>(
+  docs: Row[],
+  toRecord: (doc: Row) => Shown,
+): Deleted<Shown>[] {
+  return docs.flatMap((doc) =>
+    doc.deletedAt === undefined ? [] : [{ ...toRecord(doc), deletedAt: doc.deletedAt }],
+  );
 }
 
 /** The Convex id of a record of the core, for a field that refers to it. */
@@ -881,6 +899,15 @@ function farmSheepReader(db: DatabaseReader, farmId: FarmId): FarmSheepReader {
         .collect();
       return docs.map(toStatusChange);
     },
+    async listDeleted() {
+      const docs = await db
+        .query("sheep")
+        .withIndex("by_farmId_deletedAt_status_ownerId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toSheep);
+    },
   };
 }
 
@@ -899,6 +926,41 @@ async function ofFarm<
 >(db: DatabaseReader, table: Table, farmId: FarmId, id: string): Promise<Doc<Table> | null> {
   const doc = await getActive(db, table, id);
   return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
+}
+
+/** The tables of the records that a Member can restore from the Trash. */
+type TrashTable =
+  | "sheep"
+  | "breeds"
+  | "flockAssignments"
+  | "moneyCategories"
+  | "moneyRecords"
+  | "deals"
+  | "resourceEvents";
+
+/** The Deleted row of the Farm with the id in the table, or null if it is not Deleted. */
+async function deletedOfFarm<Table extends TrashTable>(
+  db: DatabaseReader,
+  table: Table,
+  farmId: FarmId,
+  id: string,
+): Promise<Doc<Table> | null> {
+  const docId = db.normalizeId(table, id);
+  const doc = docId === null ? null : await db.get(table, docId);
+  return doc === null || doc.deletedAt === undefined || doc.farmId !== idOf<"farms">(farmId)
+    ? null
+    : doc;
+}
+
+/** Makes the Deleted row of the Farm with the id not Deleted: the patch removes `deletedAt`. */
+async function restoreRow(
+  db: DatabaseWriter,
+  table: TrashTable,
+  farmId: FarmId,
+  id: string,
+): Promise<void> {
+  const doc = await deletedOfFarm(db, table, farmId, id);
+  if (doc !== null) await db.patch(table, doc._id, { deletedAt: undefined });
 }
 
 function farmLocationReader(db: DatabaseReader, farmId: FarmId): FarmLocationReader {
@@ -1007,6 +1069,15 @@ function farmFlockReader(db: DatabaseReader, farmId: FarmId): FarmFlockReader {
         .collect();
       return docs.map(toAssignment);
     },
+    async listDeletedAssignments() {
+      const docs = await db
+        .query("flockAssignments")
+        .withIndex("by_farmId_deletedAt_flockId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toAssignment);
+    },
   };
 }
 
@@ -1069,6 +1140,15 @@ function farmMoneyCategoryReader(db: DatabaseReader, farmId: FarmId): FarmMoneyC
       const doc = docs.find((d) => d.deletedAt === undefined && d.kind === kind);
       return doc === undefined ? null : toMoneyCategory(doc);
     },
+    async listDeleted() {
+      const docs = await db
+        .query("moneyCategories")
+        .withIndex("by_farmId_deletedAt_kind_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toMoneyCategory);
+    },
   };
 }
 
@@ -1086,6 +1166,15 @@ function farmDealReader(db: DatabaseReader, farmId: FarmId): FarmDealReader {
         )
         .collect();
       return docs.map(toDeal);
+    },
+    async listDeleted() {
+      const docs = await db
+        .query("deals")
+        .withIndex("by_farmId_deletedAt_date", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toDeal);
     },
   };
 }
@@ -1142,6 +1231,15 @@ function farmMoneyRecordReader(db: DatabaseReader, farmId: FarmId): FarmMoneyRec
         .first();
       return doc !== null;
     },
+    async listDeleted() {
+      const docs = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_deletedAt_kind_date", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toMoneyRecord);
+    },
   };
 }
 
@@ -1185,6 +1283,35 @@ function farmResourceReader(db: DatabaseReader, farmId: FarmId): FarmResourceRea
         .collect();
       return docs.map(toResourceEvent);
     },
+    async hasEventsWithDeleted(resourceId) {
+      const resourceDocId = db.normalizeId("resources", resourceId);
+      if (resourceDocId === null) return false;
+      const live = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("resourceId", resourceDocId),
+        )
+        .first();
+      if (live !== null) return true;
+      // The index has the Resource after `deletedAt`, so the range of the Deleted events filters it.
+      const cancelled = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .filter((q) => q.eq(q.field("resourceId"), resourceDocId))
+        .first();
+      return cancelled !== null;
+    },
+    async listDeletedEvents() {
+      const docs = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toResourceEvent);
+    },
   };
 }
 
@@ -1220,6 +1347,15 @@ function farmBreedReader(db: DatabaseReader, farmId: FarmId): FarmBreedReader {
         )
         .collect();
       return docs.map(toBreed);
+    },
+    async listDeleted() {
+      const docs = await db
+        .query("breeds")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .collect();
+      return withDeletedAt(docs, toBreed);
     },
   };
 }
@@ -1380,6 +1516,11 @@ export function farmRepositories(
       const doc = await sheepOfFarm(db, farmId, id);
       if (doc !== null) await db.patch("sheep", doc._id, { deletedAt });
     },
+    async getDeleted(id) {
+      const doc = await deletedOfFarm(db, "sheep", farmId, id);
+      return doc === null ? null : toSheep(doc);
+    },
+    markRestored: (id) => restoreRow(db, "sheep", farmId, id),
   };
   const breeds: FarmBreedRepository = {
     ...readers.breeds,
@@ -1408,6 +1549,11 @@ export function farmRepositories(
       const doc = await breedOfFarm(db, farmId, id);
       if (doc !== null) await db.patch("breeds", doc._id, { deletedAt });
     },
+    async getDeleted(id) {
+      const doc = await deletedOfFarm(db, "breeds", farmId, id);
+      return doc === null ? null : toBreed(doc);
+    },
+    markRestored: (id) => restoreRow(db, "breeds", farmId, id),
   };
   const locations: FarmLocationRepository = {
     ...readers.locations,
@@ -1472,6 +1618,11 @@ export function farmRepositories(
       const doc = await ofFarm(db, "flockAssignments", farmId, id);
       if (doc !== null) await db.patch("flockAssignments", doc._id, { deletedAt });
     },
+    async getDeletedAssignment(id) {
+      const doc = await deletedOfFarm(db, "flockAssignments", farmId, id);
+      return doc === null ? null : toAssignment(doc);
+    },
+    markAssignmentRestored: (id) => restoreRow(db, "flockAssignments", farmId, id),
   };
   const lambings: FarmLambingRepository = {
     ...readers.lambings,
@@ -1509,6 +1660,11 @@ export function farmRepositories(
       const doc = await ofFarm(db, "moneyCategories", farmId, id);
       if (doc !== null) await db.patch("moneyCategories", doc._id, { deletedAt });
     },
+    async getDeleted(id) {
+      const doc = await deletedOfFarm(db, "moneyCategories", farmId, id);
+      return doc === null ? null : toMoneyCategory(doc);
+    },
+    markRestored: (id) => restoreRow(db, "moneyCategories", farmId, id),
   };
   const moneyRecords: FarmMoneyRecordRepository = {
     ...readers.moneyRecords,
@@ -1532,6 +1688,28 @@ export function farmRepositories(
       const doc = await ofFarm(db, "moneyRecords", farmId, id);
       if (doc !== null) await db.patch("moneyRecords", doc._id, { deletedAt });
     },
+    async getDeleted(id) {
+      const doc = await deletedOfFarm(db, "moneyRecords", farmId, id);
+      return doc === null ? null : toMoneyRecord(doc);
+    },
+    async findDeletedBySource(source) {
+      // The index has the source after `deletedAt`, so the range of the Deleted rows cannot also
+      // narrow it down to the source: the filter reads the Deleted records of the Farm, which are
+      // few. A restore makes the same row not Deleted, so an event has one Automatic record.
+      const docs = await db
+        .query("moneyRecords")
+        .withIndex("by_farmId_deletedAt_sourceKind_sourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).gte("deletedAt", deletedFrom),
+        )
+        .filter((q) =>
+          q.and(q.eq(q.field("sourceKind"), source.kind), q.eq(q.field("sourceId"), source.id)),
+        )
+        .collect();
+      // The one that became Deleted last.
+      const last = docs.sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))[0];
+      return last === undefined ? null : toMoneyRecord(last);
+    },
+    markRestored: (id) => restoreRow(db, "moneyRecords", farmId, id),
   };
   const deals: FarmDealRepository = {
     ...readers.deals,
@@ -1555,6 +1733,11 @@ export function farmRepositories(
       const doc = await ofFarm(db, "deals", farmId, id);
       if (doc !== null) await db.patch("deals", doc._id, { deletedAt });
     },
+    async getDeleted(id) {
+      const doc = await deletedOfFarm(db, "deals", farmId, id);
+      return doc === null ? null : toDeal(doc);
+    },
+    markRestored: (id) => restoreRow(db, "deals", farmId, id),
   };
   const resources: FarmResourceRepository = {
     ...readers.resources,
@@ -1585,6 +1768,11 @@ export function farmRepositories(
       const doc = await ofFarm(db, "resourceEvents", farmId, id);
       if (doc !== null) await db.patch("resourceEvents", doc._id, { deletedAt });
     },
+    async getDeletedEvent(id) {
+      const doc = await deletedOfFarm(db, "resourceEvents", farmId, id);
+      return doc === null ? null : toResourceEvent(doc);
+    },
+    markEventRestored: (id) => restoreRow(db, "resourceEvents", farmId, id),
   };
   return {
     ...readers,

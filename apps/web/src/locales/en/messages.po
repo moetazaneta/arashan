@@ -28,6 +28,10 @@ msgstr "(optional)"
 msgid "{0, plural, =1 {чабан: {names}} other {чабаны: {names}}}"
 msgstr "{0, plural, =1 {shepherd: {names}} other {shepherds: {names}}}"
 
+#: src/components/trash/trash-table.tsx
+msgid "{count, plural, one {# баран} few {# барана} many {# баранов} other {# барана}}"
+msgstr "{count, plural, one {# sheep} other {# sheep}}"
+
 #: src/components/flocks/flock-card.tsx
 msgid "{count, plural, one {# голова} few {# головы} many {# голов} other {# головы}}"
 msgstr "{count, plural, one {# sheep} other {# sheep}}"
@@ -168,6 +172,7 @@ msgstr "Arashan, %"
 
 #: src/components/money/record-dialog.tsx
 #: src/components/money/records-tab.tsx
+#: src/components/trash/labels.ts
 msgid "Баран"
 msgstr "Sheep"
 
@@ -223,6 +228,10 @@ msgstr "The Sheep will become Active again. You can then move it to a Flock."
 #: src/errors.ts
 msgid "Баран уже у этого владельца. Выберите другого."
 msgstr "The sheep already belongs to this owner. Choose another one."
+
+#: src/errors.ts
+msgid "Баран этой записи удалён. Сначала восстановите из корзины его или покупку, в которой его купили."
+msgstr "The Sheep of this record is deleted. First restore it, or the Purchase that brought it, from the Trash."
 
 #: src/components/money/records-tab.tsx
 msgid "Баран…"
@@ -523,6 +532,10 @@ msgstr "external"
 msgid "Внешний"
 msgstr "External"
 
+#: src/components/trash/labels.ts
+msgid "Внешний баран"
+msgstr "External Sheep"
+
 #: src/components/sheep/sheep-form.tsx
 msgid "Внешний баран добавлен: <0>{addedLabel}</0>"
 msgstr "External sheep added: <0>{addedLabel}</0>"
@@ -546,6 +559,15 @@ msgstr "Log in to open the records of your farm."
 #: src/errors.ts
 msgid "Войдите, чтобы продолжить."
 msgstr "Log in to continue."
+
+#: src/components/trash/trash-table.tsx
+msgid "Восстановить"
+msgstr "Restore"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Восстановлен из корзины"
+msgstr "Restored from the Trash"
 
 #: src/components/money/records-tab.tsx
 msgid "Все"
@@ -718,6 +740,7 @@ msgid "Выдача"
 msgstr "Usage"
 
 #: src/components/resources/resource-card.tsx
+#: src/components/trash/labels.ts
 msgctxt "resource event"
 msgid "Выдача"
 msgstr "Usage"
@@ -957,6 +980,7 @@ msgstr "Part, %"
 msgid "Дополнительно"
 msgstr "More"
 
+#: src/components/trash/labels.ts
 #: src/routes/farms/$farmId/deals/$dealId.tsx
 msgid "Доход"
 msgstr "Income"
@@ -1125,6 +1149,15 @@ msgstr "Records"
 msgid "Записи ресурса"
 msgstr "Resource entries"
 
+#: src/components/trash/trash-table.tsx
+msgid "Запись"
+msgstr "Record"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Запись восстановлена"
+msgstr "Record restored"
+
 #: src/components/sheep/labels.ts
 msgctxt "history"
 msgid "Запись добавлена"
@@ -1134,6 +1167,11 @@ msgstr "Record added"
 msgctxt "history"
 msgid "Запись изменена"
 msgstr "Record changed"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Запись ресурса восстановлена"
+msgstr "Resource entry restored"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -1190,6 +1228,10 @@ msgstr "The expenses of the farm for this year will be here."
 #: src/components/flocks/flocks-tab.tsx
 msgid "Здесь будут стада фермы."
 msgstr "The flocks of the farm will be here."
+
+#: src/routes/farms/$farmId/trash.tsx
+msgid "Здесь будут удалённые записи: бараны, сделки, расходы и другие."
+msgstr "Deleted records will be here: Sheep, deals, expenses and others."
 
 #: src/components/flocks/shepherds-tab.tsx
 msgid "Здесь будут чабаны фермы."
@@ -1370,13 +1412,26 @@ msgstr "Category restored from the archive"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
+msgid "Категория восстановлена"
+msgstr "Category restored"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
 msgid "Категория добавлена"
 msgstr "Category added"
+
+#: src/components/trash/labels.ts
+msgid "Категория доходов"
+msgstr "Income category"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
 msgid "Категория переименована"
 msgstr "Category renamed"
+
+#: src/components/trash/labels.ts
+msgid "Категория расходов"
+msgstr "Expense category"
 
 #: src/errors.ts
 msgid "Категория с таким названием уже есть, может быть, в архиве."
@@ -1433,12 +1488,23 @@ msgstr "Quantity, {unit}"
 msgid "Копировать"
 msgstr "Copy"
 
+#: src/components/app-shell.tsx
+#: src/components/trash/trash-table.tsx
+#: src/routes/farms/$farmId/trash.tsx
+msgid "Корзина"
+msgstr "Trash"
+
+#: src/routes/farms/$farmId/trash.tsx
+msgid "Корзина пуста"
+msgstr "The Trash is empty"
+
 #: src/components/sheep/labels.ts
 msgctxt "history"
 msgid "Корректировка"
 msgstr "Adjustment"
 
 #: src/components/resources/resource-card.tsx
+#: src/components/trash/labels.ts
 msgctxt "resource event"
 msgid "Корректировка"
 msgstr "Adjustment"
@@ -1490,6 +1556,10 @@ msgstr "The mother must be a ewe of the farm, not an external one."
 #: src/errors.ts
 msgid "Мать должна быть самкой."
 msgstr "The mother must be an ewe."
+
+#: src/errors.ts
+msgid "Мать или отец этого барана удалены. Сначала восстановите их из корзины или покупку, в которой их купили."
+msgstr "The Mother or the Father of this Sheep is deleted. First restore them, or the Purchase that brought them, from the Trash."
 
 #: src/components/sheep/lambing-form.tsx
 msgid "Мертворождённых"
@@ -1600,6 +1670,11 @@ msgstr "Breed name"
 #: src/errors.ts
 msgid "Название породы не длиннее {maxBreedNameLength} символов."
 msgstr "A breed name can have at most {maxBreedNameLength} characters."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Назначение чабана восстановлено"
+msgstr "Shepherd assignment restored"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -1853,6 +1928,10 @@ msgstr "main"
 #: src/components/sheep/sheep-flocks.tsx
 msgid "Оставить"
 msgstr "Keep"
+
+#: src/components/trash/trash-table.tsx
+msgid "остаток {quantity}"
+msgstr "counted {quantity}"
 
 #: src/components/resources/event-dialog.tsx
 msgid "Остаток по пересчёту"
@@ -2150,6 +2229,11 @@ msgstr "Bought"
 msgid "Покупка баранов"
 msgstr "Sheep purchase"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Покупка восстановлена"
+msgstr "Purchase restored"
+
 #: src/components/deals/deal-dialogs.tsx
 msgid "Покупка и её расход удалятся, и бараны этой покупки тоже. Отменяйте только ошибочную покупку."
 msgstr "The Purchase, its Expense and its Sheep will be deleted. Only cancel a Purchase made by mistake."
@@ -2184,6 +2268,7 @@ msgid "Пополнение"
 msgstr "Restock"
 
 #: src/components/resources/resource-card.tsx
+#: src/components/trash/labels.ts
 msgctxt "resource event"
 msgid "Пополнение"
 msgstr "Restock"
@@ -2205,6 +2290,7 @@ msgid "Попросите администратора фермы прислат
 msgstr "Ask an Admin of a farm to send you an invite link."
 
 #: src/components/sheep/pedigree-fields.tsx
+#: src/components/trash/labels.ts
 msgid "Порода"
 msgstr "Breed"
 
@@ -2217,6 +2303,11 @@ msgstr "Breed archived"
 msgctxt "history"
 msgid "Порода возвращена из архива"
 msgstr "Breed unarchived"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Порода восстановлена"
+msgstr "Breed restored"
 
 #: src/components/sheep/labels.ts
 msgctxt "history"
@@ -2236,6 +2327,10 @@ msgstr "The breed will disappear from the list and from the forms."
 msgctxt "history"
 msgid "Порода удалена"
 msgstr "Breed deleted"
+
+#: src/errors.ts
+msgid "Порода этого барана удалена. Сначала восстановите её из корзины."
+msgstr "A Breed of this Sheep is deleted. Restore it from the Trash first."
 
 #: src/errors.ts
 #: src/routes/farms/$farmId/breeds.tsx
@@ -2358,6 +2453,11 @@ msgstr "Sold"
 msgid "Продажа баранов"
 msgstr "Sheep sale"
 
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Продажа восстановлена"
+msgstr "Sale restored"
+
 #: src/components/deals/deal-dialogs.tsx
 msgid "Продажа и её доход удалятся. Бараны снова станут активными и вернутся в свои стада. Отменяйте только ошибочную продажу."
 msgstr "The Sale and its Income will be deleted. The Sheep will be Active again and go back to their Flocks. Only cancel a Sale made by mistake."
@@ -2420,6 +2520,7 @@ msgstr "Leave empty if the shepherd works here now."
 msgid "Разделы"
 msgstr "Sections"
 
+#: src/components/trash/labels.ts
 #: src/routes/farms/$farmId/deals/$dealId.tsx
 msgid "Расход"
 msgstr "Expense"
@@ -2530,8 +2631,13 @@ msgid "с {from}"
 msgstr "since {from}"
 
 #: src/components/sheep/sheep-flocks.tsx
+#: src/components/trash/trash-table.tsx
 msgid "с {from} по {to}"
 msgstr "from {from} to {to}"
+
+#: src/components/trash/trash-table.tsx
+msgid "с {from} по сей день"
+msgstr "from {from} to now"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "с {since}"
@@ -3003,6 +3109,14 @@ msgstr "Deleted"
 msgid "удалённая порода"
 msgstr "deleted breed"
 
+#: src/routes/farms/$farmId/trash.tsx
+msgid "Удалённые записи фермы. Восстановите запись, и она вернётся на своё место."
+msgstr "The deleted records of the farm. Restore a record, and it goes back to its place."
+
+#: src/components/trash/trash-table.tsx
+msgid "Удалено"
+msgstr "Deleted"
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Удалить"
 msgstr "Remove"
@@ -3150,6 +3264,10 @@ msgctxt "history"
 msgid "Чабан в архиве"
 msgstr "Shepherd archived"
 
+#: src/components/trash/labels.ts
+msgid "Чабан в стаде"
+msgstr "Shepherd assignment"
+
 #: src/components/sheep/labels.ts
 msgctxt "history"
 msgid "Чабан возвращён из архива"
@@ -3195,6 +3313,7 @@ msgid "Часовой пояс"
 msgstr "Time zone"
 
 #: src/components/sheep/sheep-history.tsx
+#: src/components/trash/trash-table.tsx
 msgid "Что"
 msgstr "What"
 
@@ -3246,6 +3365,10 @@ msgstr "This sheep is gone: someone deleted it."
 #: src/errors.ts
 msgid "Этого барана уже нет на ферме: он продан, забит, пал или потерян."
 msgstr "This sheep is no longer on the farm: it is sold, slaughtered, dead or lost."
+
+#: src/errors.ts
+msgid "Этой записи уже нет в корзине: возможно, её уже восстановили."
+msgstr "This record is no longer in the Trash: maybe someone already restored it."
 
 #: src/errors.ts
 msgid "Этой овцы уже нет на ферме: окот записывают только для активной овцы."

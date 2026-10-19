@@ -1,6 +1,7 @@
 import type { CalendarDate } from "../dates";
 import type { DealId, FarmId, FlockId, SheepId } from "../ids";
 import type { MoneySource } from "../money/money";
+import type { Deleted } from "../trash/trash";
 
 // The deals of a Farm: a Sale of Sheep and a Purchase of Sheep. A deal has a date, one total price and
 // one or more Sheep. The price is the amount of its Automatic record (an Income of «Продажа баранов»
@@ -49,6 +50,8 @@ export interface FarmDealReader {
   get(id: DealId): Promise<Deal | null>;
   /** All deals of the Farm, in no order. */
   list(): Promise<Deal[]>;
+  /** The cancelled deals of the Farm, for the Trash, in no order. */
+  listDeleted(): Promise<Deleted<Deal>[]>;
 }
 
 export type DealFields = Omit<Deal, "id" | "farmId">;
@@ -60,4 +63,8 @@ export interface FarmDealRepository extends FarmDealReader {
   setSheep(id: DealId, sheepIds: SheepId[]): Promise<void>;
   /** Makes the deal Deleted: a Member cancelled it. */
   markDeleted(id: DealId, deletedAt: number): Promise<void>;
+  /** The deal if it is Deleted, for its restore; else null. */
+  getDeleted(id: DealId): Promise<Deal | null>;
+  /** Makes a cancelled deal not Deleted: a Member restored it from the Trash. */
+  markRestored(id: DealId): Promise<void>;
 }

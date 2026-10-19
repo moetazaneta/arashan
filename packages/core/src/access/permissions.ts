@@ -113,6 +113,10 @@ export const permissions = {
   "resource.archive": ["admin", "editor"],
   /** Record a Restock, a Usage or an Adjustment of a Resource, or cancel one. */
   "resource.record": ["admin", "editor"],
+  /** See the Trash: the Deleted records of the Farm. */
+  "trash.view": ["admin", "editor"],
+  /** Restore a Deleted record from the Trash. */
+  "trash.restore": ["admin", "editor"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof permissions;

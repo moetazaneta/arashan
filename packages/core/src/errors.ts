@@ -173,6 +173,11 @@ export const errorCodes = [
   "resource.eventNotFound",
   // Reports.
   "report.dateInvalid",
+  // The Trash.
+  "trash.notFound",
+  "trash.parentDeleted",
+  "trash.sheepDeleted",
+  "trash.breedDeleted",
 ] as const;
 
 export type ErrorCode = (typeof errorCodes)[number];

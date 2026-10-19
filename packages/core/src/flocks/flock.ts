@@ -8,6 +8,7 @@ import type {
   ShepherdAssignmentId,
   ShepherdId,
 } from "../ids";
+import type { Deleted } from "../trash/trash";
 
 // The Flocks of a Farm, their Locations and their Shepherds, and the moves of Sheep between Flocks.
 // The dates of a move and of an assignment are never in the future, so the current state never
@@ -202,6 +203,8 @@ export interface FarmFlockReader {
   assignmentsOfFlock(flockId: FlockId): Promise<ShepherdAssignment[]>;
   /** The assignments of the Shepherd, the oldest first. */
   assignmentsOfShepherd(shepherdId: ShepherdId): Promise<ShepherdAssignment[]>;
+  /** The Deleted assignments of the Farm, for the Trash, in no order. */
+  listDeletedAssignments(): Promise<Deleted<ShepherdAssignment>[]>;
 }
 
 export type FlockFields = Omit<Flock, "id" | "farmId">;
@@ -217,4 +220,8 @@ export interface FarmFlockRepository extends FarmFlockReader {
   ): Promise<void>;
   /** Makes the assignment Deleted, for one that a Member made by mistake. */
   markAssignmentDeleted(id: ShepherdAssignmentId, deletedAt: number): Promise<void>;
+  /** The assignment if it is Deleted, for its restore; else null. */
+  getDeletedAssignment(id: ShepherdAssignmentId): Promise<ShepherdAssignment | null>;
+  /** Makes a Deleted assignment not Deleted: a Member restored it from the Trash. */
+  markAssignmentRestored(id: ShepherdAssignmentId): Promise<void>;
 }

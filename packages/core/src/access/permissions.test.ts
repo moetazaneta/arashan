@@ -60,6 +60,8 @@ const expected: Record<Action, Record<Member["role"], boolean>> = {
   "resource.update": { admin: true, editor: true },
   "resource.archive": { admin: true, editor: true },
   "resource.record": { admin: true, editor: true },
+  "trash.view": { admin: true, editor: true },
+  "trash.restore": { admin: true, editor: true },
 };
 
 describe("can", () => {

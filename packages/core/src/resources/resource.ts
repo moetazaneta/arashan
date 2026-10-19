@@ -1,5 +1,6 @@
 import type { CalendarDate } from "../dates";
 import type { FarmId, FlockId, ResourceEventId, ResourceId } from "../ids";
+import type { Deleted } from "../trash/trash";
 import type { Norms } from "./norms";
 
 // The feed of a Farm: the Resources (hay, grain…), their Stock, and the events that change it. A
@@ -144,6 +145,13 @@ export interface FarmResourceReader {
   getEvent(id: ResourceEventId): Promise<ResourceEvent | null>;
   /** The events of the Resource, in no order. */
   events(resourceId: ResourceId): Promise<ResourceEvent[]>;
+  /** The cancelled events of all Resources of the Farm, for the Trash, in no order. */
+  listDeletedEvents(): Promise<Deleted<ResourceEvent>[]>;
+  /**
+   * True if the Resource has an event, also a cancelled one. A cancelled event can come back from
+   * the Trash, so its quantity must stay in the unit of the Resource.
+   */
+  hasEventsWithDeleted(resourceId: ResourceId): Promise<boolean>;
 }
 
 export type ResourceFields = Omit<Resource, "id" | "farmId">;
@@ -156,4 +164,8 @@ export interface FarmResourceRepository extends FarmResourceReader {
   insertEvent(event: Omit<ResourceEvent, "id">): Promise<ResourceEventId>;
   /** Makes the event Deleted, for one that a Member cancelled. */
   markEventDeleted(id: ResourceEventId, deletedAt: number): Promise<void>;
+  /** The event if it is Deleted, for its restore; else null. */
+  getDeletedEvent(id: ResourceEventId): Promise<ResourceEvent | null>;
+  /** Makes a cancelled event not Deleted: a Member restored it from the Trash. */
+  markEventRestored(id: ResourceEventId): Promise<void>;
 }
