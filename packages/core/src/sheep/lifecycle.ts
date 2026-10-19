@@ -149,6 +149,11 @@ export async function undoSheepStatusChange(
     // The Sheep was in no Flock while it was Lost: the moves after it was found must go first.
     const moves = await ctx.repos.sheep.flockMoves(sheep.id);
     if (moves.some((move) => move.at > last.at)) throw new DomainError("sheep.movedAfterFound");
+    // An Ewe that lambed on the day she was found or later was on the Farm then.
+    const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
+    if (lastLambing !== null && last.date <= lastLambing) {
+      throw new DomainError("sheep.undoBeforeLambing");
+    }
   }
   await ctx.repos.sheep.markStatusChangeDeleted(last.id, ctx.now());
   await ctx.repos.sheep.update(sheep.id, { status: last.from });

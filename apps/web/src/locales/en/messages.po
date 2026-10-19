@@ -2535,6 +2535,10 @@ msgstr "This sheep has no move to undo."
 msgid "У этого барана нет смены статуса, которую можно отменить."
 msgstr "This Sheep has no Status change to undo."
 
+#: src/errors.ts
+msgid "У этой овцы есть окот в день этого события или позже: ягнята получили её стадо и владельца на дату окота. Отменить событие нельзя."
+msgstr "This Ewe has a Lambing on the day of this event or later: her Lambs got her Flock and her Owner of that date. You cannot undo the event."
+
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Убрать ветпаспорт"
 msgstr "Remove the passport"

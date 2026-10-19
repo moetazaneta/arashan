@@ -397,6 +397,11 @@ export async function undoFlockMove(
   const moves = await ctx.repos.sheep.flockMoves(sheep.id);
   const last = moves.at(-1);
   if (last === undefined) throw new DomainError("sheep.noMoveToUndo");
+  // The Lambs of an Ewe went into her Flock of the date of her Lambing: that Flock stays.
+  const lastLambing = await lastLambingDate(ctx.repos.lambings, sheep.id);
+  if (lastLambing !== null && last.date <= lastLambing) {
+    throw new DomainError("sheep.undoBeforeLambing");
+  }
   const previous = moves.at(-2)?.flockId ?? null;
   await requireTargetFlock(ctx, previous);
   await ctx.repos.sheep.markFlockMoveDeleted(last.id, ctx.now());

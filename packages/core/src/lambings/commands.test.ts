@@ -4,7 +4,7 @@ import { addBreed } from "../breeds/commands";
 import { arashanBreedId } from "../breeds/breed";
 import type { CommandContext } from "../context";
 import { createFarm } from "../farms/commands";
-import { archiveFlock, createFlock, moveSheep } from "../flocks/commands";
+import { archiveFlock, createFlock, moveSheep, undoFlockMove } from "../flocks/commands";
 import type { MembershipId, SheepId } from "../ids";
 import { wholeShare } from "../pedigree/composition";
 import {
@@ -14,7 +14,7 @@ import {
   registerSheep,
   type SheepRegistration,
 } from "../sheep/commands";
-import { changeSheepStatus, markSheepFound } from "../sheep/lifecycle";
+import { changeSheepStatus, markSheepFound, undoSheepStatusChange } from "../sheep/lifecycle";
 import { getSheep, getSheepHistory } from "../sheep/queries";
 import { InMemoryStore } from "../testing/in-memory";
 import { type LambingInput, recordLambing } from "./commands";
@@ -423,6 +423,41 @@ describe("recordLambing", () => {
       await moveSheep(ctx, { sheepIds: [motherId], flockId, date: "2026-10-10" });
       await changeSheepOwner(ctx, { sheepId: motherId, ownerId: adminId, date: "2026-10-10" });
       expect(sheepOf(store, motherId)).toMatchObject({ flockId, ownerId: adminId });
+    });
+
+    test("keeps her Flock of the date of her Lambing: the undo of an earlier move fails", async () => {
+      const { store, ctx, motherId, lambing } = await setup();
+      const north = await createFlock(ctx, { name: "Северное", locationId: null });
+      const south = await createFlock(ctx, { name: "Южное", locationId: null });
+      await moveSheep(ctx, { sheepIds: [motherId], flockId: north, date: "2026-10-10" });
+      await lambing({ date: "2026-10-10" });
+
+      await expect(undoFlockMove(ctx, { sheepId: motherId })).rejects.toThrow(
+        "sheep.undoBeforeLambing",
+      );
+      expect(sheepOf(store, motherId).flockId).toBe(north);
+
+      // A move after the Lambing can be undone.
+      await moveSheep(ctx, { sheepIds: [motherId], flockId: south, date: "2026-10-12" });
+      await undoFlockMove(ctx, { sheepId: motherId });
+      expect(sheepOf(store, motherId).flockId).toBe(north);
+    });
+
+    test("stays found if she lambed after she was found", async () => {
+      const { store, ctx, motherId, lambing } = await setup();
+      await changeSheepStatus(ctx, {
+        sheepIds: [motherId],
+        status: "lost",
+        date: "2026-09-01",
+        reason: null,
+      });
+      await markSheepFound(ctx, { sheepId: motherId, date: "2026-09-05", reason: null });
+      await lambing({ date: "2026-10-10" });
+
+      await expect(undoSheepStatusChange(ctx, { sheepId: motherId })).rejects.toThrow(
+        "sheep.undoBeforeLambing",
+      );
+      expect(sheepOf(store, motherId).status).toBe("active");
     });
 
     test("is not an External Sheep", async () => {

@@ -90,6 +90,7 @@ export const errorCodes = [
   "sheep.tooManyToChangeStatus",
   "sheep.noStatusChangeToUndo",
   "sheep.movedAfterFound",
+  "sheep.undoBeforeLambing",
   // Locations.
   "location.notFound",
   "location.nameRequired",

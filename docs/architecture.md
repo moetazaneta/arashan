@@ -394,7 +394,9 @@ the card of an Ewe, and the card of an Ewe lists her Lambings (`listLambings`).
   `lambings.defaults` gives this Flock too.
 - **The Mother keeps her later events after the Lambing.** A move, a change of the Owner or a change
   of the Status of the Mother is not dated before her last Lambing (`lastLambingDate`): her Lambs
-  got her Owner and her Flock of that date, and she was Active then. The same date is good.
+  got her Owner and her Flock of that date, and she was Active then. The same date is good. For the
+  same reason, the undo of her move dated on or before her last Lambing, and the undo of «Баран
+  нашёлся» dated on or before it, fail with `sheep.undoBeforeLambing`.
 - **The list of the Lambings** skips a Lamb that is Deleted, or that got another Mother or birth date
   later on its card.
 - **No partial Lambing.** The command checks all rules (the counts, the parents, the Flock, each Tag

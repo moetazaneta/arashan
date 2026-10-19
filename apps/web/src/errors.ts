@@ -111,6 +111,7 @@ const errorMessages: Record<ErrorCode, MessageDescriptor> = {
   "sheep.reasonTooLong": msg`Причина длиннее ${maxStatusReasonLength} символов.`,
   "sheep.tooManyToChangeStatus": msg`За один раз можно изменить статус не больше чем у ${maxSheepPerStatusChange} баранов.`,
   "sheep.noStatusChangeToUndo": msg`У этого барана нет смены статуса, которую можно отменить.`,
+  "sheep.undoBeforeLambing": msg`У этой овцы есть окот в день этого события или позже: ягнята получили её стадо и владельца на дату окота. Отменить событие нельзя.`,
   "sheep.movedAfterFound": msg`После находки барана переводили между стадами. Сначала отмените эти переводы.`,
   "location.notFound": msg`Такого места нет.`,
   "location.nameRequired": msg`Введите название места.`,
