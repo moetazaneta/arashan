@@ -99,6 +99,10 @@ The event when the Farm sells one or more Sheep for one total price. A Sale alwa
 **Purchase** (рус. покупка):
 The event when the Farm buys one or more Sheep for one total price. A Purchase always has a price.
 
+**Deal** (рус. сделка):
+A Sale or a Purchase. A Member who made a deal by mistake cancels it: the deal and its Automatic record become Deleted. A cancelled Sale makes its Sheep Active again, and a cancelled Purchase makes its Sheep Deleted.
+_Avoid_: Transaction, operation
+
 ### Flocks and places
 
 **Flock** (рус. стадо):

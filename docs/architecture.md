@@ -189,6 +189,10 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `moneyCategory.update`  | yes   | yes    |
 | `moneyCategory.archive` | yes   | yes    |
 | `moneyCategory.delete`  | yes   | yes    |
+| `deal.view`             | yes   | yes    |
+| `deal.create`           | yes   | yes    |
+| `deal.update`           | yes   | yes    |
+| `deal.cancel`           | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -453,6 +457,53 @@ with the name of the command of the event.
   the two never differ. A Member changes the amount (and the notes) of an Automatic record in the
   table, as of any record; its event owns the date, the category and the scope, and a Member cannot
   delete it (`money.automatic`).
+
+## Sales and Purchases
+
+The module `core/src/deals/` keeps the Sales and the Purchases of Sheep: the page «Сделки», the card
+of a deal, the bulk action «Продать» of the table «Бараны» and the panel «Купить баранов». A deal is
+a Sale or a Purchase, and its `kind` tells which. The table `deals` keeps both, with the date, the
+Sheep (`sheepIds`, in the order of the form) and the Flock of a Purchase.
+
+- **A Sale** (`sellSheep`, `deals.sell`) sells one or more Sheep that are on the Farm, also of
+  different Owners, on a date, for one total price. Each Sheep becomes Sold with
+  `recordStatusChange`: it leaves its Flock on that date, and its change of the Status keeps the id
+  of the Sale (`saleId`). The date follows the rules of a change of the Status
+  (`sheep.statusDateInvalid`).
+- **A Purchase** (`buySheep`, `deals.buy`) registers one or more new Sheep in one form, on a date,
+  for one total price, with an optional Flock. Each Sheep has the Origin Bought, the id of its
+  Purchase (`purchaseId`) and the rules of a new Sheep (`validBoughtSheep`): a free Tag, also among
+  the rows of the form, a Member as the Owner, and a birth date that is not after the Purchase
+  (`deal.bornAfterPurchase`). With a Flock, each Sheep goes into it on that date. No event of a
+  Bought Sheep (a move, a change of the Owner or of the Status) is before its Purchase
+  (`purchaseDate`), as no event is before the birth date.
+- **A deal always has a price,** from 0,01 to `maxAmount` (`deal.priceInvalid`), and its date is not
+  in the future (`deal.dateInFuture`). The Farm gets or pays all the money on that day.
+- **The Automatic record.** A Sale makes an Income of «Продажа баранов» (`sheepSale`), a Purchase an
+  Expense of «Покупка баранов» (`sheepPurchase`), with `createAutomaticRecord` and the source
+  `{ kind: "sale" | "purchase", id }`. The record is about the Sheep if the deal has one, else about
+  the Farm: a total price of many Sheep is not split between them.
+- **One amount.** The deal stores no price: its queries read the amount of its record
+  (`findBySource`). `changeDealPrice` (`deals.changePrice`) changes the amount with
+  `updateAutomaticRecord`, and a change of the amount in the table of the Incomes or the Expenses
+  changes the price of the deal in the same way. The date and the Sheep of a deal do not change: to
+  correct them, a Member cancels the deal and makes it again.
+- **A cancel** (`cancelDeal`, `deals.cancel`) makes the deal and its record Deleted
+  (`deleteAutomaticRecord`), so the Trash can restore them. A cancelled Sale makes its Sheep Active
+  again: its changes of the Status become Deleted (`revertStatusChange`), and each Sheep goes back to
+  the Flock that it left, if that Flock is not Archived now. The Owner of each Sheep must be a Member
+  now (`sheep.ownerNotMember`). A cancelled Purchase makes its Sheep Deleted. The core rejects it if
+  one of them is a parent (`sheep.isParent`), or if a Sale sold one (`deal.sheepSold`). All checks of
+  a cancel come before its first write.
+- **A deal never has a Deleted Sheep.** `deleteSheep` rejects a Sold Sheep and a Sheep that a
+  Purchase brought (`sheep.inDeal`): a Member cancels the deal instead. An undo of a change of the
+  Status takes only the changes of the lifecycle: a Sale has its own cancel.
+- **The links.** The tables of the Incomes and the Expenses show the deal of an Automatic record as
+  a link to its card. The card of a Sheep links to its Purchase (`SheepCard.purchaseId`) and to its
+  Sale (`StatusChangeRow.saleId`).
+- **The audit entries.** Each command appends one entry for the deal (`Sale` or `Purchase`), one for
+  its record and one for each of its Sheep: `sale.create`, `sale.updatePrice`, `sale.cancel`,
+  `purchase.create`, `purchase.updatePrice`, `purchase.cancel`.
 
 ## The audit log
 
