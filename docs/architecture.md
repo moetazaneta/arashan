@@ -199,6 +199,8 @@ Each record belongs to one Farm (ADR 0002), and a User acts in a Farm as a Membe
 | `resource.archive`      | yes   | yes    |
 | `resource.record`       | yes   | yes    |
 | `lambing.record`        | yes   | yes    |
+| `trash.view`            | yes   | yes    |
+| `trash.restore`         | yes   | yes    |
 
 A new action adds a row to the matrix and to the table of its test (`permissions.test.ts`).
 
@@ -604,6 +606,60 @@ of a Resource shows its Stock and its events, the newest first, each with the St
   Resource and, for a Usage, one for its Flock. A Restock with a price also appends the entry of its
   Expense.
 
+## The Trash
+
+The module `core/src/trash/` lists the Deleted records of a Farm and restores them (ADR 0005): the
+page «Корзина» (`trash.list`, `trash.restore`). A Member restores a record that someone deleted by
+mistake, and it comes back as it was.
+
+- **The kinds.** Each module with records that a Member deletes gives one `TrashType` in its file
+  `trash.ts`: `list` (what the page shows of each Deleted record) and `restore` (the command, with
+  the rules of the module, next to its delete in `commands.ts`). `trashTypes` in
+  `trash/registry.ts` lists them, and `TrashItem` and `TrashKind` come from that list. Now the
+  kinds are `sheep`, `deal` (Sales and Purchases), `moneyRecord` (Expenses and Incomes),
+  `moneyCategory`, `resourceEvent` (Restocks, Usages and Adjustments), `breed` and
+  `shepherdAssignment`.
+- **A record that belongs to another one is not an entry of its own.** The Automatic record of a
+  cancelled deal or Restock, and the Sheep of a cancelled Purchase, come back with their event.
+  Their own restore fails (`money.automatic`, `sheep.inDeal`).
+- **A restore checks the rules again.** While a record is Deleted, no rule sees it: another Sheep
+  can take its Tag, its Owner can leave the Farm, its Flock can become Archived. So a restore checks
+  the rules that are about other records, all before the first write, and fails with the error of
+  the first one that it breaks. For example: `sheep.tagTaken`, `sheep.ownerNotMember` (an Active or
+  a Lost Sheep), `flock.archived` (a Sheep in an Archived Flock), `passport.notArashan`, the rules
+  of the pedigree, `breed.nameTaken`, `moneyCategory.nameTaken`, `flock.assignmentOverlaps`,
+  `resource.archived`. A record that needs a Deleted record fails until a Member restores that
+  record first: `trash.parentDeleted` (the Mother or the Father), `trash.sheepDeleted` (a Sheep of
+  a Sale, the Sheep of an Expense or an Income) and `trash.breedDeleted` (a Breed of the parts by
+  hand).
+- **A cancelled deal comes back as a full deal.** A Sale sells its Sheep again on its date, with
+  `recordStatusChange`: the rules of a change of the Status apply (`sheep.notActive`,
+  `sheep.statusDateInvalid`), and each Sheep leaves its Flock again. A Purchase brings back its
+  Sheep, each by the rules of a restored Sheep (`requireRestorableSheep`). Both bring back their
+  Automatic record (`restoreAutomaticRecord`, with `findDeletedBySource`), so the price is the same.
+- **A cancelled Resource event** changes the Stock again, as when it was new, and a Restock brings
+  back its Automatic Expense. An Archived Resource gets no events (`resource.archived`).
+- **Not in the Trash:** an undone Flock move and an undone change of the Status. They are steps of
+  the history of a Sheep that a Member undoes with «Отменить» and records again with the same form.
+  A Lambing has no cancel yet, so it is not in the Trash either.
+- **The audit log.** A restore appends one entry for each record that comes back, with the command
+  of its kind: `sheep.restore`, `breed.restore`, `flock.restoreAssignment`, `money.restore`,
+  `moneyCategory.restore`, `sale.restore`, `purchase.restore`, `resource.restoreEvent`. A Sale
+  appends entries for the deal, its Income and each Sheep, as its cancel does.
+- **The repositories.** Each repository of a kind has `listDeleted` (or `listDeletedEvents`,
+  `listDeletedAssignments`) for the list, and `getDeleted` and `markRestored` for the restore. They
+  read the Deleted rows of the Farm through its indexes, which start with `farmId` and `deletedAt`.
+
+To add a kind of record to the Trash:
+
+1. **Core:** `listDeleted`, `getDeleted` and `markRestored` in the repository port and in the
+   repositories in memory; the restore command next to the delete, with its rules and a
+   `CommandName`; a `TrashType` in the file `trash.ts` of the module; one line in `trashTypes`.
+2. **Backend:** the three methods in the adapter, and a test in `convex/trash.test.ts`. The
+   function `trash.restore` takes the kind as a string, so it needs no change.
+3. **Web:** the label and the description of the kind on the page «Корзина», the label of the
+   command in the history, and the fake repositories of the tests.
+
 ## The audit log
 
 Each command that writes a record appends at least one audit entry: the actor (the User, or null
@@ -659,6 +715,8 @@ has the time when it became Deleted.
   of the Farm (the Trash). A table of no Farm, such as `users`, starts with `deletedAt`.
 - Each read method of a repository port hides the Deleted records. A method that must show them, for
   example for the Trash, says so in its name, for example `listDeleted`.
+- A Member restores a Deleted record from the Trash (see "The Trash"): `markRestored` removes
+  `deletedAt`.
 - The core sets the time from `ctx.now()`, and the adapter writes it.
 
 ## Domain errors
