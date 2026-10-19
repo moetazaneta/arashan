@@ -216,6 +216,38 @@ export default defineSchema({
       "sourceId",
     ]),
 
+  // The Resources of a Farm: hay, grain…
+  resources: defineTable({
+    farmId: v.id("farms"),
+    name: v.string(),
+    /** The key of the name (`nameKey` of the core), to find a name that is taken. */
+    nameKey: v.string(),
+    unit: v.string(),
+    /** The Stock now, in thousandths of the unit: the sum of the events, which each command writes. */
+    stock: v.number(),
+    archivedAt: v.optional(v.number()),
+    ...deletable,
+  })
+    // Also the index of the list of all Resources of the Farm.
+    .index("by_farmId_deletedAt_nameKey", ["farmId", "deletedAt", "nameKey"]),
+
+  // The Restocks, the Usages and the Adjustments of the Resources.
+  resourceEvents: defineTable({
+    farmId: v.id("farms"),
+    resourceId: v.id("resources"),
+    kind: v.union(v.literal("restock"), v.literal("usage"), v.literal("adjustment")),
+    /** "YYYY-MM-DD". */
+    date: v.string(),
+    /** In thousandths of the unit: an integer. Signed for an Adjustment, more than 0 for the others. */
+    quantity: v.number(),
+    /** The Flock of a Usage. */
+    flockId: v.optional(v.id("flocks")),
+    /** The reason of an Adjustment. */
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+    ...deletable,
+  }).index("by_farmId_deletedAt_resourceId", ["farmId", "deletedAt", "resourceId"]),
+
   // The changes of the Owner of a Sheep, for the history of the Owners on its card.
   sheepOwnerChanges: defineTable({
     farmId: v.id("farms"),

@@ -15,6 +15,8 @@ import {
   type FarmMoneyRecordReader,
   type FarmMoneyRecordRepository,
   type FarmReader,
+  type FarmResourceReader,
+  type FarmResourceRepository,
   type FarmReaders,
   type FarmRepositories,
   type FarmRepository,
@@ -55,6 +57,11 @@ import {
   type PasswordResetRepository,
   type Readers,
   type Repositories,
+  type Resource,
+  type ResourceEvent,
+  type ResourceEventId,
+  type ResourceFields,
+  type ResourceId,
   type Sheep,
   type SheepFields,
   type SheepId,
@@ -209,6 +216,40 @@ function flockColumns(flock: FlockFields) {
     nameKey: nameKey(flock.name),
     locationId: flock.locationId === null ? undefined : idOf<"locations">(flock.locationId),
     archivedAt: flock.archivedAt ?? undefined,
+  };
+}
+
+function resourceColumns(resource: ResourceFields) {
+  return {
+    name: resource.name,
+    nameKey: nameKey(resource.name),
+    unit: resource.unit,
+    stock: resource.stock,
+    archivedAt: resource.archivedAt ?? undefined,
+  };
+}
+
+function toResource(doc: Doc<"resources">): Resource {
+  return {
+    id: doc._id as string as ResourceId,
+    farmId: doc.farmId as string as FarmId,
+    name: doc.name,
+    unit: doc.unit,
+    stock: doc.stock,
+    archivedAt: doc.archivedAt ?? null,
+  };
+}
+
+function toResourceEvent(doc: Doc<"resourceEvents">): ResourceEvent {
+  return {
+    id: doc._id as string as ResourceEventId,
+    resourceId: doc.resourceId as string as ResourceId,
+    kind: doc.kind,
+    date: doc.date,
+    quantity: doc.quantity,
+    flockId: doc.flockId === undefined ? null : (doc.flockId as string as FlockId),
+    reason: doc.reason ?? null,
+    createdAt: doc.createdAt,
   };
 }
 
@@ -701,7 +742,9 @@ async function ofFarm<
     | "flocks"
     | "flockAssignments"
     | "moneyCategories"
-    | "moneyRecords",
+    | "moneyRecords"
+    | "resources"
+    | "resourceEvents",
 >(db: DatabaseReader, table: Table, farmId: FarmId, id: string): Promise<Doc<Table> | null> {
   const doc = await getActive(db, table, id);
   return doc === null || doc.farmId !== idOf<"farms">(farmId) ? null : doc;
@@ -912,6 +955,49 @@ function farmMoneyRecordReader(db: DatabaseReader, farmId: FarmId): FarmMoneyRec
   };
 }
 
+function farmResourceReader(db: DatabaseReader, farmId: FarmId): FarmResourceReader {
+  return {
+    async get(id) {
+      const doc = await ofFarm(db, "resources", farmId, id);
+      return doc === null ? null : toResource(doc);
+    },
+    async list() {
+      const docs = await db
+        .query("resources")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined),
+        )
+        .collect();
+      return docs.map(toResource);
+    },
+    async findByName(name) {
+      // Only the rows of this key, as in `findByTag`.
+      const docs = await db
+        .query("resources")
+        .withIndex("by_farmId_deletedAt_nameKey", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("nameKey", nameKey(name)),
+        )
+        .collect();
+      return docs.map(toResource);
+    },
+    async getEvent(id) {
+      const doc = await ofFarm(db, "resourceEvents", farmId, id);
+      return doc === null ? null : toResourceEvent(doc);
+    },
+    async events(resourceId) {
+      const resourceDocId = db.normalizeId("resources", resourceId);
+      if (resourceDocId === null) return [];
+      const docs = await db
+        .query("resourceEvents")
+        .withIndex("by_farmId_deletedAt_resourceId", (q) =>
+          q.eq("farmId", idOf(farmId)).eq("deletedAt", undefined).eq("resourceId", resourceDocId),
+        )
+        .collect();
+      return docs.map(toResourceEvent);
+    },
+  };
+}
+
 function farmAuditReader(db: DatabaseReader, farmId: FarmId): FarmAuditReader {
   return {
     async listForTarget(target) {
@@ -955,6 +1041,7 @@ export function farmReaders(db: DatabaseReader, farmId: FarmId): FarmReaders {
     shepherds: farmShepherdReader(db, farmId),
     moneyCategories: farmMoneyCategoryReader(db, farmId),
     moneyRecords: farmMoneyRecordReader(db, farmId),
+    resources: farmResourceReader(db, farmId),
     history: farmAuditReader(db, farmId),
   };
 }
@@ -1126,6 +1213,36 @@ export function farmRepositories(
       if (doc !== null) await db.patch("moneyRecords", doc._id, { deletedAt });
     },
   };
+  const resources: FarmResourceRepository = {
+    ...readers.resources,
+    async insert(fields) {
+      return (await db.insert("resources", {
+        farmId: idOf(farmId),
+        ...resourceColumns(fields),
+      })) as string as ResourceId;
+    },
+    async update(id, fields) {
+      const doc = await ofFarm(db, "resources", farmId, id);
+      if (doc === null) return;
+      await db.patch("resources", doc._id, resourceColumns({ ...toResource(doc), ...fields }));
+    },
+    async insertEvent(event) {
+      return (await db.insert("resourceEvents", {
+        farmId: idOf(farmId),
+        resourceId: idOf(event.resourceId),
+        kind: event.kind,
+        date: event.date,
+        quantity: event.quantity,
+        flockId: event.flockId === null ? undefined : idOf(event.flockId),
+        reason: event.reason ?? undefined,
+        createdAt: event.createdAt,
+      })) as string as ResourceEventId;
+    },
+    async markEventDeleted(id, deletedAt) {
+      const doc = await ofFarm(db, "resourceEvents", farmId, id);
+      if (doc !== null) await db.patch("resourceEvents", doc._id, { deletedAt });
+    },
+  };
   return {
     ...readers,
     flocks,
@@ -1133,6 +1250,7 @@ export function farmRepositories(
     shepherds,
     moneyCategories,
     moneyRecords,
+    resources,
     farm: {
       async updateSettings(settings) {
         await db.patch("farms", idOf<"farms">(farmId), settings);
