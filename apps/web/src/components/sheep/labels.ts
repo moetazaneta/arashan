@@ -82,4 +82,15 @@ export const commandLabels: Record<CommandName, MessageDescriptor> = {
   "shepherd.update": msg({ context: "history", message: "Чабан изменён" }),
   "shepherd.archive": msg({ context: "history", message: "Чабан в архиве" }),
   "shepherd.unarchive": msg({ context: "history", message: "Чабан возвращён из архива" }),
+  "money.create": msg({ context: "history", message: "Запись добавлена" }),
+  "money.update": msg({ context: "history", message: "Запись изменена" }),
+  "money.delete": msg({ context: "history", message: "Запись удалена" }),
+  "moneyCategory.create": msg({ context: "history", message: "Категория добавлена" }),
+  "moneyCategory.update": msg({ context: "history", message: "Категория переименована" }),
+  "moneyCategory.archive": msg({ context: "history", message: "Категория в архиве" }),
+  "moneyCategory.unarchive": msg({
+    context: "history",
+    message: "Категория возвращена из архива",
+  }),
+  "moneyCategory.delete": msg({ context: "history", message: "Категория удалена" }),
 };

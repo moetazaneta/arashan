@@ -392,7 +392,6 @@ when it is Slaughtered, Dead or Lost, and a Lost Sheep can come back. Sold comes
   checks the rules and writes the change and the move out of the Flock, without a permission check
   and without an audit entry, as `recordFlockMove` does. A Sale uses it to make its Sheep Sold.
 
-
 ## Expenses and Incomes
 
 The module `core/src/money/` keeps the Expenses and the Incomes of a Farm and their categories: the

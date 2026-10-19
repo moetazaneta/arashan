@@ -32,6 +32,10 @@ msgstr "{count, plural, one {Перевести в стадо # барана} fe
 msgid "{count, plural, one {Сменить статус # барана} few {Сменить статус # баранов} many {Сменить статус # баранов} other {Сменить статус # барана}}"
 msgstr "{count, plural, one {Сменить статус # барана} few {Сменить статус # баранов} many {Сменить статус # баранов} other {Сменить статус # барана}}"
 
+#: src/components/money/records-tab.tsx
+msgid "{date}, {category}, {amount} {symbol}. Удалите запись, только если её сделали по ошибке."
+msgstr "{date}, {category}, {amount} {symbol}. Удалите запись, только если её сделали по ошибке."
+
 #: src/components/sheep/sheep-details.tsx
 msgid "{kg} кг, взвешен {weighed}"
 msgstr "{kg} кг, взвешен {weighed}"
@@ -45,8 +49,14 @@ msgid "{lambAgeMonths, plural, one {младше # месяца} few {младш
 msgstr "{lambAgeMonths, plural, one {младше # месяца} few {младше # месяцев} many {младше # месяцев} other {младше # месяца}}"
 
 #: src/components/flocks/flock-dialog.tsx
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
 msgid "{name} (в архиве)"
 msgstr "{name} (в архиве)"
+
+#: src/components/money/records-tab.tsx
+msgid "{name} (системная)"
+msgstr "{name} (системная)"
 
 #: src/components/sheep/sheep-details.tsx
 msgid "{number}, выдан {issued}"
@@ -63,6 +73,11 @@ msgstr "{total, plural, =1 {Баран уже вне стада.} other {Эти 
 #: src/components/sheep/pedigree-fields.tsx
 msgid "PDF или фото: JPEG, PNG, WebP."
 msgstr "PDF или фото: JPEG, PNG, WebP."
+
+#: src/components/money/records-tab.tsx
+msgctxt "money record"
+msgid "Авто"
+msgstr "Авто"
 
 #: src/routes/invite/$token.tsx
 msgid "администратор"
@@ -114,10 +129,23 @@ msgstr "арашан {share}"
 msgid "Арашан, %"
 msgstr "Арашан, %"
 
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
+msgid "Баран"
+msgstr "Баран"
+
 #: src/components/sheep/pedigree-tree.tsx
 msgctxt "pedigree"
 msgid "Баран"
 msgstr "Баран"
+
+#: src/components/money/records-tab.tsx
+msgid "Баран {label}"
+msgstr "Баран {label}"
+
+#: src/components/money/records-tab.tsx
+msgid "Баран без бирки"
+msgstr "Баран без бирки"
 
 #: src/components/sheep/sheep-flocks.tsx
 msgid "Баран вернётся туда, где был до этого перевода."
@@ -155,6 +183,10 @@ msgstr "Баран снова станет активным. Потом его �
 msgid "Баран уже у этого владельца. Выберите другого."
 msgstr "Баран уже у этого владельца. Выберите другого."
 
+#: src/components/money/records-tab.tsx
+msgid "Баран…"
+msgstr "Баран…"
+
 #: src/components/app-shell.tsx
 #: src/components/flocks/flock-sheep.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -167,6 +199,7 @@ msgstr "Бараны"
 msgid "Бараны стада"
 msgstr "Бараны стада"
 
+#: src/components/money/sheep-combobox.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-ref.tsx
 msgid "без бирки"
@@ -183,6 +216,7 @@ msgid "Без места"
 msgstr "Без места"
 
 #: src/components/flocks/flock-sheep.tsx
+#: src/components/money/sheep-combobox.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -204,6 +238,7 @@ msgstr "Бывшие участники"
 #: src/components/flocks/flock-card.tsx
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
+#: src/components/money/categories-tab.tsx
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "В архив"
 msgstr "В архив"
@@ -236,6 +271,10 @@ msgstr "В ферме уже есть участник: новая ссылка 
 #: src/errors.ts
 msgid "В эти дни этот чабан уже работает в этом стаде."
 msgstr "В эти дни этот чабан уже работает в этом стаде."
+
+#: src/errors.ts
+msgid "В этой категории есть записи, поэтому её нельзя удалить. Отправьте её в архив."
+msgstr "В этой категории есть записи, поэтому её нельзя удалить. Отправьте её в архив."
 
 #: src/components/sheep/sheep-flocks.tsx
 msgid "В этот день баран не был в стаде."
@@ -275,6 +314,10 @@ msgid "Введите имя чабана."
 msgstr "Введите имя чабана."
 
 #: src/errors.ts
+msgid "Введите название категории."
+msgstr "Введите название категории."
+
+#: src/errors.ts
 msgid "Введите название места."
 msgstr "Введите название места."
 
@@ -295,12 +338,17 @@ msgid "Введите номер ветпаспорта."
 msgstr "Введите номер ветпаспорта."
 
 #: src/errors.ts
+msgid "Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50."
+msgstr "Введите сумму больше нуля и не больше миллиарда, например 1500 или 1500,50."
+
+#: src/errors.ts
 msgid "Введите целое число месяцев от {minLambAgeMonths} до {maxLambAgeMonths}."
 msgstr "Введите целое число месяцев от {minLambAgeMonths} до {maxLambAgeMonths}."
 
 #: src/components/flocks/flock-card.tsx
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
+#: src/components/money/categories-tab.tsx
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Вернуть из архива"
 msgstr "Вернуть из архива"
@@ -385,10 +433,22 @@ msgstr "Войдите, чтобы открыть записи вашей фер
 msgid "Войдите, чтобы продолжить."
 msgstr "Войдите, чтобы продолжить."
 
+#: src/components/money/records-tab.tsx
+msgid "Все"
+msgstr "Все"
+
 #: src/components/sheep/status-filter.tsx
 msgctxt "filter"
 msgid "Все"
 msgstr "Все"
+
+#: src/components/money/records-tab.tsx
+msgid "Всё время"
+msgstr "Всё время"
+
+#: src/components/money/records-tab.tsx
+msgid "Все категории"
+msgstr "Все категории"
 
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Всё неизвестное — арашан"
@@ -427,6 +487,10 @@ msgstr "Вы станете участником фермы. Ваша роль: 
 msgid "Вы уже участник этой фермы."
 msgstr "Вы уже участник этой фермы."
 
+#: src/components/money/record-dialog.tsx
+msgid "Выберите барана."
+msgstr "Выберите барана."
+
 #: src/components/farm-settings-fields.tsx
 msgid "Выберите валюту"
 msgstr "Выберите валюту"
@@ -439,13 +503,26 @@ msgstr "Выберите валюту из списка."
 msgid "Выберите владельца"
 msgstr "Выберите владельца"
 
+#: src/components/money/record-dialog.tsx
+msgid "Выберите категорию"
+msgstr "Выберите категорию"
+
+#: src/components/money/record-dialog.tsx
+msgid "Выберите категорию."
+msgstr "Выберите категорию."
+
 #: src/components/sheep/sheep-form.tsx
 msgid "Выберите пол: самец или самка."
 msgstr "Выберите пол: самец или самка."
 
+#: src/components/money/record-dialog.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 msgid "Выберите стадо"
 msgstr "Выберите стадо"
+
+#: src/components/money/record-dialog.tsx
+msgid "Выберите стадо."
+msgstr "Выберите стадо."
 
 #: src/components/sheep/sheep-dialogs.tsx
 msgid "Выберите участника"
@@ -456,8 +533,13 @@ msgid "Выберите ферму"
 msgstr "Выберите ферму"
 
 #: src/components/flocks/flock-shepherds.tsx
+#: src/components/money/record-dialog.tsx
 msgid "Выберите чабана"
 msgstr "Выберите чабана"
+
+#: src/errors.ts
+msgid "Выберите чабана, которому заплатили."
+msgstr "Выберите чабана, которому заплатили."
 
 #: src/errors.ts
 msgid "Выберите часовой пояс из списка."
@@ -505,6 +587,8 @@ msgstr "Готово"
 msgid "Да"
 msgstr "Да"
 
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-flocks.tsx
 #: src/components/sheep/status-dialogs.tsx
@@ -542,6 +626,10 @@ msgstr "Дата не может быть в будущем или раньше 
 #: src/errors.ts
 msgid "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
 msgstr "Дата не может быть в будущем, раньше рождения барана или раньше прошлой смены владельца."
+
+#: src/errors.ts
+msgid "Дата не может быть в будущем."
+msgstr "Дата не может быть в будущем."
 
 #: src/errors.ts
 msgid "Дата перевода не может быть в будущем, раньше рождения барана или раньше его прошлого перевода."
@@ -583,6 +671,8 @@ msgid "Деды"
 msgstr "Деды"
 
 #: src/components/flocks/flock-shepherds.tsx
+#: src/components/money/categories-tab.tsx
+#: src/components/money/records-tab.tsx
 #: src/routes/farms/$farmId/members.tsx
 #: src/routes/operator/farms.tsx
 msgid "Действия"
@@ -609,6 +699,14 @@ msgstr "Добавить барана"
 msgid "Добавить внешнего барана"
 msgstr "Добавить внешнего барана"
 
+#: src/components/money/labels.ts
+msgid "Добавить доход"
+msgstr "Добавить доход"
+
+#: src/components/money/categories-tab.tsx
+msgid "Добавить категорию"
+msgstr "Добавить категорию"
+
 #: src/components/flocks/locations-tab.tsx
 msgid "Добавить место"
 msgstr "Добавить место"
@@ -616,6 +714,10 @@ msgstr "Добавить место"
 #: src/components/sheep/pedigree-fields.tsx
 msgid "Добавить породу"
 msgstr "Добавить породу"
+
+#: src/components/money/labels.ts
+msgid "Добавить расход"
+msgstr "Добавить расход"
 
 #: src/components/flocks/shepherds-tab.tsx
 msgid "Добавить чабана"
@@ -633,6 +735,11 @@ msgstr "Доля, %"
 #: src/components/sheep/sheep-form.tsx
 msgid "Дополнительно"
 msgstr "Дополнительно"
+
+#: src/components/app-shell.tsx
+#: src/components/money/labels.ts
+msgid "Доходы"
+msgstr "Доходы"
 
 #: src/components/sheep/sheep-form.tsx
 msgid "Если дату никто не знает, оставьте поле пустым."
@@ -710,6 +817,25 @@ msgctxt "history"
 msgid "Записан как внешний"
 msgstr "Записан как внешний"
 
+#: src/components/money/money-page.tsx
+msgid "Записи"
+msgstr "Записи"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Запись добавлена"
+msgstr "Запись добавлена"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Запись изменена"
+msgstr "Запись изменена"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Запись удалена"
+msgstr "Запись удалена"
+
 #: src/components/sheep/status-dialogs.tsx
 msgid "Запись удалится, и у барана снова будет статус «{back}». Отменяйте только ошибочную запись."
 msgstr "Запись удалится, и у барана снова будет статус «{back}». Отменяйте только ошибочную запись."
@@ -728,9 +854,17 @@ msgstr "Зарегистрирован"
 msgid "Здесь будут бараны фермы."
 msgstr "Здесь будут бараны фермы."
 
+#: src/components/money/labels.ts
+msgid "Здесь будут доходы фермы за этот год."
+msgstr "Здесь будут доходы фермы за этот год."
+
 #: src/components/flocks/locations-tab.tsx
 msgid "Здесь будут места: пастбища, кошары, загоны."
 msgstr "Здесь будут места: пастбища, кошары, загоны."
+
+#: src/components/money/labels.ts
+msgid "Здесь будут расходы фермы за этот год."
+msgstr "Здесь будут расходы фермы за этот год."
 
 #: src/components/flocks/flocks-tab.tsx
 msgid "Здесь будут стада фермы."
@@ -779,6 +913,7 @@ msgid "Изменены права оператора"
 msgstr "Изменены права оператора"
 
 #: src/components/flocks/flock-card.tsx
+#: src/components/money/records-tab.tsx
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "Изменить"
 msgstr "Изменить"
@@ -791,6 +926,10 @@ msgstr "Изменить барана"
 msgid "Изменить даты"
 msgstr "Изменить даты"
 
+#: src/components/money/labels.ts
+msgid "Изменить доход"
+msgstr "Изменить доход"
+
 #: src/components/flocks/locations-tab.tsx
 msgid "Изменить место"
 msgstr "Изменить место"
@@ -798,6 +937,10 @@ msgstr "Изменить место"
 #: src/routes/farms/$farmId/index.tsx
 msgid "Изменить настройки"
 msgstr "Изменить настройки"
+
+#: src/components/money/labels.ts
+msgid "Изменить расход"
+msgstr "Изменить расход"
 
 #: src/components/flocks/flock-dialog.tsx
 msgid "Изменить стадо"
@@ -823,6 +966,10 @@ msgstr "Имя пользователя"
 msgid "История"
 msgstr "История"
 
+#: src/components/money/records-tab.tsx
+msgid "Итого"
+msgstr "Итого"
+
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "К списку баранов"
 msgstr "К списку баранов"
@@ -838,6 +985,49 @@ msgstr "Как записать барана"
 #: src/routes/farms/$farmId/sheep/$sheepId.tsx
 msgid "Карточка"
 msgstr "Карточка"
+
+#: src/components/money/categories-tab.tsx
+#: src/components/money/money-page.tsx
+msgid "Категории"
+msgstr "Категории"
+
+#: src/components/money/categories-tab.tsx
+msgid "Категорию, в которой есть записи, можно только отправить в архив."
+msgstr "Категорию, в которой есть записи, можно только отправить в архив."
+
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
+msgid "Категория"
+msgstr "Категория"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Категория в архиве"
+msgstr "Категория в архиве"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Категория возвращена из архива"
+msgstr "Категория возвращена из архива"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Категория добавлена"
+msgstr "Категория добавлена"
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Категория переименована"
+msgstr "Категория переименована"
+
+#: src/errors.ts
+msgid "Категория с таким названием уже есть, может быть, в архиве."
+msgstr "Категория с таким названием уже есть, может быть, в архиве."
+
+#: src/components/sheep/labels.ts
+msgctxt "history"
+msgid "Категория удалена"
+msgstr "Категория удалена"
 
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
@@ -889,6 +1079,10 @@ msgstr "Куплен"
 msgid "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 msgstr "Купленного барана записывают покупкой. Если он был на ферме до приложения, выберите «Начальный ввод»."
 
+#: src/components/money/category-names.ts
+msgid "Лечение"
+msgstr "Лечение"
+
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
 msgid "Мать"
@@ -936,6 +1130,10 @@ msgstr "Место создано"
 msgid "Можно указать до {limitText}."
 msgstr "Можно указать до {limitText}."
 
+#: src/components/money/category-names.ts
+msgid "Мясо"
+msgstr "Мясо"
+
 #: src/components/home-link.tsx
 msgid "На главную"
 msgstr "На главную"
@@ -947,9 +1145,14 @@ msgstr "На ферме ещё нет стад. <0>Создать стадо</0>
 #: src/components/flocks/flock-dialog.tsx
 #: src/components/flocks/flocks-tab.tsx
 #: src/components/flocks/locations-tab.tsx
+#: src/components/money/categories-tab.tsx
 #: src/routes/operator/farms.tsx
 msgid "Название"
 msgstr "Название"
+
+#: src/errors.ts
+msgid "Название не длиннее {maxCategoryNameLength} символов."
+msgstr "Название не длиннее {maxCategoryNameLength} символов."
 
 #: src/errors.ts
 msgid "Название не длиннее {maxNameLength} символов."
@@ -1068,9 +1271,25 @@ msgctxt "grade"
 msgid "Нет"
 msgstr "Нет"
 
+#: src/components/money/sheep-combobox.tsx
+msgid "Нет барана с такой биркой."
+msgstr "Нет барана с такой биркой."
+
 #: src/routes/farms/$farmId/sheep/index.tsx
 msgid "Нет баранов с этим статусом."
 msgstr "Нет баранов с этим статусом."
+
+#: src/components/money/labels.ts
+msgid "Нет доходов с такими фильтрами."
+msgstr "Нет доходов с такими фильтрами."
+
+#: src/components/money/labels.ts
+msgid "Нет расходов с такими фильтрами."
+msgstr "Нет расходов с такими фильтрами."
+
+#: src/components/money/categories-tab.tsx
+msgid "Новая категория"
+msgstr "Новая категория"
 
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Новая порода"
@@ -1126,9 +1345,21 @@ msgstr "Номер ветпаспорта"
 msgid "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
 msgstr "Номер ветпаспорта не длиннее {maxPassportNumberLength} символов."
 
+#: src/components/money/category-names.ts
+msgid "Оборудование"
+msgstr "Оборудование"
+
+#: src/components/money/categories-tab.tsx
+msgid "Она пропадёт из списка и из форм."
+msgstr "Она пропадёт из списка и из форм."
+
 #: src/routes/farms/$farmId/members.tsx
 msgid "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
 msgstr "Они не могут открыть ферму, но остаются в истории. Чтобы вернуть участника, отправьте ему новую ссылку."
+
+#: src/components/money/category-names.ts
+msgid "Оплата чабану"
+msgstr "Оплата чабану"
 
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "основная"
@@ -1164,6 +1395,9 @@ msgstr "Открыть скан"
 #: src/components/flocks/flock-shepherds.tsx
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
+#: src/components/money/categories-tab.tsx
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-dialogs.tsx
 #: src/components/sheep/status-dialogs.tsx
@@ -1192,6 +1426,11 @@ msgstr "Отменить последний перевод?"
 #: src/components/sheep/status-dialogs.tsx
 msgid "Отменить смену статуса?"
 msgstr "Отменить смену статуса?"
+
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
+msgid "Относится к"
+msgstr "Относится к"
 
 #: src/components/flocks/flock-card.tsx
 msgid "Отправить стадо {name} в архив?"
@@ -1276,15 +1515,25 @@ msgctxt "history"
 msgid "Перевод отменён"
 msgstr "Перевод отменён"
 
+#: src/components/money/categories-tab.tsx
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Переименовать"
 msgstr "Переименовать"
+
+#: src/components/money/categories-tab.tsx
+msgid "Переименовать категорию"
+msgstr "Переименовать категорию"
 
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Переименовать породу"
 msgstr "Переименовать породу"
 
+#: src/components/money/records-tab.tsx
+msgid "Период"
+msgstr "Период"
+
 #: src/components/flocks/flock-shepherds.tsx
+#: src/components/money/records-tab.tsx
 msgctxt "to date"
 msgid "По"
 msgstr "По"
@@ -1305,6 +1554,10 @@ msgstr "Показать архив"
 msgid "Показывать столбцы"
 msgstr "Показывать столбцы"
 
+#: src/components/money/category-names.ts
+msgid "Покупка баранов"
+msgstr "Покупка баранов"
+
 #: src/components/flocks/flock-sheep.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-form.tsx
@@ -1316,6 +1569,10 @@ msgstr "Пол"
 msgctxt "history"
 msgid "Пользователь зарегистрирован"
 msgstr "Пользователь зарегистрирован"
+
+#: src/components/money/category-names.ts
+msgid "Пополнение ресурса"
+msgstr "Пополнение ресурса"
 
 #: src/routes/index.tsx
 msgid "Попросите администратора фермы прислать ссылку-приглашение."
@@ -1411,6 +1668,15 @@ msgctxt "history"
 msgid "Приглашение принято"
 msgstr "Приглашение принято"
 
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
+msgid "Примечание"
+msgstr "Примечание"
+
+#: src/errors.ts
+msgid "Примечание не длиннее {maxMoneyNotesLength} символов. Сократите текст."
+msgstr "Примечание не длиннее {maxMoneyNotesLength} символов. Сократите текст."
+
 #: src/components/sheep/status-dialogs.tsx
 msgid "Причина"
 msgstr "Причина"
@@ -1424,8 +1690,16 @@ msgid "Проверьте адрес или вернитесь на главну
 msgstr "Проверьте адрес или вернитесь на главную."
 
 #: src/errors.ts
+msgid "Проверьте период: дата «по» не может быть раньше даты «с»."
+msgstr "Проверьте период: дата «по» не может быть раньше даты «с»."
+
+#: src/errors.ts
 msgid "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
 msgstr "Проверьте состав породы: у каждой породы доля больше нуля, и порода не повторяется."
+
+#: src/components/money/category-names.ts
+msgid "Продажа баранов"
+msgstr "Продажа баранов"
 
 #: src/components/sheep/labels.ts
 msgid "Продан"
@@ -1446,6 +1720,14 @@ msgstr "Происхождение"
 msgid "Происхождение меняется только у начального ввода."
 msgstr "Происхождение меняется только у начального ввода."
 
+#: src/components/money/category-names.ts
+msgid "Прочее"
+msgstr "Прочее"
+
+#: src/components/money/records-tab.tsx
+msgid "Прошлый год"
+msgstr "Прошлый год"
+
 #: src/components/flocks/flock-shepherds.tsx
 msgid "Пусто, если работает сейчас."
 msgstr "Пусто, если работает сейчас."
@@ -1453,6 +1735,11 @@ msgstr "Пусто, если работает сейчас."
 #: src/components/app-shell.tsx
 msgid "Разделы"
 msgstr "Разделы"
+
+#: src/components/app-shell.tsx
+#: src/components/money/labels.ts
+msgid "Расходы"
+msgstr "Расходы"
 
 #: src/routes/invite/$token.tsx
 msgid "редактор"
@@ -1492,6 +1779,7 @@ msgid "Роль участника {username}"
 msgstr "Роль участника {username}"
 
 #: src/components/flocks/flock-shepherds.tsx
+#: src/components/money/records-tab.tsx
 msgctxt "from date"
 msgid "С"
 msgstr "С"
@@ -1526,6 +1814,10 @@ msgstr "Самец"
 msgid "Самка"
 msgstr "Самка"
 
+#: src/components/money/records-tab.tsx
+msgid "Свой период"
+msgstr "Свой период"
+
 #: src/components/flocks/flock-shepherds.tsx
 msgid "Сделайте это, только если его записали по ошибке."
 msgstr "Сделайте это, только если его записали по ошибке."
@@ -1537,6 +1829,10 @@ msgstr "сейчас"
 #: src/components/sheep/sheep-history.tsx
 msgid "Система"
 msgstr "Система"
+
+#: src/components/money/categories-tab.tsx
+msgid "Системная"
+msgstr "Системная"
 
 #: src/components/sheep/pedigree-fields.tsx
 #: src/components/sheep/sheep-details.tsx
@@ -1623,6 +1919,8 @@ msgstr "Состав считается по родителям."
 #: src/components/flocks/flock-shepherds.tsx
 #: src/components/flocks/locations-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
+#: src/components/money/categories-tab.tsx
+#: src/components/money/record-dialog.tsx
 #: src/components/sheep/sheep-form.tsx
 #: src/components/sheep/status-dialogs.tsx
 #: src/routes/farms/$farmId/breeds.tsx
@@ -1660,6 +1958,7 @@ msgstr "Ссылка-приглашение"
 msgid "Стада"
 msgstr "Стада"
 
+#: src/components/money/record-dialog.tsx
 #: src/components/sheep/move-sheep-dialog.tsx
 #: src/components/sheep/sheep-details.tsx
 #: src/components/sheep/sheep-table.tsx
@@ -1703,6 +2002,18 @@ msgstr "Статус"
 #: src/components/sheep/sheep-table.tsx
 msgid "Столбцы"
 msgstr "Столбцы"
+
+#: src/components/money/category-names.ts
+msgid "Стрижка"
+msgstr "Стрижка"
+
+#: src/components/money/record-dialog.tsx
+msgid "Сумма"
+msgstr "Сумма"
+
+#: src/components/money/records-tab.tsx
+msgid "Сумма, {symbol}"
+msgstr "Сумма, {symbol}"
 
 #: src/errors.ts
 msgid "Такая порода уже есть в списке, возможно в архиве."
@@ -1748,6 +2059,14 @@ msgstr "Такого чабана нет."
 #: src/components/farm-settings-fields.tsx
 msgid "Такого часового пояса нет."
 msgstr "Такого часового пояса нет."
+
+#: src/errors.ts
+msgid "Такой записи нет. Возможно, её уже удалили."
+msgstr "Такой записи нет. Возможно, её уже удалили."
+
+#: src/errors.ts
+msgid "Такой категории нет. Возможно, её уже удалили."
+msgstr "Такой категории нет. Возможно, её уже удалили."
 
 #: src/errors.ts
 msgid "Такой породы нет. Возможно, её удалили."
@@ -1802,6 +2121,10 @@ msgid "У фермы ещё нет чабанов. Сначала добавьт
 msgstr "У фермы ещё нет чабанов. Сначала добавьте чабана."
 
 #: src/errors.ts
+msgid "У фермы уже есть расходы или доходы, поэтому валюту изменить нельзя."
+msgstr "У фермы уже есть расходы или доходы, поэтому валюту изменить нельзя."
+
+#: src/errors.ts
 msgid "У этого барана есть потомки, поэтому его пол нельзя изменить."
 msgstr "У этого барана есть потомки, поэтому его пол нельзя изменить."
 
@@ -1852,6 +2175,16 @@ msgctxt "breed"
 msgid "Удалить"
 msgstr "Удалить"
 
+#: src/components/money/categories-tab.tsx
+msgctxt "money category"
+msgid "Удалить"
+msgstr "Удалить"
+
+#: src/components/money/records-tab.tsx
+msgctxt "money record"
+msgid "Удалить"
+msgstr "Удалить"
+
 #: src/components/sheep/sheep-dialogs.tsx
 msgctxt "sheep"
 msgid "Удалить"
@@ -1869,6 +2202,14 @@ msgstr "Удалить {username} из фермы?"
 msgid "Удалить барана?"
 msgstr "Удалить барана?"
 
+#: src/components/money/labels.ts
+msgid "Удалить доход?"
+msgstr "Удалить доход?"
+
+#: src/components/money/categories-tab.tsx
+msgid "Удалить категорию «{name}»?"
+msgstr "Удалить категорию «{name}»?"
+
 #: src/components/flocks/flock-shepherds.tsx
 msgid "Удалить назначение?"
 msgstr "Удалить назначение?"
@@ -1876,6 +2217,10 @@ msgstr "Удалить назначение?"
 #: src/routes/farms/$farmId/breeds.tsx
 msgid "Удалить породу {name}?"
 msgstr "Удалить породу {name}?"
+
+#: src/components/money/labels.ts
+msgid "Удалить расход?"
+msgstr "Удалить расход?"
 
 #: src/routes/farms/$farmId/members.tsx
 msgid "Участник больше не сможет открыть ферму. Его записи и история останутся."
@@ -1908,6 +2253,8 @@ msgid "Ферм пока нет"
 msgstr "Ферм пока нет"
 
 #: src/components/app-shell.tsx
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
 msgid "Ферма"
 msgstr "Ферма"
 
@@ -1922,6 +2269,8 @@ msgid "Фермы"
 msgstr "Фермы"
 
 #: src/components/flocks/flock-shepherds.tsx
+#: src/components/money/record-dialog.tsx
+#: src/components/money/records-tab.tsx
 msgid "Чабан"
 msgstr "Чабан"
 
@@ -1958,6 +2307,10 @@ msgstr "чабан не назначен"
 msgid "Чабан не назначен."
 msgstr "Чабан не назначен."
 
+#: src/errors.ts
+msgid "Чабана указывают только в расходе «Оплата чабану»."
+msgstr "Чабана указывают только в расходе «Оплата чабану»."
+
 #: src/components/flocks/flock-shepherds.tsx
 #: src/components/flocks/flocks-tab.tsx
 #: src/components/flocks/shepherds-tab.tsx
@@ -1978,6 +2331,10 @@ msgstr "Что"
 msgid "Что-то пошло не так. Попробуйте ещё раз."
 msgstr "Что-то пошло не так. Попробуйте ещё раз."
 
+#: src/components/money/category-names.ts
+msgid "Шерсть"
+msgstr "Шерсть"
+
 #: src/components/sheep/labels.ts
 msgctxt "grade"
 msgid "Элита"
@@ -1986,6 +2343,10 @@ msgstr "Элита"
 #: src/errors.ts
 msgid "Эта бирка уже есть у другого барана фермы. Проверьте номер."
 msgstr "Эта бирка уже есть у другого барана фермы. Проверьте номер."
+
+#: src/errors.ts
+msgid "Эта категория в архиве. Выберите другую или верните эту категорию из архива."
+msgstr "Эта категория в архиве. Выберите другую или верните эту категорию из архива."
 
 #: src/errors.ts
 msgid "Эта порода в архиве. Верните её из архива на странице «Породы» или выберите другую."
@@ -1998,6 +2359,10 @@ msgstr "Это место в архиве. Выберите другое или 
 #: src/errors.ts
 msgid "Это может сделать только оператор."
 msgstr "Это может сделать только оператор."
+
+#: src/errors.ts
+msgid "Это системная категория: её записи делает само приложение. Её нельзя выбрать, изменить или удалить."
+msgstr "Это системная категория: её записи делает само приложение. Её нельзя выбрать, изменить или удалить."
 
 #: src/errors.ts
 msgid "Это стадо в архиве. Выберите другое или верните это стадо из архива."
@@ -2023,6 +2388,14 @@ msgstr "Этот баран — родитель других баранов, е
 msgid "Этот баран не потерян."
 msgstr "Этот баран не потерян."
 
+#: src/components/money/records-tab.tsx
+msgid "Этот год"
+msgstr "Этот год"
+
+#: src/components/money/records-tab.tsx
+msgid "Этот месяц"
+msgstr "Этот месяц"
+
 #: src/errors.ts
 msgid "Этот пароль слишком простой или есть в утёкших базах. Придумайте другой."
 msgstr "Этот пароль слишком простой или есть в утёкших базах. Придумайте другой."
@@ -2042,6 +2415,14 @@ msgstr "Этот участник — владелец потерянных ба
 #: src/errors.ts
 msgid "Этот чабан в архиве. Сначала верните его из архива."
 msgstr "Этот чабан в архиве. Сначала верните его из архива."
+
+#: src/errors.ts
+msgid "Эту запись сделало приложение: в ней можно изменить только сумму и примечание, а удалить её нельзя."
+msgstr "Эту запись сделало приложение: в ней можно изменить только сумму и примечание, а удалить её нельзя."
+
+#: src/components/money/record-dialog.tsx
+msgid "Эту запись сделало приложение: в ней можно изменить только сумму и примечание."
+msgstr "Эту запись сделало приложение: в ней можно изменить только сумму и примечание."
 
 #: src/errors.ts
 msgid "Эту ссылку уже использовали. Попросите новую."

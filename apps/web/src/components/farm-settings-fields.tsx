@@ -51,6 +51,7 @@ export function settingsOf(draft: SettingsDraft): FarmSettings {
 /** The errors that these fields show; a form shows the others itself. */
 export const settingsErrorCodes: readonly ErrorCode[] = [
   "farm.currencyInvalid",
+  "farm.currencyLocked",
   "farm.timeZoneInvalid",
   "farm.lambAgeInvalid",
 ];
@@ -75,7 +76,7 @@ export function FarmSettingsFields({
   const currencies = useMemo(() => currencyOptions(i18n.locale), [i18n.locale]);
   const zones = useMemo(() => timeZones(draft.timeZone), [draft.timeZone]);
   const errorOf = (code: ErrorCode) => (error?.code === code ? error.message : null);
-  const currencyError = errorOf("farm.currencyInvalid");
+  const currencyError = errorOf("farm.currencyInvalid") ?? errorOf("farm.currencyLocked");
   const timeZoneError = errorOf("farm.timeZoneInvalid");
   const lambAgeError = errorOf("farm.lambAgeInvalid");
 
