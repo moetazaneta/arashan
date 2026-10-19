@@ -93,6 +93,14 @@ export const permissions = {
   "moneyCategory.archive": ["admin", "editor"],
   /** Make a category that no record uses Deleted. */
   "moneyCategory.delete": ["admin", "editor"],
+  /** See the Sales and the Purchases. */
+  "deal.view": ["admin", "editor"],
+  /** Sell Active Sheep, or buy new Sheep. */
+  "deal.create": ["admin", "editor"],
+  /** Change the price of a Sale or a Purchase. */
+  "deal.update": ["admin", "editor"],
+  /** Cancel a Sale or a Purchase made by mistake, with its Automatic record. */
+  "deal.cancel": ["admin", "editor"],
   /** See the Resources, their Stock and their events. */
   "resource.view": ["admin", "editor"],
   /** Add a Resource. */

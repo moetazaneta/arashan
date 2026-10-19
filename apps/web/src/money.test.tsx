@@ -199,7 +199,10 @@ test("a Member deletes a record after a confirmation, but not an Automatic one",
 
   await screen.findByRole("table", { name: "Доходы" });
   const automatic = await screen.findByRole("row", { name: /Продажа баранов/ });
-  expect(within(automatic).getByText("Авто")).toBeTruthy();
+  // An Automatic record links to its deal.
+  expect(within(automatic).getByRole("link", { name: "Продажа" }).getAttribute("href")).toBe(
+    `/farms/${farm.id}/deals/sale-1`,
+  );
   await user.click(within(automatic).getByRole("button", { name: "Действия" }));
   expect(await screen.findByRole("menuitem", { name: "Изменить" })).toBeTruthy();
   expect(screen.queryByRole("menuitem", { name: "Удалить" })).toBeNull();

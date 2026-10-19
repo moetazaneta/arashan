@@ -1,6 +1,7 @@
 import type { Member } from "./access/permissions";
 import type { AuditLog, FarmAuditReader } from "./audit/audit";
 import type { FarmBreedReader, FarmBreedRepository } from "./breeds/breed";
+import type { FarmDealReader, FarmDealRepository } from "./deals/deal";
 import type { Farm, FarmReader, FarmRepository, FarmSettings } from "./farms/farm";
 import type { FileReader, FileStorage } from "./files/files";
 import type {
@@ -96,6 +97,8 @@ export interface FarmReaders {
   shepherds: FarmShepherdReader;
   moneyCategories: FarmMoneyCategoryReader;
   moneyRecords: FarmMoneyRecordReader;
+  /** The Sales and the Purchases. */
+  deals: FarmDealReader;
   resources: FarmResourceReader;
   /** The audit log of the Farm, for the history of a record. */
   history: FarmAuditReader;
@@ -119,6 +122,7 @@ export interface FarmRepositories {
   shepherds: FarmShepherdRepository;
   moneyCategories: FarmMoneyCategoryRepository;
   moneyRecords: FarmMoneyRecordRepository;
+  deals: FarmDealRepository;
   resources: FarmResourceRepository;
   history: FarmAuditReader;
   passwordResets: FarmPasswordResetRepository;

@@ -56,6 +56,7 @@ export const errorCodes = [
   "sheep.sameOwner",
   "sheep.ownerChangeDateInvalid",
   "sheep.isParent",
+  "sheep.inDeal",
   "sheep.breedsInvalid",
   "sheep.breedsTooLarge",
   "sheep.gradeDateInvalid",
@@ -134,6 +135,15 @@ export const errorCodes = [
   "moneyCategory.system",
   "moneyCategory.archived",
   "moneyCategory.inUse",
+  // Sales and Purchases.
+  "deal.notFound",
+  "deal.noSheep",
+  "deal.tooManySheep",
+  "deal.dateInvalid",
+  "deal.dateInFuture",
+  "deal.priceInvalid",
+  "deal.bornAfterPurchase",
+  "deal.sheepSold",
   // Resources and their events.
   "resource.notFound",
   "resource.nameRequired",

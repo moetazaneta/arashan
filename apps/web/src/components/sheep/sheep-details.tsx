@@ -10,6 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { formatCalendarDate, formatDateAt, formatKg } from "@/format";
 
+import { DealLink } from "@/components/deals/deal-link";
+
 import { CompositionText } from "./composition";
 import { gradeLabels, originLabels, sexLabels } from "./labels";
 import { SheepLink } from "./sheep-ref";
@@ -83,11 +85,23 @@ export function SheepDetails({ farm, sheep }: { farm: Farm; sheep: SheepCardData
                   <Trans>с {statusSince}</Trans>
                 </span>
               )}
+              {sheep.status === "sold" && lastChange?.saleId != null && (
+                <>
+                  {" · "}
+                  <DealLink farmId={farm.id} deal={{ kind: "sale", id: lastChange.saleId }} />
+                </>
+              )}
             </FieldRow>
           </>
         )}
         <FieldRow label={<Trans>Происхождение</Trans>}>
           {i18n._(originLabels[sheep.origin])}
+          {sheep.purchaseId !== null && (
+            <>
+              {" · "}
+              <DealLink farmId={farm.id} deal={{ kind: "purchase", id: sheep.purchaseId }} />
+            </>
+          )}
         </FieldRow>
       </Fields>
 

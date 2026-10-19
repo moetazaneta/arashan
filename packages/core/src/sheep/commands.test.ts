@@ -81,6 +81,7 @@ describe("registerSheep", () => {
       birthDate: "2026-03-01",
       origin: "born",
       initialEntry: true,
+      purchaseId: null,
       status: "active",
       ownerId: membershipId("editor"),
       notes: "С рыжим пятном",
